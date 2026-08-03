@@ -4,6 +4,8 @@
 **Status:** Architecture Proposal
 **Supersedes framing of:** v0.1 / v0.2 (trust-boundary model kept; execution model corrected)
 
+![Visa Master — Secure Agent Architecture v0.3, cover slide](architecture-v0.3-slides1.png)
+
 ---
 
 ## 1. What changed from v0.2, and why
@@ -55,6 +57,8 @@ missing outbound controls.
 
 ## 3. Execution model: asynchronous jobs, not synchronous requests
 
+![High-level architecture: Backend as control plane, a job queue and worker, and an ephemeral Hermes container beyond the trust boundary reachable only through an egress proxy](architecture-v0.3-slides2.png)
+
 A case takes minutes and involves intake back-and-forth. It cannot ride a single
 HTTP request. Every case is a **job**.
 
@@ -87,6 +91,8 @@ sends the agent only what reasoning needs.
 
 ## 4. Tenancy & lifecycle: one-at-a-time, ephemeral, single-tenant (MVP)
 
+![Job lifecycle: create a fresh scratch, launch the container, run and stream progress, detect completion by artifact, pull and validate the pack, then destroy the container and scratch](architecture-v0.3-slides3.png)
+
 **Your MVP simplification is sound: run exactly one job at a time, in its own
 fresh space, and destroy it afterward.** With serial execution there is no
 concurrent job to leak into, and with destroy-after there is no residual state
@@ -109,6 +115,8 @@ So each job gets: `image (read-only agent + runtime) + a fresh empty scratch
 volume for workbench/workspace/sessions + this user's uploaded files`. On finish,
 the scratch volume and container are deleted. The reusable, non-PII parts stay;
 only the PII-bearing parts are ephemeral.
+
+![Data-dir split: shared read-only agent profile, toolchain runtime and model credential versus a per-job writable, ephemeral scratch holding workbench, workspace, sessions and uploads](architecture-v0.3-slides5.png)
 
 **(b) Destroy for real.** Tear down the container **and** delete the scratch
 volume/tmpfs; don't just stop the container (a stopped container keeps its
@@ -170,6 +178,8 @@ flowchart LR
   default gateway to the internet. The **only** reachable host is the proxy.
 - Set `HTTP_PROXY`/`HTTPS_PROXY` in the container *and* enforce at the network
   level, so even if the agent ignores the env var it still cannot route around.
+
+![Egress control topology: the Hermes container sits on an internal-only network with no default route and reaches the internet only through an audited egress proxy that applies the policy](architecture-v0.3-slides4.png)
 
 ### 5.2 Policy (layered)
 
