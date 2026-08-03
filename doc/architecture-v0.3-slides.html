@@ -1,0 +1,281 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Visa Master — Secure Agent Architecture v0.3 (slides)</title>
+<style>
+  :root{
+    --bg:#eef2f8; --panel:#ffffff; --ink:#16203a; --muted:#5b6b86; --line:#dde5f0;
+    --trust:#2563eb; --trust-bg:#eaf1fe; --trust-line:#bcd3fb;
+    --untrust:#ea7317; --untrust-bg:#fdf1e3; --untrust-line:#f7cfa0;
+    --proxy:#0d9488; --proxy-bg:#e3f5f2; --proxy-line:#a9e0d8;
+    --boundary:#dc2626; --allow:#16a34a; --deny:#dc2626;
+    --data-bg:#fef7e6; --data-line:#f5e2ad; --ops-bg:#eef7f3; --ops-line:#c3e6d7;
+    --shadow:0 2px 8px rgba(16,32,58,.08),0 18px 50px rgba(16,32,58,.10);
+    --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+    --sans:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial;
+  }
+  @media (prefers-color-scheme:dark){:root{
+    --bg:#080d18; --panel:#141b2e; --ink:#e7edf8; --muted:#9fb0cc; --line:#26314a;
+    --trust:#6ea0ff; --trust-bg:#16233f; --trust-line:#294b7f;
+    --untrust:#f5a24a; --untrust-bg:#33240f; --untrust-line:#6b4a1c;
+    --proxy:#4fd1c0; --proxy-bg:#0f2f2b; --proxy-line:#1e564f;
+    --boundary:#f87171; --allow:#4ade80; --deny:#f87171;
+    --data-bg:#2a2410; --data-line:#5c4d1c; --ops-bg:#12271f; --ops-line:#25503f;
+    --shadow:0 2px 8px rgba(0,0,0,.4),0 20px 55px rgba(0,0,0,.45);
+  }}
+  :root[data-theme="light"]{
+    --bg:#eef2f8; --panel:#ffffff; --ink:#16203a; --muted:#5b6b86; --line:#dde5f0;
+    --trust:#2563eb; --trust-bg:#eaf1fe; --trust-line:#bcd3fb;
+    --untrust:#ea7317; --untrust-bg:#fdf1e3; --untrust-line:#f7cfa0;
+    --proxy:#0d9488; --proxy-bg:#e3f5f2; --proxy-line:#a9e0d8;
+    --boundary:#dc2626; --allow:#16a34a; --deny:#dc2626;
+    --data-bg:#fef7e6; --data-line:#f5e2ad; --ops-bg:#eef7f3; --ops-line:#c3e6d7;
+  }
+  :root[data-theme="dark"]{
+    --bg:#080d18; --panel:#141b2e; --ink:#e7edf8; --muted:#9fb0cc; --line:#26314a;
+    --trust:#6ea0ff; --trust-bg:#16233f; --trust-line:#294b7f;
+    --untrust:#f5a24a; --untrust-bg:#33240f; --untrust-line:#6b4a1c;
+    --proxy:#4fd1c0; --proxy-bg:#0f2f2b; --proxy-line:#1e564f;
+    --boundary:#f87171; --allow:#4ade80; --deny:#f87171;
+    --data-bg:#2a2410; --data-line:#5c4d1c; --ops-bg:#12271f; --ops-line:#25503f;
+  }
+  *{box-sizing:border-box;margin:0}
+  body{background:var(--bg);color:var(--ink);font-family:var(--sans);-webkit-font-smoothing:antialiased}
+  .deck{display:flex;flex-direction:column;align-items:center;gap:26px;padding:26px 18px 60px}
+
+  .tip{max-width:1120px;width:100%;font-family:var(--mono);font-size:12px;color:var(--muted);
+    background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:10px 14px;line-height:1.5}
+  .tip b{color:var(--ink)}
+
+  /* SLIDE = 16:9 canvas; all inner sizes in cqw so screen == print */
+  .slide{container-type:inline-size;position:relative;width:100%;max-width:1120px;aspect-ratio:16/9;
+    background:var(--panel);border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow);overflow:hidden}
+  .pad{position:absolute;inset:0;padding:4.2cqw 4.8cqw;display:flex;flex-direction:column}
+  .sn{position:absolute;top:3cqw;right:3.4cqw;font-family:var(--mono);font-size:1.5cqw;letter-spacing:.12em;
+    color:var(--muted);opacity:.8}
+
+  .head{display:flex;align-items:baseline;gap:1.6cqw;margin-bottom:2.6cqw}
+  .head .n{font-family:var(--mono);font-size:1.55cqw;font-weight:700;color:var(--panel);background:var(--ink);
+    border-radius:.55cqw;padding:.5cqw 1cqw;letter-spacing:.05em}
+  .head h2{font-size:3cqw;line-height:1.05;letter-spacing:-.02em}
+  .head p{font-size:1.5cqw;color:var(--muted);margin-top:.5cqw;line-height:1.4}
+  .headtext{min-width:0}
+
+  .node{border:.2cqw solid var(--line);background:var(--panel);border-radius:1cqw;padding:1.2cqw 1.4cqw}
+  .node .t{font-weight:650;font-size:1.7cqw;display:flex;align-items:center;gap:.6cqw;line-height:1.1}
+  .node .s{color:var(--muted);font-size:1.32cqw;margin-top:.5cqw;line-height:1.4}
+  .node.trust{border-color:var(--trust-line);background:var(--trust-bg)} .node.trust .t{color:var(--trust)}
+  .node.untrust{border-color:var(--untrust-line);background:var(--untrust-bg)} .node.untrust .t{color:var(--untrust)}
+  .node.proxy{border-color:var(--proxy-line);background:var(--proxy-bg)} .node.proxy .t{color:var(--proxy)}
+  .node.data{border-color:var(--data-line);background:var(--data-bg)}
+  .node.ops{border-color:var(--ops-line);background:var(--ops-bg)}
+  .node.eph{border-style:dashed;border-width:.3cqw;border-color:var(--untrust)}
+  code{font-family:var(--mono);font-size:.92em;background:color-mix(in srgb,var(--ink) 8%,transparent);padding:.05em .35em;border-radius:.3cqw}
+
+  .arw{color:var(--muted);font-weight:700;text-align:center;align-self:center;font-size:2cqw;line-height:1}
+  .lbl{font-family:var(--mono);font-size:1.15cqw;color:var(--muted)}
+  .zh{font-family:var(--mono);font-size:1.25cqw;letter-spacing:.1em;text-transform:uppercase;font-weight:700}
+  .zh.t{color:var(--trust)} .zh.u{color:var(--untrust)}
+
+  /* fig1 */
+  .hl{flex:1;display:grid;grid-template-columns:1fr .06fr 1fr;gap:1.4cqw;align-items:stretch;min-height:0}
+  .col{display:flex;flex-direction:column;gap:1cqw;min-height:0}
+  .row2{display:grid;grid-template-columns:1fr 1fr;gap:1cqw}
+  .bd{display:flex;flex-direction:column;align-items:center;justify-content:center}
+  .bd .bar{width:0;flex:1;border-left:.3cqw dashed var(--boundary)}
+  .bd .tag{writing-mode:vertical-rl;transform:rotate(180deg);font-family:var(--mono);font-size:1.15cqw;
+    letter-spacing:.14em;text-transform:uppercase;color:var(--boundary);font-weight:700;padding:.8cqw 0}
+
+  /* fig2 lifecycle : 6 across */
+  .life{flex:1;display:grid;grid-template-columns:repeat(6,1fr);gap:.7cqw;align-items:stretch;min-height:0}
+  .life .st{position:relative;display:flex;flex-direction:column;gap:.7cqw}
+  .life .num{width:2.6cqw;height:2.6cqw;border-radius:50%;background:var(--proxy);color:#fff;font-family:var(--mono);
+    font-weight:700;font-size:1.35cqw;display:flex;align-items:center;justify-content:center}
+  .life .node{flex:1}
+  .life .st:not(:last-child)::after{content:"\2192";position:absolute;right:-.62cqw;top:.6cqw;color:var(--muted);font-weight:700;font-size:1.5cqw}
+
+  /* fig3 egress */
+  .egtop{display:grid;grid-template-columns:1fr .5fr 1fr .5fr 1fr;gap:1cqw;align-items:center;margin-bottom:2cqw}
+  .policy{display:flex;flex-direction:column;gap:.85cqw}
+  .rule{display:flex;gap:1cqw;align-items:flex-start;font-size:1.42cqw;line-height:1.35}
+  .rule b{color:var(--ink)} .rule i{color:var(--muted);font-style:italic}
+  .pill{font-family:var(--mono);font-size:1.1cqw;font-weight:700;padding:.3cqw .8cqw;border-radius:2cqw;white-space:nowrap;flex:0 0 auto;margin-top:.15cqw}
+  .pill.deny{color:var(--deny);background:color-mix(in srgb,var(--deny) 14%,transparent);border:.12cqw solid color-mix(in srgb,var(--deny) 38%,transparent)}
+  .pill.allow{color:var(--allow);background:color-mix(in srgb,var(--allow) 14%,transparent);border:.12cqw solid color-mix(in srgb,var(--allow) 38%,transparent)}
+  .pill.watch{color:var(--proxy);background:color-mix(in srgb,var(--proxy) 14%,transparent);border:.12cqw solid color-mix(in srgb,var(--proxy) 38%,transparent)}
+
+  /* fig4 split */
+  .split{flex:1;display:grid;grid-template-columns:1fr 1fr;gap:1.6cqw;min-height:0}
+  .split .card{border-radius:1.2cqw;padding:2cqw;display:flex;flex-direction:column}
+  .split .ro{border:.2cqw solid var(--trust-line);background:var(--trust-bg)}
+  .split .rw{border:.3cqw dashed var(--untrust);background:var(--untrust-bg)}
+  .split h3{font-size:2cqw;display:flex;gap:.8cqw;align-items:center}
+  .split .meta{font-family:var(--mono);font-size:1.25cqw;color:var(--muted);margin:.4cqw 0 1.4cqw}
+  .split ul{padding-left:2cqw;font-size:1.55cqw;line-height:1.65}
+  .split li b{color:var(--ink)} .split li span{color:var(--muted)}
+
+  .legend{display:flex;flex-wrap:wrap;gap:.6cqw 1.8cqw;margin-top:2cqw;font-size:1.28cqw;color:var(--muted);align-items:center}
+  .legend .k{display:inline-flex;align-items:center;gap:.7cqw}
+  .sw{width:1.6cqw;height:1.6cqw;border-radius:.35cqw;border:.15cqw solid var(--line);flex:0 0 auto}
+  .sw.t{background:var(--trust-bg);border-color:var(--trust-line)}
+  .sw.u{background:var(--untrust-bg);border-color:var(--untrust-line)}
+  .sw.p{background:var(--proxy-bg);border-color:var(--proxy-line)}
+  .sw.e{background:transparent;border-style:dashed;border-color:var(--untrust)}
+  .sw.b{border:0;border-top:.3cqw dashed var(--boundary);border-radius:0;height:.3cqw;width:2.2cqw}
+
+  /* cover */
+  .cover .pad{justify-content:center}
+  .cover .kick{font-family:var(--mono);font-size:1.5cqw;letter-spacing:.18em;text-transform:uppercase;color:var(--proxy);font-weight:600}
+  .cover h1{font-size:5.4cqw;line-height:1.02;letter-spacing:-.02em;margin:1.4cqw 0 1cqw;text-wrap:balance}
+  .cover .lede{font-size:1.9cqw;color:var(--muted);max-width:64%;line-height:1.45}
+  .cover .lede b{color:var(--ink)}
+  .cover .chips{display:flex;gap:1cqw;margin-top:3cqw;flex-wrap:wrap}
+  .cover .chip{font-size:1.4cqw;font-weight:600;border:.15cqw solid var(--line);border-radius:2cqw;padding:.7cqw 1.4cqw;background:var(--panel)}
+  .cover .chip.b{border-color:var(--boundary);color:var(--boundary)}
+  .cover .chip.p{border-color:var(--proxy-line);color:var(--proxy)}
+  .cover .chip.u{border-color:var(--untrust-line);color:var(--untrust)}
+
+  @page{size:13.333in 7.5in;margin:0}
+  @media print{
+    body{background:#fff}
+    .deck{gap:0;padding:0}
+    .screen-only{display:none !important}
+    .slide{max-width:none;width:13.333in;height:7.5in;aspect-ratio:auto;border:0;border-radius:0;box-shadow:none;break-after:page}
+    .slide:last-child{break-after:auto}
+    *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  }
+</style>
+</head>
+<body>
+<div class="deck">
+  <div class="tip screen-only">📽 <b>5 slides · 16:9.</b> To print one slide per page: <b>⌘/Ctrl-P → Layout: Landscape · Margins: None · More settings → Background graphics: ON</b>. Or “Save as PDF”. Each slide is a full 13.33″×7.5″ PowerPoint page.</div>
+
+  <!-- COVER -->
+  <section class="slide cover">
+    <div class="pad">
+      <div class="kick">Visa Master · Architecture</div>
+      <h1>Secure Agent Architecture v0.3</h1>
+      <p class="lede">The <b>outbound &amp; lifecycle</b> half the v0.2 diagram was missing. The trust boundary stays; what's new is <b>egress control</b>, an <b>async job</b> path, and <b>ephemeral single-tenant</b> execution — because this agent browses the live web and runs code on the user's data.</p>
+      <div class="chips">
+        <span class="chip b">Trust boundary</span>
+        <span class="chip p">Egress proxy</span>
+        <span class="chip u">Ephemeral worker</span>
+        <span class="chip">Human review gate</span>
+      </div>
+    </div>
+    <div class="sn">01 / 05</div>
+  </section>
+
+  <!-- SLIDE: high level -->
+  <section class="slide">
+    <div class="pad">
+      <div class="head"><span class="n">01</span><div class="headtext">
+        <h2>High-level — corrected trust boundary</h2>
+        <p>Backend is the control plane. The agent is a disposable worker beyond the boundary, reached only via a queue, and it touches the internet only through an egress proxy.</p></div></div>
+      <div class="hl">
+        <div class="col">
+          <div class="zh t">Trusted zone</div>
+          <div class="node trust"><div class="t">🧠 Backend API</div><div class="s">Auth · authz · business logic · sanitize task · validate result</div></div>
+          <div class="row2">
+            <div class="node data"><div class="t">🗄️ Data &amp; secrets</div><div class="s">Postgres · Redis · S3</div></div>
+            <div class="node ops"><div class="t">📈 Monitoring</div><div class="s">Logs · audit</div></div>
+          </div>
+          <div class="node trust"><div class="t">📥 Job Queue → Worker</div><div class="s">Leases one job · launches &amp; destroys the container · streams progress (WS/SSE)</div></div>
+        </div>
+        <div class="bd"><div class="bar"></div><div class="tag">Trust Boundary</div><div class="bar"></div></div>
+        <div class="col">
+          <div class="zh u">Untrusted execution zone</div>
+          <div class="node eph"><div class="t">🤖 Ephemeral Hermes container</div><div class="s"><b>Single tenant · --yolo · destroyed after.</b> Browses web, downloads PDFs, runs Python venv + LibreOffice, ~10&nbsp;min.</div></div>
+          <div class="node proxy"><div class="t">🛡️ Egress Proxy · <span class="lbl">only route out</span></div><div class="s">Block internal &amp; metadata · constrain POST · rate-cap · audit-log</div></div>
+          <div class="node"><div class="t">🌍 Internet &nbsp;·&nbsp; 🔑 model key</div><div class="s">LLM provider (inference) + vetted web (research). Key injected read-only, budgeted.</div></div>
+        </div>
+      </div>
+      <div class="legend">
+        <span class="k"><span class="sw t"></span>Trusted</span>
+        <span class="k"><span class="sw u"></span>Untrusted / agent</span>
+        <span class="k"><span class="sw p"></span>Egress control</span>
+        <span class="k"><span class="sw e"></span>Ephemeral (destroyed)</span>
+        <span class="k"><span class="sw b"></span>Trust boundary</span>
+      </div>
+    </div>
+    <div class="sn">02 / 05</div>
+  </section>
+
+  <!-- SLIDE: lifecycle -->
+  <section class="slide">
+    <div class="pad">
+      <div class="head"><span class="n">02</span><div class="headtext">
+        <h2>Job lifecycle — ephemeral &amp; single-tenant</h2>
+        <p>One job at a time (MVP). A fresh writable space is created, used, pulled from, then destroyed with the container — no PII survives to the next user.</p></div></div>
+      <div class="life">
+        <div class="st"><div class="num">1</div><div class="node"><div class="t">Fresh scratch</div><div class="s">Empty volume/tmpfs; stage this user's uploads into it.</div></div></div>
+        <div class="st"><div class="num">2</div><div class="node untrust"><div class="t">Launch</div><div class="s">Read-only agent+runtime · fresh scratch · scoped key · <code>--yolo</code>.</div></div></div>
+        <div class="st"><div class="num">3</div><div class="node"><div class="t">Run &amp; stream</div><div class="s">research → retrieval → build → QA; progress → Backend.</div></div></div>
+        <div class="st"><div class="num">4</div><div class="node proxy"><div class="t">Done by artifact</div><div class="s">Watch <code>qa-report.json</code>, not process exit. Deadline backstop.</div></div></div>
+        <div class="st"><div class="num">5</div><div class="node trust"><div class="t">Pull &amp; validate</div><div class="s">Backend validates, stores to S3, routes to review.</div></div></div>
+        <div class="st"><div class="num">6</div><div class="node eph"><div class="t">Destroy</div><div class="s">Remove container <b>+</b> delete scratch (<code>rm -v</code>). PII gone.</div></div></div>
+      </div>
+      <div class="legend"><span class="k">🟢 one concurrent job (MVP) — the same isolation generalizes to a per-tenant worker pool at scale.</span></div>
+    </div>
+    <div class="sn">03 / 05</div>
+  </section>
+
+  <!-- SLIDE: egress -->
+  <section class="slide">
+    <div class="pad">
+      <div class="head"><span class="n">03</span><div class="headtext">
+        <h2>Egress control — the boundary is the network</h2>
+        <p>The container has no default route; its only path out is the proxy. Never trust the agent to self-limit. Kills exfiltration &amp; SSRF under prompt injection.</p></div></div>
+      <div class="egtop">
+        <div class="node eph"><div class="t">🤖 Hermes container</div><div class="s"><code>internal:true</code> net — no gateway; <code>HTTP(S)_PROXY</code> enforced</div></div>
+        <div class="arw">→</div>
+        <div class="node proxy"><div class="t">🛡️ Egress Proxy</div><div class="s">Squid / Envoy · audit every request</div></div>
+        <div class="arw">→</div>
+        <div class="node"><div class="t">🌍 Internet</div><div class="s">only what policy allows</div></div>
+      </div>
+      <div class="policy">
+        <div class="rule"><span class="pill deny">BLOCK</span><div><b>Internal + metadata + odd ports.</b> RFC1918, <code>169.254.0.0/16</code> (cloud metadata → IAM theft), <code>127/8</code>, anything not 80/443 — kills SSRF.</div></div>
+        <div class="rule"><span class="pill allow">ALLOW</span><div><b>Inference channel.</b> Only the LLM provider host(s); the model key goes nowhere else.</div></div>
+        <div class="rule"><span class="pill allow">ALLOW</span><div><b>Research reads.</b> Public web <code>GET</code> for embassy / BLS / gov pages &amp; PDFs.</div></div>
+        <div class="rule"><span class="pill watch">LIMIT</span><div><b>Constrain data-sends.</b> Block/scrutinize <code>POST/PUT</code> + large bodies to non-allowlisted hosts — exfiltration has to <i>send</i> data out. Rate + bandwidth caps.</div></div>
+        <div class="rule"><span class="pill watch">PHASE 2</span><div><b>Egress DLP.</b> TLS-intercept &amp; scan outbound for this job's PII (passport №, balance) → block on match.</div></div>
+      </div>
+    </div>
+    <div class="sn">04 / 05</div>
+  </section>
+
+  <!-- SLIDE: data split -->
+  <section class="slide">
+    <div class="pad">
+      <div class="head"><span class="n">04</span><div class="headtext">
+        <h2>Data-dir split — reuse the runtime, never the PII</h2>
+        <p>Don't rebuild the ~1&nbsp;min Python venv every job, yet never share writable state. Non-PII parts mount read-only; only PII-bearing parts are ephemeral.</p></div></div>
+      <div class="split">
+        <div class="card ro">
+          <h3>🔒 Shared · read-only</h3>
+          <p class="meta">no PII · baked or RO volume</p>
+          <ul>
+            <li><b>profiles/visa-master-agent</b> <span>— SOUL + skills</span></li>
+            <li><b>local/toolchain-runtime</b> <span>— Python venv (docx, pypdf, reportlab)</span></li>
+            <li><b>auth.json</b> <span>— model service credential, not user data</span></li>
+          </ul>
+        </div>
+        <div class="card rw">
+          <h3>♻️ Per-job · writable · ephemeral</h3>
+          <p class="meta">holds PII · destroyed after</p>
+          <ul>
+            <li><b>workbench/</b> <span>— downloaded sources, manifests, renders</span></li>
+            <li><b>workspace/</b> <span>— the generated delivery pack</span></li>
+            <li><b>sessions/</b> <span>— conversation state</span></li>
+            <li><b>uploads/</b> <span>— the user's documents</span></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+    <div class="sn">05 / 05</div>
+  </section>
+</div>
+</body>
+</html>
