@@ -684,7 +684,67 @@ hr.rule {
   box-shadow: var(--shadow-sm);
   filter: var(--diagram-shade);
 }
-.diagram svg { max-width: 100%; height: auto; display: block; }
+.diagram { position: relative; }
+.diagram svg {
+  display: block; height: auto;
+  width: 100%; max-width: none;
+  min-width: var(--diagram-min-w, 0px);   /* JS floors this so labels stay >= 9.5px */
+  margin: auto;                            /* centres without the flex-overflow trap */
+}
+/* once content overflows, flex centring makes the left edge unreachable */
+.diagram.is-scrollable { justify-content: flex-start; }
+.diagram.is-zoomable svg { cursor: zoom-in; }
+.diagram__zoom {
+  position: absolute; top: .55rem; right: .55rem; z-index: 2;
+  display: inline-flex; align-items: center; gap: .3rem;
+  padding: .28rem .55rem; border-radius: 6px; cursor: pointer;
+  font-size: var(--fs-2xs); font-weight: 600; line-height: 1;
+  color: #35434F; background: rgba(255,255,255,.9);
+  border: 1px solid rgba(0,0,0,.18);
+  opacity: 0; transition: opacity .14s ease;
+}
+.diagram__zoom svg { width: 12px; height: 12px; min-width: 0; margin: 0; }
+.diagram:hover .diagram__zoom, .diagram__zoom:focus-visible,
+.diagram.is-scrollable .diagram__zoom { opacity: 1; }
+.diagram__hint { display: none; }
+.diagram.is-scrollable .diagram__hint {
+  display: block;
+  position: absolute; left: .55rem; bottom: .5rem; z-index: 2;
+  font-size: var(--fs-2xs); color: #55606B;
+  background: rgba(255,255,255,.9); border-radius: 5px; padding: .15rem .45rem;
+  pointer-events: none;
+}
+
+/* ---------- diagram lightbox ---------- */
+.lightbox[hidden] { display: none; }
+.lightbox {
+  position: fixed; inset: 0; z-index: 90;
+  display: flex; flex-direction: column;
+  background: rgba(9, 13, 18, .82);
+  backdrop-filter: blur(2px);
+}
+.lightbox__bar {
+  flex: 0 0 auto; display: flex; align-items: center; gap: .75rem;
+  padding: .5rem .75rem; background: var(--canvas); border-bottom: 1px solid var(--border);
+}
+.lightbox__title { font-size: var(--fs-xs); font-weight: 600; color: var(--text-2);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.lightbox__tools { margin-left: auto; display: flex; align-items: center; gap: .3rem; }
+.lightbox__pct { font-size: var(--fs-2xs); color: var(--text-3);
+  min-width: 3.4em; text-align: center; font-variant-numeric: tabular-nums; }
+.lightbox__btn {
+  border: 1px solid var(--border-strong); background: var(--surface);
+  color: var(--text); border-radius: 6px; cursor: pointer;
+  font-size: var(--fs-2xs); font-weight: 600; line-height: 1;
+  padding: .38rem .6rem; min-width: 2rem;
+}
+.lightbox__btn:hover { background: var(--surface-2); }
+.lightbox__stage {
+  flex: 1 1 auto; overflow: auto; padding: 1.25rem;
+  background: #fff; display: block;
+}
+.lightbox__stage svg { display: block; margin: 0 auto; height: auto; max-width: none; }
+:root.lb-open, :root.lb-open body { overflow: hidden; }
 .diagram figcaption {
   margin-top: .6rem;
   font-size: var(--fs-2xs);
@@ -833,7 +893,9 @@ hr.rule {
     color: #444;
     word-break: break-all;
   }
-  .diagram { filter: none !important; }
+  .diagram { filter: none !important; overflow: visible !important; }
+  .diagram svg { min-width: 0 !important; width: 100% !important; }
+  .diagram__zoom, .diagram__hint, .lightbox { display: none !important; }
   @page { margin: 16mm 14mm; }
 }
 </style>
@@ -1252,6 +1314,140 @@ hr.rule {
     window.addEventListener("hashchange", syncFromHash);
     if (window.location.hash) window.setTimeout(syncFromHash, 60);
   });
+  /* ---- diagrams: legibility floor, scroll affordance, click-to-enlarge ---- */
+  ready(function () {
+    var MIN_TEXT_PX = 9.5;
+    var figs = [].slice.call(document.querySelectorAll("figure.diagram"));
+    if (!figs.length) return;
+    var lb = null, stage = null, pct = null, ttl = null;
+    var openFig = null, holder = null, baseW = 0, z = 1, lastFocus = null;
+
+    function smallestFont(svg) {
+      var min = Infinity, nodes = svg.querySelectorAll("text, tspan, foreignObject div, foreignObject span, foreignObject p");
+      for (var i = 0; i < nodes.length; i++) {
+        if (!(nodes[i].textContent || "").trim()) continue;
+        var fs = parseFloat(getComputedStyle(nodes[i]).fontSize);
+        if (fs && fs < min) min = fs;
+      }
+      return isFinite(min) ? min : 0;
+    }
+    function syncScroll(fig) { fig.classList.toggle("is-scrollable", fig.scrollWidth - fig.clientWidth > 2); }
+    /* Only force a width floor when downscaling would actually make labels
+       illegible — and only when the floor buys >5% over the fitted width,
+       so a diagram never scrolls just to gain a few pixels. */
+    function applyFloor(fig) {
+      if (!fig._vbw || !fig._mf) return;
+      var cs = getComputedStyle(fig);
+      var avail = fig.clientWidth - parseFloat(cs.paddingLeft || 0) - parseFloat(cs.paddingRight || 0);
+      var floorW = fig._vbw * Math.min(1, MIN_TEXT_PX / fig._mf);
+      if (avail > 0 && floorW > avail * 1.05) fig.style.setProperty("--diagram-min-w", Math.round(floorW) + "px");
+      else fig.style.removeProperty("--diagram-min-w");
+    }
+    function setZoom(v) {
+      z = Math.min(4, Math.max(0.1, v));
+      var svg = stage.querySelector("svg");
+      if (!svg || !baseW) return;
+      svg.style.width = Math.round(baseW * z) + "px";
+      pct.textContent = Math.round(z * 100) + "%";
+    }
+    function fit() { setZoom(baseW ? (stage.clientWidth - 40) / baseW : 1); }
+    function build() {
+      lb = document.createElement("div");
+      lb.className = "lightbox"; lb.setAttribute("hidden", "");
+      lb.setAttribute("role", "dialog"); lb.setAttribute("aria-modal", "true");
+      lb.setAttribute("aria-label", "Enlarged diagram");
+      lb.innerHTML =
+        '<div class="lightbox__bar"><span class="lightbox__title"></span>' +
+        '<div class="lightbox__tools">' +
+        '<button type="button" class="lightbox__btn" data-act="out" aria-label="Zoom out">&#8722;</button>' +
+        '<span class="lightbox__pct">100%</span>' +
+        '<button type="button" class="lightbox__btn" data-act="in" aria-label="Zoom in">+</button>' +
+        '<button type="button" class="lightbox__btn" data-act="fit">Fit</button>' +
+        '<button type="button" class="lightbox__btn" data-act="full">100%</button>' +
+        '<button type="button" class="lightbox__btn" data-act="close" aria-label="Close (Esc)">&#10005;</button>' +
+        '</div></div><div class="lightbox__stage"></div>';
+      document.body.appendChild(lb);
+      stage = lb.querySelector(".lightbox__stage");
+      pct = lb.querySelector(".lightbox__pct");
+      ttl = lb.querySelector(".lightbox__title");
+      lb.addEventListener("click", function (ev) {
+        var b = ev.target.closest ? ev.target.closest("[data-act]") : null;
+        if (b) {
+          var a = b.getAttribute("data-act");
+          if (a === "close") closeLb();
+          else if (a === "in") setZoom(z * 1.25);
+          else if (a === "out") setZoom(z / 1.25);
+          else if (a === "fit") fit();
+          else if (a === "full") setZoom(1);
+          return;
+        }
+        if (ev.target === stage) closeLb();
+      });
+    }
+    function openLb(fig) {
+      var svg = fig.querySelector("svg"); if (!svg) return;
+      if (!lb) build();
+      lastFocus = document.activeElement; openFig = fig;
+      holder = document.createElement("span");
+      holder.className = "diagram__slot"; holder.hidden = true;
+      fig.style.minHeight = Math.round(fig.getBoundingClientRect().height) + "px";
+      svg.parentNode.insertBefore(holder, svg);
+      stage.appendChild(svg);
+      baseW = (svg.viewBox && svg.viewBox.baseVal && svg.viewBox.baseVal.width) || svg.getBoundingClientRect().width || 1;
+      ttl.textContent = (fig.getAttribute("data-mermaid") || "Diagram") + " · " + Math.round(baseW) + "px wide";
+      lb.removeAttribute("hidden");
+      document.documentElement.classList.add("lb-open");
+      /* Enlarge means "make it readable": always open at natural size and let
+         the stage scroll. "Fit" is one click away for an overview. */
+      setZoom(1);
+      lb.querySelector('[data-act="close"]').focus();
+    }
+    function closeLb() {
+      if (!openFig) return;
+      var svg = stage.querySelector("svg");
+      if (svg && holder && holder.parentNode) {
+        svg.style.width = ""; holder.parentNode.replaceChild(svg, holder);
+      }
+      openFig.style.minHeight = ""; syncScroll(openFig);
+      lb.setAttribute("hidden", "");
+      document.documentElement.classList.remove("lb-open");
+      if (lastFocus && lastFocus.focus) lastFocus.focus();
+      openFig = null; holder = null;
+    }
+    document.addEventListener("keydown", function (ev) {
+      if (!openFig) return;
+      if (ev.key === "Escape") { ev.preventDefault(); closeLb(); }
+      else if (ev.key === "+" || ev.key === "=") { ev.preventDefault(); setZoom(z * 1.25); }
+      else if (ev.key === "-") { ev.preventDefault(); setZoom(z / 1.25); }
+      else if (ev.key === "0") { ev.preventDefault(); fit(); }
+    });
+
+    figs.forEach(function (fig) {
+      var svg = fig.querySelector("svg"); if (!svg) return;
+      var vbw = (svg.viewBox && svg.viewBox.baseVal && svg.viewBox.baseVal.width) || 0;
+      var mf = vbw ? smallestFont(svg) : 0;
+      fig._vbw = vbw; fig._mf = mf;
+      applyFloor(fig);
+      fig.classList.add("is-zoomable");
+      var btn = document.createElement("button");
+      btn.type = "button"; btn.className = "diagram__zoom";
+      btn.setAttribute("aria-label", "Enlarge diagram");
+      btn.innerHTML = '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><path d="M6.2 2.2H2.2v4M9.8 2.2h4v4M9.8 13.8h4v-4M6.2 13.8H2.2v-4"/></svg><span>Enlarge</span>';
+      btn.addEventListener("click", function (ev) { ev.stopPropagation(); openLb(fig); });
+      fig.appendChild(btn);
+      svg.addEventListener("click", function () { openLb(fig); });
+      syncScroll(fig);
+      var hint = document.createElement("span");
+      hint.className = "diagram__hint"; hint.textContent = "↔ scroll · click to enlarge";
+      fig.appendChild(hint);
+    });
+    var rt; addEventListener("resize", function () {
+      clearTimeout(rt); rt = setTimeout(function () {
+        figs.forEach(function (f) { if (f !== openFig) { applyFloor(f); syncScroll(f); } });
+      }, 150);
+    });
+  });
+
 })();
 </script>
 </head>
