@@ -1,0 +1,35 @@
+# macOS (this repo lives in iCloud Drive)
+.DS_Store
+
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Build output
+.next/
+out/
+dist/
+build/
+.turbo/
+
+# Environment — never commit real secrets; commit .env.example instead
+.env
+.env.local
+.env.*.local
+!.env.example
+
+# Logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# Coverage
+coverage/
+
+# Editors
+.idea/
+.vscode/*
+!.vscode/extensions.json
+
+# Deploy
+.vercel
