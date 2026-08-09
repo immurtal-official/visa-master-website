@@ -84,11 +84,23 @@ document — it deliberately has no `-zh` twin.
 > rationale and status; a multi-page camera-capture loop with thumbnail
 > reorder; a resumable uploader; the language switcher described above.
 >
-> **Real copy to design against** — homepage hero:
-> title「更清楚地准备你的签证材料包」, primary CTA「开始准备材料」, secondary
-> 「查看支持路线」, trust row「官方来源核对 · 材料自动生成 · 一致性校验 ·
-> 人工复核后交付」. Pack preview card sections: 从这里开始 / 官方文件 /
-> 可编辑模板 / 本人材料 / 来源与提醒.
+> **Real copy to design against — use these exact strings, do not invent or
+> translate your own.** The English is authored separately rather than
+> translated, and it is deliberately longer than the Chinese; that is the point,
+> because the layout has to hold at the longer length.
+>
+> Homepage hero, Chinese: title「更清楚地准备你的签证材料包」· primary CTA
+> 「开始准备材料」· secondary「查看支持路线」· trust row「官方来源核对 ·
+> 材料自动生成 · 一致性校验 · 人工复核后交付」.
+>
+> Homepage hero, English: title "Know exactly what your visa application
+> needs" · primary CTA "Start your document pack" · secondary "See supported
+> routes" · trust row "Checked against official sources · Documents generated
+> for you · Cross-checked for consistency · Human-reviewed before delivery".
+>
+> Pack preview card sections — Chinese: 从这里开始 / 官方文件 / 可编辑模板 /
+> 本人材料 / 来源与提醒. English: Start Here / Official Documents / Editable
+> Templates / Your Documents / Sources & Notes.
 >
 > **What I want first:** the token set (colour, the type scale in both PingFang
 > SC and the Latin face, spacing, radius, elevation) and the base components;
