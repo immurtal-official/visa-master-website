@@ -19,7 +19,7 @@ created_at: 2026-08-08
 | `04_MVP_Scope_V1_V2.md` | V1 成都→西班牙申根旅游签；V2 相邻路线扩张；美国 B1/B2 为 V3/后续探索 | 明确先做什么、不做什么、何时扩展 |
 | `05_Content_Strategy_Homepage.md` | 内容策略、信任表达、AI 表达方式、首页首屏文案 | 指导官网文案、产品说明和品牌语气 |
 
-设计系统选型已单独成文，见 [`../guidelines/design-system-selection-zh.md`](../guidelines/design-system-selection-zh.md)（英文原件：[`design-system-selection-en.md`](../guidelines/design-system-selection-en.md)）。
+设计系统选型已单独成文，见 [`../guidelines/design-system-selection-zh.md`](../guidelines/design-system-selection-zh.md)（英文原件：[`design-system-selection-en.md`](../guidelines/design-system-selection-en.md)）；国际化见 [`../guidelines/internationalization-zh.md`](../guidelines/internationalization-zh.md)。
 
 ## 当前核心判断
 
@@ -33,7 +33,13 @@ Visa Master 不是一个单纯的“AI 工具网站”，而是一个高信任�
 4. 让用户清楚知道自己每一步要做什么。
 5. 让用户知道护照、银行流水、在职证明等敏感信息如何被处理。
 
-一条统辖全包的长期指令（2026-08-09）：**手机与电脑地位并重，两端各承载 100% 的产品功能且体验同级；"移动优先"只指构建顺序（先做窄屏再撑开）。** 发现端以手机为主（小红书/微信），但完成端由用户决定，四种设备组合都受支持，跨设备续填是被设计出来的正常流程。任何与此冲突的旧表述以 [`../guidelines/mobile-parity-zh.md`](../guidelines/mobile-parity-zh.md) 为准。
+两条统辖全包的长期指令（2026-08-09）：
+
+**一、手机与电脑地位并重**，两端各承载 100% 的产品功能且体验同级；"移动优先"只指构建顺序（先做窄屏再撑开）。发现端以手机为主（小红书/微信），但完成端由用户决定，四种设备组合都受支持，跨设备续填是被设计出来的正常流程。以 [`../guidelines/mobile-parity-zh.md`](../guidelines/mobile-parity-zh.md) 为准。
+
+**二、全站中英双语**，每一个界面都以简体中文和英文交付，架构上为任意后续语言做好准备。切换器只改界面语言——**材料包的语言由目的国要求决定，两者不可混为一谈**。以 [`../guidelines/internationalization-zh.md`](../guidelines/internationalization-zh.md) 为准。
+
+任何与这两条冲突的旧表述，一律以上述两份指南为准。
 
 推荐的网站风格：
 

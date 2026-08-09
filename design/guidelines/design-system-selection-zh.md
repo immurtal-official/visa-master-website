@@ -4,7 +4,7 @@
 **决定：** 实现层采用 **Radix UI primitives + Tailwind CSS**，并把 **GOV.UK Design System** 仅作为*交互模式*参考借用 — 不整套照搬任何厂商的设计系统。
 **取代：** [`design-system-options-zh`](../../discussion/withchatgpt/design-system-options-zh.md) 中的建议 — 见 §6，其中大部分予以保留，一处予以推翻
 **指导来源：** [`../product/03_Information_Architecture.md`](../product/03_Information_Architecture.md)（页面结构）· [`../product/05_Content_Strategy_Homepage.md`](../product/05_Content_Strategy_Homepage.md)（视觉关键词、颜色方向）
-**配套文档：** [`mobile-parity-zh.md`](mobile-parity-zh.md) — 移动端长期指令及 §7 背后逐阶段的完整需求
+**配套文档：** [`mobile-parity-zh.md`](mobile-parity-zh.md) — 移动端长期指令及 §7 背后逐阶段的完整需求 · [`internationalization-zh.md`](internationalization-zh.md) — 中英双语指令，以及让后续语言变便宜的那些设计
 **使用方：** [`../../doc/platform-and-dev-plan-zh.md`](../../doc/platform-and-dev-plan-zh.md) 中所述 monorepo 里的 `apps/web`
 
 > 英文原件：[Design System Selection (English)](design-system-selection-en.md)
@@ -60,7 +60,7 @@ Visa Master 不是一个带联系表单的内容网站，而是一个**高信任
 - **Tailwind** 提供视觉层，由一套 design token 驱动，这套 token 编码的正是内容策略里已经商定的颜色方向 — 蓝 / 青蓝 / 深海军蓝为主色，白色与浅蓝灰为背景，绿色表示成功，橙色表示警示，红色表示错误但刻意降低压迫感。
 - **shadcn/ui** 是交付方式，不是依赖。组件以我们拥有、可以随意改动的源文件形式落地 — 这一点很关键，因为我们几个核心页面在任何现成组件库里都找不到对应物。
 
-那些没有任何厂商系统会提供、因而必须由我们自己设计的组件包括：材料包文件树预览、一致性校验报告、来源与警示引用面板、带逐项理由说明的材料上传 checklist、补材料请求流程、可断点续传的上传器，以及带缩略图排序的多页拍照采集循环（最后两个是移动端需求；见 §7）。每个组件都先按堆叠式、触控优先的列表来设计，再撑开成它的桌面双栏形态 —— 一个组件、两套一等布局，而不是一套布局加一个降级方案。
+那些没有任何厂商系统会提供、因而必须由我们自己设计的组件包括：材料包文件树预览、一致性校验报告、来源与警示引用面板、带逐项理由说明的材料上传 checklist、补材料请求流程、可断点续传的上传器、带缩略图排序的多页拍照采集循环（这两个是移动端需求；见 §7），以及语言切换器 —— 它很小，但要承载"材料包语言由目的国决定、而非由界面决定"这句说明（[`internationalization-zh.md`](internationalization-zh.md) §6）。每个组件都先按堆叠式、触控优先的列表来设计，再撑开成它的桌面双栏形态 —— 一个组件、两套一等布局，而不是一套布局加一个降级方案。
 
 ## 5. 我们从 GOV.UK 拿什么，不拿什么
 
@@ -106,7 +106,8 @@ GOV.UK Design System 是现存最好的公开参考，针对的正是**高风险
 - **触控目标**最小 44×44pt，相邻可点行之间留 8px 间隔，以 Tailwind token 编码，不留给逐屏判断。
 - **输入框**字号最小 16px（消除 iOS 聚焦自动缩放），且每个字段的 `inputmode` / `autocomplete` / `autocapitalize` 属于其绑定 `packages/core` zod schema 的类型定义 — 键盘行为由 schema 驱动，不是逐屏各写各的。
 - **视口处理是 token 级的：** 用 `dvh` 而不是 `vh`，用封装 `env(safe-area-inset-*)` 的 safe-area 工具类，并由一个共享的吸底操作栏组件独占 `visualViewport` 键盘重定位逻辑，任何单屏都不得自行重新实现。
-- **文字用系统中文字体渲染**（以苹方为先 — 字号体系就在苹方下设计和审阅）。在大陆网络上永远不加载中文 webfont；唯一的例外是一个小体积子集化的拉丁字体。
+- **一套字号体系，按文字系统区分字体栈。** CJK 用系统字体栈渲染（苹方优先），拉丁文用小体积子集化 webfont。在大陆网络上永远不加载中文 webfont。字号体系要在**两种**文字下分别设计和审阅，行高按文字系统设定 —— CJK 需要约 1.7–1.8，拉丁约 1.5（[`internationalization-zh.md`](internationalization-zh.md) §4）。
+- **每个组件都要扛得住 +100% 的文字膨胀。** 界面以中文和英文交付，而中文是它将来会承载的语言里最紧凑的一种。任何含文字的元素都不设固定宽度，操作按钮文案不允许截断，也不允许用片段拼字符串。只在中文长度下成立的组件就是没做完（[`internationalization-zh.md`](internationalization-zh.md) §5）。
 - **文档预览用服务端预渲染的页面图片**，复用管线里已有的 QA 渲染步骤 — 移动端不上 pdf.js，DOCX 预览也因此与 PDF 预览统一。
 - **桌面端布局是被规定出来的，不是继承来的。** 每个自研组件的宽屏变体是它自己的设计、有自己的交互能力 —— 双栏比对、一屏看全材料包树、多文件拖拽、intake 的完整键盘走位（[`mobile-parity-zh.md`](mobile-parity-zh.md) §3.11）—— 由同一套 token 和同一份 schema 构建。一个桌面状态只是"移动端堆叠居中、两侧留白"的组件，是没做完。
 - **完成定义：** 每个基础组件在发布前必须在微信 iOS（WKWebView）、微信安卓（XWeb）**以及桌面宽度下**验证通过 — 焦点管理、键盘交互和 fixed 定位恰好是 Radix primitives 负责的部分，也恰好是这些 webview 与桌面 Chrome 分歧最大的地方；而指针与键盘交互能力则是桌面变体证明自身价值的地方。每次发布按 [`mobile-parity-zh.md`](mobile-parity-zh.md) 中的完整设备矩阵做冒烟测试。
@@ -115,6 +116,6 @@ GOV.UK Design System 是现存最好的公开参考，针对的正是**高风险
 
 **接受的代价。** 从无样式原语起步，前期工作量比直接采用带样式的套件更大 — 在第一个页面看起来完整之前，我们要先建好 token 体系和基础组件，而每个浮层和输入组件的移动端变体（§7）属于这套基础建设的一部分，不是日后的适配。这是一个刻意的取舍：intake 表单是长期存在的，在几十个页面上跟别人的主张较劲，比一开始多花的搭建成本更贵。
 
-**任何组件都不得复刻一份校验规则。** 无论采用哪套设计系统，表单组件的规则都来自 `packages/core` 里共享的 zod schema，遵循 [`../README.md`](../README.md) 里定下的基本规矩。一个自带"什么是合法护照号"副本的组件是缺陷，不是便利。
+**任何组件都不得复刻校验规则，也不得硬编码错误文案。** 表单组件的规则来自 `packages/core` 里共享的 zod schema，遵循 [`../README.md`](../README.md) 里定下的基本规矩；一个自带"什么是合法护照号"副本的组件是缺陷，不是便利。而这些 schema 输出的是**消息 key 加参数**而不是句子，由组件按当前语言解析（[`internationalization-zh.md`](internationalization-zh.md) §3）。这是整套 i18n 架构里唯一一件事后补救代价极高的事。
 
 **何时重新审视：** 当我们加入第二个路线族（无论下一条上线的是哪条路线）并发现 intake 表单需要真正不同的分支逻辑时，或者当有设计伙伴加入、且其工作方式是在 Figma 中基于某个特定套件时。

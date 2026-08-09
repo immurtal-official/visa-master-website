@@ -242,7 +242,9 @@ between the two mid-journey.
   seconds behind the GFW.
 - **Chinese text renders in the system CJK stack** (PingFang SC / HarmonyOS
   Sans / MiSans / Noto Sans CJK); no Chinese webfont ever (multi-MB,
-  disqualifying); a small subsetted Latin webfont is the only allowance.
+  disqualifying); a small subsetted Latin webfont is the only allowance. The
+  UI ships in Chinese and English, so both scripts are on this budget —
+  see [`internationalization-en.md`](internationalization-en.md) §4.
 - **JS budget on the intake route ≈250KB gzipped**; marketing pages
   statically rendered. Measure TTFB/LCP from mainland carriers on real
   devices; evaluate a China-reachable CDN tier; plan ICP filing as soon as a
@@ -324,6 +326,10 @@ phone, print from my desk" are all supported flows.
   the payment handoff to the system browser; delivery preview and
   print-bundle access (including printing from a desktop browser); and a
   cross-device handoff mid-intake (§3.12) resuming at the same step.
+- **Both UI languages, every release.** The matrix runs in Chinese and
+  English — layouts are verified against the longer string, and switching
+  language mid-intake must preserve the step, the draft, and any in-flight
+  upload ([`internationalization-en.md`](internationalization-en.md) §9).
 - **Re-entrancy by construction:** after a webview kill and reload, the user
   returns to the same step with state restored, in-flight uploads resumed or
   cleanly re-promptable; no flow depends on in-memory state across more than

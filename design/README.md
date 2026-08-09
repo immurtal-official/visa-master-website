@@ -48,7 +48,10 @@ then [`guidelines/design-system-selection-en.md`](guidelines/design-system-selec
 for what we build the interface out of and why, and
 [`guidelines/mobile-parity-en.md`](guidelines/mobile-parity-en.md) for the
 standing directive that the mobile web carries 100% of the product at
-desktop-equal quality — it overrides any older document that assumes desktop.
+desktop-equal quality — it overrides any older document that assumes desktop —
+and [`guidelines/internationalization-en.md`](guidelines/internationalization-en.md)
+for the directive that every screen ships in Chinese and English, which
+overrides any older document that assumes a Chinese-only interface.
 
 Each prototype should carry a short note saying what it demonstrates and what is
 deliberately fake, so a reader can tell the intended behaviour from the

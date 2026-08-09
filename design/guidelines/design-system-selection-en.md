@@ -4,7 +4,7 @@
 **Decision:** **Radix UI primitives + Tailwind CSS** for implementation, with **GOV.UK Design System** borrowed as an *interaction-pattern* reference only — no wholesale adoption of any vendor system.
 **Supersedes:** the recommendation in [`design-system-options-zh`](../../discussion/withchatgpt/design-system-options-zh.md) — see §6, which keeps most of it and reverses one part
 **Informed by:** [`../product/03_Information_Architecture.md`](../product/03_Information_Architecture.md) (page structure) · [`../product/05_Content_Strategy_Homepage.md`](../product/05_Content_Strategy_Homepage.md) (visual keywords, colour direction)
-**Companion:** [`mobile-parity-en.md`](mobile-parity-en.md) — the standing mobile directive and the stage-by-stage requirements behind §7
+**Companion:** [`mobile-parity-en.md`](mobile-parity-en.md) — the standing mobile directive and the stage-by-stage requirements behind §7 · [`internationalization-en.md`](internationalization-en.md) — the zh/en directive and what makes further languages cheap
 **Consumed by:** `apps/web` in the monorepo described in [`../../doc/platform-and-dev-plan-en.md`](../../doc/platform-and-dev-plan-en.md)
 
 > 中文版：[设计系统选型（中文）](design-system-selection-zh.md)
@@ -87,8 +87,11 @@ The components no vendor system provides — and which we will therefore design
 ourselves — include the pack file-tree preview, the consistency-check report,
 the source-and-caveat citation panel, the document-upload checklist with
 per-item rationale, the additional-documents request flow, the resumable
-uploader, and the multi-page camera-capture loop with thumbnail reorder (the
-last two are mobile requirements; see §7). Each is designed as a stacked,
+uploader, the multi-page camera-capture loop with thumbnail reorder (those two
+are mobile requirements; see §7), and the language switcher — small, but it
+carries the note that the pack's language is set by the destination country
+rather than by the interface
+([`internationalization-en.md`](internationalization-en.md) §6). Each is designed as a stacked,
 touch-first list and then widened into its desktop two-pane form — one
 component with two first-class layouts, not a layout and its fallback.
 
@@ -215,9 +218,16 @@ What binds the design system itself:
   utilities wrapping `env(safe-area-inset-*)`, and one shared sticky-action-bar
   component that owns `visualViewport` keyboard repositioning so individual
   screens never reimplement it.
-- **Type renders in system CJK fonts** (PingFang SC first — design and review
-  the type scale there). No Chinese webfont, ever, on mainland networks; a
-  small subsetted Latin webfont is the only allowance.
+- **One type scale, per-script font stacks.** CJK renders in the system stack
+  (PingFang SC first); Latin renders in a small subsetted webfont. No Chinese
+  webfont, ever, on mainland networks. Design and review the scale in **both**
+  scripts, with line height set per script — CJK needs ~1.7–1.8 where Latin
+  needs ~1.5 ([`internationalization-en.md`](internationalization-en.md) §4).
+- **Every component survives +100% text expansion.** The UI ships in Chinese
+  and English, and Chinese is the most compact language it will ever carry. No
+  fixed widths on anything containing text, no truncated action labels, and no
+  string assembled from fragments. A component that only works at the Chinese
+  string length is unfinished ([`internationalization-en.md`](internationalization-en.md) §5).
 - **Document preview is server-rendered page images**, reusing the pipeline's
   existing QA rendering step — no pdf.js on mobile, and DOCX preview becomes
   uniform with PDF preview.
@@ -246,10 +256,14 @@ adaptation. This is a deliberate trade: the intake form is long-lived, and
 fighting someone else's opinions across dozens of screens costs more than the
 initial setup.
 
-**No component may fork validation.** Whatever the design system, form
-components take their rules from the shared zod schemas in `packages/core`, per
-the ground rule in [`../README.md`](../README.md). A component that carries its
-own copy of "what is a valid passport number" is a defect, not a convenience.
+**No component may fork validation — and no component may hardcode its error
+text.** Form components take their rules from the shared zod schemas in
+`packages/core`, per the ground rule in [`../README.md`](../README.md); a
+component carrying its own copy of "what is a valid passport number" is a
+defect, not a convenience. Those schemas emit a **message key plus parameters**
+rather than a sentence, and the component resolves the key against the active
+locale ([`internationalization-en.md`](internationalization-en.md) §3). This is
+the one piece of the i18n architecture that is genuinely expensive to retrofit.
 
 **Revisit when:** we add a second route family (whichever route ships next) and
 discover the intake form needs genuinely different branching, or if a design
