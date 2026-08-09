@@ -1,7 +1,7 @@
 # Mobile Parity
 
-**Status:** Standing directive, decided 2026-08-09 — overrides any older document that assumes desktop
-**The directive:** The mobile web supports **100% of product functionality at an experience as good as desktop.** Discovery, route check, account, the full intake, document capture and upload, payment, progress, the additional-documents loop, and pack delivery all complete on a phone. Desktop is the derived variant.
+**Status:** Standing directive, decided 2026-08-09 — overrides any older document that assumes a single device
+**The directive:** **Mobile-first as build sequence; both devices equal in standing.** The mobile web supports **100% of product functionality at an experience as good as desktop** — discovery, route check, account, the full intake, document capture and upload, payment, progress, the additional-documents loop, and pack delivery all complete on a phone. Desktop carries the same 100% plus its own native strengths (§3.11). Neither device is a degraded version of the other, and a journey may cross between them at any point (§3.12).
 **Companion:** [`design-system-selection-en.md`](design-system-selection-en.md) §7 — the component-level rules this document's requirements imply
 **Consumed by:** `apps/web`; the release process (§4)
 
@@ -9,31 +9,47 @@
 
 ---
 
-## 1. Why this is a directive and not a preference
+## 1. Two devices, equal standing, one build order
 
-Customers find this product inside Xiaohongshu and WeChat, on phones. The
-first session almost always happens inside an in-app webview, and for many
-customers there is no second device in the picture: the phone that found the
-product is the phone that fills the intake, photographs the passport, pays,
-and receives the pack. A single desktop-assuming stage anywhere in that chain
-— an upload step without camera capture, a zip-only delivery page, a payment
-redirect that dies inside WeChat — silently amputates the journey for the
-primary audience while every aggregate metric still looks plausible.
+Most customers find this product inside Xiaohongshu and WeChat, on phones —
+discovery is phone-dominant because the acquisition channel is. But discovery
+device does not determine completion device. All four combinations are real
+and supported: phone throughout, computer throughout, discover on a phone and
+finish on a computer, or start on a computer and photograph documents with a
+phone. **Neither device is the "real" one.**
 
-Two practical consequences bind everything below:
+Why mobile still leads the build order: responsive design is asymmetric.
+Narrow → wide is addition (more columns, more density, more shown at once)
+and it composes safely. Wide → narrow is subtraction — cutting navigation,
+collapsing columns, hiding content — and it is where responsive layouts
+break. So we design the narrow case first and widen it. That is a statement
+about sequence and risk, **not** about which customer matters.
 
-- **Acceptance criteria name mobile behaviour.** A feature is not "done
-  desktop, mobile later"; the mobile path is part of the feature's definition
-  of done.
-- **Funnel metrics are device-segmented.** Intake completion, start-to-submit
-  time, and conversion are reported for mobile first (or at minimum split by
-  device), so a failing mobile funnel can never hide inside a desktop-skewed
-  aggregate.
+The failure this guards against is asymmetric too: a desktop-assuming stage
+(upload without camera capture, zip-only delivery, a payment redirect that
+dies inside WeChat) silently amputates the journey for the largest entry
+cohort while every aggregate metric still looks plausible.
 
-## 2. The environment we actually ship into
+Three practical consequences bind everything below:
+
+- **Acceptance criteria name behaviour on both devices.** A feature is not
+  "done desktop, mobile later" — nor "done mobile, desktop falls out". Both
+  paths belong to the definition of done.
+- **No functionality is exclusive to either device.** Every capability is
+  reachable on both; §3.11 covers what desktop does *better*, never what it
+  does *only*.
+- **Funnel metrics are reported per device, both of them.** Intake
+  completion, start-to-submit time, and conversion are split by device with
+  neither as the headline number, so a failure on either side cannot hide
+  inside a blended aggregate.
+
+## 2. The mobile environment we ship into
 
 The constraints below are facts about mainland-China mobile web, not choices.
-Every requirement in §3 traces back to one of them.
+They are listed here because they are unfamiliar and they bite; desktop's
+environment is ordinary by comparison, which is why §3.1–§3.10 read as
+mobile-specific. That asymmetry is about *unfamiliarity*, not importance.
+Every requirement in §3.1–§3.10 traces back to one of these.
 
 | # | Constraint | Consequence |
 |---|---|---|
@@ -52,6 +68,10 @@ Every requirement in §3 traces back to one of them.
 | E13 | Without a verified Official Account (CN entity), links shared into WeChat render as **bare-URL cards** — no custom share title/thumbnail | Limited link virality until an OA exists; plan for it, don't depend on it |
 
 ## 3. Requirements by journey stage
+
+§3.1–§3.10 specify the mobile path (the unfamiliar one). §3.11 specifies what
+desktop must do natively rather than inherit, and §3.12 specifies moving
+between the two mid-journey.
 
 ### 3.1 Entry and discovery
 
@@ -233,15 +253,77 @@ Every requirement in §3 traces back to one of them.
   whose funnel and delivery both run through WeChat links, a domain block is
   a total outage.
 
+### 3.11 What desktop does natively
+
+Desktop is not the mobile layout stretched wide. These capabilities are
+designed for the large screen and the pointer, and they are the reason a
+customer might deliberately choose a computer for part of the journey. None
+of them is desktop-*only* — each has a working mobile path in §3.1–§3.10 —
+but on desktop they are the primary interaction:
+
+- **Multi-file drag-and-drop upload.** Dropping twelve statement pages onto
+  the upload area at once, with the same page-set model, ordering, and
+  server-confirmed completion as the mobile capture loop.
+- **The scanner path.** A flatbed or sheet-fed scan is often the highest-
+  quality version of a bank statement or employment letter. Accept
+  multi-page PDFs as a first-class document source, not as an afterthought
+  of the photo pipeline.
+- **Side-by-side comparison.** Two panes — the pack file against the intake
+  data that produced it, or a generated template against the uploaded
+  evidence — is the review posture a phone cannot offer. It serves both the
+  customer checking a draft and the operator reviewing (§3.9).
+- **The full file tree at once.** The pack's structure — 00 through 04 with
+  03's six evidence folders — is legible in a single view, where mobile
+  necessarily paginates it.
+- **Direct printing and local editing.** The print bundle prints from the
+  browser; the DOCX templates open in a local Word/WPS. State the desktop
+  path plainly instead of routing everyone through the phone's
+  send-to-print-shop flow (§3.8).
+- **Keyboard efficiency in intake.** Tab order, Enter-to-advance, paste into
+  every field, and typed dates as an alternative to the three-field control.
+  A confident typist should be able to complete a step without reaching for
+  the mouse.
+
+The design-system consequence: these are variants of the same components,
+built from the same tokens and the same `packages/core` schemas — not a
+second interface.
+
+### 3.12 Crossing devices mid-journey
+
+Switching devices is a **normal user choice**, not only a workaround for a
+blocked webview (§3.5). "Fill this in on my computer tonight", "photograph
+the passport with my phone, finish on the laptop", and "check progress on my
+phone, print from my desk" are all supported flows.
+
+- **State lives server-side, so continuity is the default** (§3.2). Any
+  application resumes on any device at the exact step it was left, with
+  uploads, drafts, and payment state intact.
+- **A deliberate "continue on another device" action** exists at every long
+  step — the intake, the upload screen, and the delivery page. It produces a
+  short-expiry signed link (send to my email / show a QR code the desktop
+  user scans with a phone) landing on the same step, authenticated. The
+  WeChat escape hatch (§3.5) is one caller of this mechanism, not its
+  definition.
+- **The phone as the camera for a desktop session.** A desktop user on the
+  upload step can display a QR code, capture documents on their phone, and
+  watch them appear in the desktop session — the highest-quality path for a
+  paper document without a scanner, and it belongs to both devices at once.
+- **Never lose work on switch.** Handoff never discards an in-progress
+  upload or an unsaved answer; a device that reconnects to an application
+  already being edited elsewhere shows current server state rather than
+  overwriting it.
+
 ## 4. Release definition of done
 
-- **Webview matrix, every release:** WeChat iOS (WKWebView), WeChat Android
+- **Device matrix, every release:** WeChat iOS (WKWebView), WeChat Android
   (XWeb), Xiaohongshu iOS and Android, Safari iOS, Chrome Android — at
-  375×667 and 390×844 (E1). None of these is testable in desktop devtools.
-- **Four fragile flows smoke-tested every release:** camera capture with
+  375×667 and 390×844 (E1); plus desktop Chrome, Safari, and Edge at 1280×800
+  and 1920×1080. None of the webviews is testable in desktop devtools.
+- **Five fragile flows smoke-tested every release:** camera capture with
   multi-page upload; resumable-upload recovery under network interruption;
   the payment handoff to the system browser; delivery preview and
-  print-bundle access.
+  print-bundle access (including printing from a desktop browser); and a
+  cross-device handoff mid-intake (§3.12) resuming at the same step.
 - **Re-entrancy by construction:** after a webview kill and reload, the user
   returns to the same step with state restored, in-flight uploads resumed or
   cleanly re-promptable; no flow depends on in-memory state across more than

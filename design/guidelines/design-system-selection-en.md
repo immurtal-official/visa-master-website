@@ -22,12 +22,12 @@ surfaces, and the design system has to be good at both:
 1. **A marketing front page** that has to establish credibility in ten seconds.
 2. **A long, branching, resumable intake form** — the product's actual core.
 
-Both surfaces ship phone-first. A standing directive (2026-08-09) requires the
-mobile web to support **100% of product functionality at an experience equal to
-desktop** — customers discover the product inside Xiaohongshu and WeChat on
-phones and must be able to complete the entire journey there. §7 carries what
-that binds at the design-system level; the full statement lives in
-[`mobile-parity-en.md`](mobile-parity-en.md).
+Both surfaces are built narrow-first and widened. A standing directive
+(2026-08-09) sets **mobile-first as build sequence, both devices equal in
+standing**: the mobile web carries 100% of product functionality at an
+experience equal to desktop, and desktop carries the same 100% plus its own
+native strengths. §7 carries what that binds at the design-system level; the
+full statement lives in [`mobile-parity-en.md`](mobile-parity-en.md).
 
 The product design pack states the visual target directly: *trustworthy, clear,
 modern, lightly professional, low-anxiety, procedural, explainable*. It also
@@ -88,8 +88,9 @@ ourselves — include the pack file-tree preview, the consistency-check report,
 the source-and-caveat citation panel, the document-upload checklist with
 per-item rationale, the additional-documents request flow, the resumable
 uploader, and the multi-page camera-capture loop with thumbnail reorder (the
-last two are mobile requirements; see §7). Every one of these is designed as a
-stacked, touch-first list; desktop two-pane layouts are the derived variant.
+last two are mobile requirements; see §7). Each is designed as a stacked,
+touch-first list and then widened into its desktop two-pane form — one
+component with two first-class layouts, not a layout and its fallback.
 
 ## 5. What we take from GOV.UK, and what we don't
 
@@ -168,16 +169,17 @@ different release cadence, and different security posture. **If and when
 candidate for that app specifically. Until then, the reviewer portal is built
 from the same Radix primitives, accepting that we hand-build a data table.
 
-## 7. Mobile is the baseline, not the adaptation
+## 7. Mobile-first as build order, both devices equal in standing
 
 A standing directive (2026-08-09) governs everything in this section: **the
 mobile web supports 100% of product functionality, at an experience as good as
 desktop** — intake, camera document capture, payment, progress, the
-additional-documents loop, and pack delivery included. The phone is the
-completion device, not a teaser for a desktop session. An earlier revision of
-this document called steering document upload to desktop "acceptable"; that
-sentence was wrong under the directive and is retracted. Desktop is the derived
-variant.
+additional-documents loop, and pack delivery included — **and desktop carries
+the same 100% plus its own native strengths.** Neither device is a teaser for
+the other; a journey may cross between them at any point, and cross-device
+continuity is a designed flow rather than a workaround. We build narrow-first
+because widening composes safely and narrowing does not — that is a statement
+about sequence, not about which customer matters.
 
 Two facts about the shipping environment drive the rules below. First, the
 in-app browsers customers arrive in — WeChat's XWeb on Android, WKWebView on
@@ -219,11 +221,20 @@ What binds the design system itself:
 - **Document preview is server-rendered page images**, reusing the pipeline's
   existing QA rendering step — no pdf.js on mobile, and DOCX preview becomes
   uniform with PDF preview.
+- **Desktop layouts are specified, not inherited.** The wide variant of each
+  custom component is its own design with its own affordances — two-pane
+  comparison, the whole pack tree in one view, multi-file drag-and-drop, full
+  keyboard traversal of the intake ([`mobile-parity-en.md`](mobile-parity-en.md)
+  §3.11) — built from the same tokens and the same schemas. A component whose
+  desktop state is "the mobile stack, centered, with whitespace either side"
+  is unfinished.
 - **Definition of done:** every base component is verified in WeChat iOS
-  (WKWebView) and WeChat Android (XWeb) before it ships — focus management,
-  keyboard interaction, and fixed positioning, exactly what Radix primitives
-  own, are where these webviews diverge from desktop Chrome. Releases smoke-test
-  the full device matrix in [`mobile-parity-en.md`](mobile-parity-en.md).
+  (WKWebView) and WeChat Android (XWeb) *and* at desktop widths before it
+  ships — focus management, keyboard interaction, and fixed positioning,
+  exactly what Radix primitives own, are where these webviews diverge from
+  desktop Chrome, and pointer/keyboard affordances are where the desktop
+  variant earns its keep. Releases smoke-test the full device matrix in
+  [`mobile-parity-en.md`](mobile-parity-en.md).
 
 ## 8. Consequences
 
