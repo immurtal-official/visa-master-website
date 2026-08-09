@@ -1,5 +1,5 @@
 
-## 2. 做产品设计时，除了用户画像，还要产出什么？
+## 1. 做产品设计时，除了用户画像，还要产出什么？
 
 用户画像只是第一步。真正做网站和软件开发，至少还需要这些东西：
 
@@ -18,7 +18,7 @@
 
 尤其对 Visa Master 来说，“状态机设计”和“服务蓝图”很重要。因为你不是普通内容网站，而是一个“用户提交资料 → AI/系统处理 → 人工审核 → 交付成果”的工作流产品。你文档里也明确说，可信后端应该拥有用户、支付、数据和 workflow 状态，LLM 不决定业务规则。
 
-## 3. Visa Master 应该追求什么网站风格？
+## 2. Visa Master 应该追求什么网站风格？
 
 我建议的风格关键词是：
 
@@ -72,7 +72,7 @@ AI research + document automation + consistency check + human review
 | Document delivery | 文件清单、下载、注意事项、来源链接 |
 | Help / FAQ | 隐私、数据删除、拒签责任、人工审核范围 |
 
-## 4. Adobe Spectrum 2 适合吗？
+## 3. Adobe Spectrum 2 适合吗？
 
 我的判断：**Adobe Spectrum 可以参考，但不建议作为 Visa Master 的首选 design system。**
 
@@ -96,7 +96,7 @@ Adobe Spectrum 是 Adobe 的设计系统，React Spectrum 是它的 React 实现
 
 简单说：**Adobe 适合参考“专业感”，不适合作为你整个网站的默认视觉基因。**
 
-## 5. awesome-design-systems 里面，我推荐哪些？
+## 4. awesome-design-systems 里面，我推荐哪些？
 
 你给的 `awesome-design-systems` 仓库本质上是一个设计系统目录。它自己也定义 design system 是一组原则、最佳实践和文档，通常体现在 UI library、pattern library，也可能包括 voice & tone。它还标注了各系统是否有组件、语气规范、设计师 kit、源码等。
 
@@ -291,4 +291,4 @@ Ant Design 对这些非常成熟，而且你的后台审核、路线配置、材
 
 Visa Master 的核心不是“展示技术高级”，而是“让用户相信这个系统不会害我填错、不会乱处理我的隐私、不会编造签证要求、不会让我交一堆不一致的材料”。因此，最优策略不是选一个最酷的 UI，而是建立一个低焦虑、高解释性、高流程可见性的体验。长期看，真正的壁垒也不是按钮长什么样，而是路线覆盖、官方来源更新、材料一致性、人工审核流程、隐私合规和交付质量。
 
-Timestamp: 2026-08-08 20:29:08.845 EDT | Response #4
+Timestamp: 2026-08-08 20:29:08.845 EDT 
