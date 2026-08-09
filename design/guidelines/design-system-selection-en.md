@@ -1,9 +1,10 @@
 # Design System Selection
 
 **Status:** Decided for V1
-**Decision:** **Radix UI primitives + Tailwind CSS** for implementation, with **GOV.UK Design System** borrowed as a *pattern* reference only — no wholesale adoption of any vendor system.
+**Decision:** **Radix UI primitives + Tailwind CSS** for implementation, with **GOV.UK Design System** borrowed as an *interaction-pattern* reference only — no wholesale adoption of any vendor system.
 **Supersedes:** the recommendation in [`design-system-options-zh`](../../discussion/withchatgpt/design-system-options-zh.md) — see §6, which keeps most of it and reverses one part
-**Informs:** [`../product/03_Information_Architecture.md`](../product/03_Information_Architecture.md) (page structure) · [`../product/05_Content_Strategy_Homepage.md`](../product/05_Content_Strategy_Homepage.md) (visual keywords, colour direction)
+**Informed by:** [`../product/03_Information_Architecture.md`](../product/03_Information_Architecture.md) (page structure) · [`../product/05_Content_Strategy_Homepage.md`](../product/05_Content_Strategy_Homepage.md) (visual keywords, colour direction)
+**Companion:** [`mobile-parity-en.md`](mobile-parity-en.md) — the standing mobile directive and the stage-by-stage requirements behind §7
 **Consumed by:** `apps/web` in the monorepo described in [`../../doc/platform-and-dev-plan-en.md`](../../doc/platform-and-dev-plan-en.md)
 
 > 中文版：[设计系统选型（中文）](design-system-selection-zh.md)
@@ -20,6 +21,13 @@ surfaces, and the design system has to be good at both:
 
 1. **A marketing front page** that has to establish credibility in ten seconds.
 2. **A long, branching, resumable intake form** — the product's actual core.
+
+Both surfaces ship phone-first. A standing directive (2026-08-09) requires the
+mobile web to support **100% of product functionality at an experience equal to
+desktop** — customers discover the product inside Xiaohongshu and WeChat on
+phones and must be able to complete the entire journey there. §7 carries what
+that binds at the design-system level; the full statement lives in
+[`mobile-parity-en.md`](mobile-parity-en.md).
 
 The product design pack states the visual target directly: *trustworthy, clear,
 modern, lightly professional, low-anxiety, procedural, explainable*. It also
@@ -40,8 +48,13 @@ brand personality with it.
 | Next.js / React fit | `apps/web` is Next.js; server components and hydration behaviour are real constraints |
 | Escape hatch cost | We will need components no system ships (pack file tree, consistency-check report, source-citation panel) |
 | Bundle weight on mainland networks | Customers are in mainland China; heavy CSS-in-JS runtimes are a real cost |
+| Survival inside mainland webviews | Much of the journey runs inside WeChat (WKWebView / XWeb) and Xiaohongshu in-app browsers, whose keyboard, focus, and fixed-position behaviour diverge from desktop Chrome |
 
 ## 3. Options considered
+
+The question this section answers is not "which system ranks best" but
+"should we adopt any system wholesale at all". The answer is no; the verdicts
+below record why each candidate fails that question, not a preference order.
 
 | Candidate | Verdict | Reasoning |
 |---|---|---|
@@ -73,13 +86,17 @@ Concretely:
 The components no vendor system provides — and which we will therefore design
 ourselves — include the pack file-tree preview, the consistency-check report,
 the source-and-caveat citation panel, the document-upload checklist with
-per-item rationale, and the additional-documents request flow.
+per-item rationale, the additional-documents request flow, the resumable
+uploader, and the multi-page camera-capture loop with thumbnail reorder (the
+last two are mobile requirements; see §7). Every one of these is designed as a
+stacked, touch-first list; desktop two-pane layouts are the derived variant.
 
 ## 5. What we take from GOV.UK, and what we don't
 
 The GOV.UK Design System is the best public reference in existence for
 **high-stakes forms filled in by people who are anxious and only do this once**.
 That is exactly the intake form. We borrow its *patterns* and reject its *skin*.
+(USWDS, its American sibling, is a secondary reference for the same material.)
 
 Borrowed:
 
@@ -114,6 +131,24 @@ intake flow needs low information density, not enterprise density; Adobe
 Spectrum is worth studying for restraint but wrong as our visual genome;
 government design systems are the right reference for high-stakes forms.
 
+The prior review also carried a structural contradiction worth naming: it
+ranked seven systems in order (1st Ant Design … 7th Fluent) while concluding
+that none should be adopted wholesale — a reader skimming the ranking walks
+away with "use Ant Design", which its own conclusion does not support. This
+document deliberately answers the question that ranking obscured: not "which
+system ranks best" but "should we adopt any at all" (§3).
+
+**Also rejected: "Material-like patterns" for the intake step.** The prior
+review proposed shadcn for marketing but Material-like form patterns for
+intake. There is exactly one visual system across marketing → intake →
+dashboard, because the moment a visitor crosses from the marketing page into
+the intake form is the conversion-critical trust moment — a visible change of
+visual language at that seam reads as being handed to a different company,
+precisely when the user is deciding whether to type in their passport number.
+And "Material is mobile-friendly" is not an argument for Material: responsive,
+touch-first behaviour comes from our own Tailwind layer (§7) without importing
+Google's brand language.
+
 **Reversed: Ant Design for the admin and reviewer portal.** The argument for it
 is real — Table, Steps, Upload, Drawer, Descriptions, Timeline, and Tag are
 exactly the reviewer portal's vocabulary, and internal tools have no brand
@@ -133,25 +168,78 @@ different release cadence, and different security posture. **If and when
 candidate for that app specifically. Until then, the reviewer portal is built
 from the same Radix primitives, accepting that we hand-build a data table.
 
-## 7. Consequences
+## 7. Mobile is the baseline, not the adaptation
+
+A standing directive (2026-08-09) governs everything in this section: **the
+mobile web supports 100% of product functionality, at an experience as good as
+desktop** — intake, camera document capture, payment, progress, the
+additional-documents loop, and pack delivery included. The phone is the
+completion device, not a teaser for a desktop session. An earlier revision of
+this document called steering document upload to desktop "acceptable"; that
+sentence was wrong under the directive and is retracted. Desktop is the derived
+variant.
+
+Two facts about the shipping environment drive the rules below. First, the
+in-app browsers customers arrive in — WeChat's XWeb on Android, WKWebView on
+iOS, the Xiaohongshu webview — are modern engines where file input and camera
+capture work natively, but where file downloads and Alipay handoffs are
+blocked, sessions do not carry into the system browser, and no push channel
+exists. Second, WeChat routinely kills and reloads the webview when the user
+switches to a chat, so client-side state is a cache, never the record. The
+journey-level consequences — escape-hatch overlays with auth handoff, SMS
+notifications, server-side drafts, resumable uploads, the in-browser pack
+viewer, the print-bundle PDF — are specified stage by stage in
+[`mobile-parity-en.md`](mobile-parity-en.md).
+
+What binds the design system itself:
+
+- **Overlays.** Dialogs become bottom sheets on mobile (shadcn's Drawer /
+  Vaul); a centered modal over an open keyboard is a known WKWebView failure
+  mode.
+- **Selects.** Radix Select does not ship to touch devices — styled native
+  `<select>` for short lists, a bottom-sheet picker for long ones (city,
+  nationality). Radix Select may remain on desktop.
+- **No hover-dependent disclosure.** Tooltip and HoverCard are banned from the
+  intake and delivery flows; explanations sit inline beneath the question,
+  which is the GOV.UK protocol §5 already adopts — mobile makes it mandatory
+  rather than stylistic.
+- **Touch targets** are minimum 44×44pt with 8px separation between adjacent
+  tappable rows, encoded as Tailwind tokens, not left to per-screen judgment.
+- **Inputs** are minimum 16px font size (defeats iOS focus auto-zoom), and
+  every field's `inputmode` / `autocomplete` / `autocapitalize` belongs to its
+  type definition bound to the `packages/core` zod schemas — keyboard
+  behaviour is schema-driven, not screen-by-screen.
+- **Viewport handling is token-level:** `dvh` instead of `vh`, safe-area
+  utilities wrapping `env(safe-area-inset-*)`, and one shared sticky-action-bar
+  component that owns `visualViewport` keyboard repositioning so individual
+  screens never reimplement it.
+- **Type renders in system CJK fonts** (PingFang SC first — design and review
+  the type scale there). No Chinese webfont, ever, on mainland networks; a
+  small subsetted Latin webfont is the only allowance.
+- **Document preview is server-rendered page images**, reusing the pipeline's
+  existing QA rendering step — no pdf.js on mobile, and DOCX preview becomes
+  uniform with PDF preview.
+- **Definition of done:** every base component is verified in WeChat iOS
+  (WKWebView) and WeChat Android (XWeb) before it ships — focus management,
+  keyboard interaction, and fixed positioning, exactly what Radix primitives
+  own, are where these webviews diverge from desktop Chrome. Releases smoke-test
+  the full device matrix in [`mobile-parity-en.md`](mobile-parity-en.md).
+
+## 8. Consequences
 
 **Accepted costs.** Starting from unstyled primitives means more up-front work
 than adopting a styled kit — we build the token set and the base components
-before the first screen looks finished. This is a deliberate trade: the intake
-form is long-lived, and fighting someone else's opinions across dozens of screens
-costs more than the initial setup.
-
-**Mobile-first is not optional.** The product design pack barely discusses
-mobile, which is its largest gap. Discovery for these customers is
-overwhelmingly on a phone (Xiaohongshu, WeChat search), so the home page and the
-route checker must be designed mobile-first. Steering document upload to a
-desktop session is acceptable; a broken first screen on a phone is not.
+before the first screen looks finished, and the mobile variants of every
+overlay and input component (§7) are part of that base build, not a later
+adaptation. This is a deliberate trade: the intake form is long-lived, and
+fighting someone else's opinions across dozens of screens costs more than the
+initial setup.
 
 **No component may fork validation.** Whatever the design system, form
 components take their rules from the shared zod schemas in `packages/core`, per
 the ground rule in [`../README.md`](../README.md). A component that carries its
 own copy of "what is a valid passport number" is a defect, not a convenience.
 
-**Revisit when:** we add a second route family (V2, US B1/B2) and discover the
-intake form needs genuinely different branching, or if a design partner joins
-who works in Figma against a specific kit.
+**Revisit when:** we add a second route family (whichever route ships next) and
+discover the intake form needs genuinely different branching, or if a design
+partner joins who works in Figma against a specific kit.

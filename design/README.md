@@ -45,7 +45,10 @@ Figma file — you don't import a Figma file.
 
 Start with [`product/00_INDEX_Visa_Master_Product_Design.md`](product/00_INDEX_Visa_Master_Product_Design.md),
 then [`guidelines/design-system-selection-en.md`](guidelines/design-system-selection-en.md)
-for what we build the interface out of and why.
+for what we build the interface out of and why, and
+[`guidelines/mobile-parity-en.md`](guidelines/mobile-parity-en.md) for the
+standing directive that the mobile web carries 100% of the product at
+desktop-equal quality — it overrides any older document that assumes desktop.
 
 Each prototype should carry a short note saying what it demonstrates and what is
 deliberately fake, so a reader can tell the intended behaviour from the
