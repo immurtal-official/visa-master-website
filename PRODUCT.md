@@ -50,6 +50,9 @@ From a real validated run (Chengdu → Spain, Schengen tourism, 20 days):
 02_Editable_Templates/  5 DOCX: application-form field guide, employment &
                         leave certificate, 20-day itinerary, cover letter,
                         optional financial explanation
+03_Your_Documents_To_Add/ The applicant's own evidence, organized: passport &
+                        photos, hukou, employment & company papers, bank
+                        statements, insurance, transport & hotel bookings
 04_Sources_and_Warnings/ Every source cited, with current caveats
 ```
 
