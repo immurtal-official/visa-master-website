@@ -38,9 +38,14 @@ Figma file — you don't import a Figma file.
 
 | Path | Contents |
 |---|---|
+| `product/` | Product design material — personas, user journey, information architecture, MVP scope, content strategy (zh-CN) |
 | `guidelines/` | Written design and interaction guidance — layout rules, copy tone, component behaviour, states |
 | `prototypes/` | Generated prototype code and self-contained HTML/React pages |
 | `assets/` | Screenshots, exported images, and anything visual worth keeping |
+
+Start with [`product/00_INDEX_Visa_Master_Product_Design.md`](product/00_INDEX_Visa_Master_Product_Design.md),
+then [`guidelines/design-system-selection-en.md`](guidelines/design-system-selection-en.md)
+for what we build the interface out of and why.
 
 Each prototype should carry a short note saying what it demonstrates and what is
 deliberately fake, so a reader can tell the intended behaviour from the
