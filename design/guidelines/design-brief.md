@@ -4,7 +4,15 @@
 and [`mobile-parity-en.md`](mobile-parity-en.md) to hand to a design tool or a
 human designer who will not read two thousand lines. It is tool input, not a
 document — it deliberately has no `-zh` twin.
-**Keep in sync with:** the two documents above. If they change, this changes.
+**Keep in sync with:** the two documents above, plus
+[`internationalization-en.md`](internationalization-en.md). If they change, this changes.
+
+**Two halves, two destinations.** A design system holds tokens, components, and
+global rules; a project holds pages. Everything down to the custom-component
+list belongs in the design system and is inherited by every project. The
+"what I want first" screens belong in a project that uses it — pasting screens
+into the design system grows specific pages inside something meant to be
+reusable.
 
 ---
 
@@ -102,6 +110,13 @@ document — it deliberately has no `-zh` twin.
 > 本人材料 / 来源与提醒. English: Start Here / Official Documents / Editable
 > Templates / Your Documents / Sources & Notes.
 >
+> **Icons and fonts are self-hosted.** No CDN, no Google Fonts, no gstatic, no
+> unpkg or jsdelivr — customers are on mainland Chinese networks where those
+> origins are unreliable or blocked, and one hanging request delays first paint
+> by seconds.
+
+## Screens (project field — not the design system)
+
 > **What I want first:** the token set (colour, the type scale in both PingFang
 > SC and the Latin face, spacing, radius, elevation) and the base components;
 > then three screens — the homepage hero at 375px and at 1280px, one intake
