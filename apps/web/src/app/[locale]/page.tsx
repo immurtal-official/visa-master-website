@@ -1,23 +1,32 @@
 import type { Locale } from "next-intl";
-import { setRequestLocale } from "next-intl/server";
-import { Card } from "@/components/ui/card";
+import { getTranslations, setRequestLocale } from "next-intl/server";
 
 /**
- * Placeholder landing page. The chrome and its copy arrive with the site header
- * and footer in the next commit; this exists so both locale routes render.
+ * The landing page, deliberately minimal.
  *
- * The param is typed as a Locale rather than a string because the layout above
- * has already rejected anything else with a 404.
+ * The marketing homepage is its own piece of work with its own copy decisions;
+ * this is the shell that proves both locale routes render their chrome. The
+ * sign-in action joins it when the route it points at exists.
  */
 export default async function LandingPage({ params }: { params: Promise<{ locale: Locale }> }) {
   const { locale } = await params;
   setRequestLocale(locale);
+  const t = await getTranslations("landing");
 
   return (
     <main className="vm-container" style={{ paddingBlock: "var(--space-12)" }}>
-      <Card>
-        <div style={{ blockSize: "var(--space-16)" }} />
-      </Card>
+      <h1
+        style={{
+          margin: 0,
+          maxInlineSize: "var(--measure-prose)",
+          fontSize: "var(--type-h1-size)",
+          lineHeight: "var(--type-h1-lh)",
+          fontWeight: "var(--fw-semibold)",
+          color: "var(--text-heading)",
+        }}
+      >
+        {t("intro")}
+      </h1>
     </main>
   );
 }

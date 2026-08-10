@@ -3,6 +3,51 @@
     "title": "Visa Master",
     "description": "Prepare clearer, more consistent visa documents."
   },
+  "chrome": {
+    "footer": {
+      "disclaimer": "We do not apply on your behalf, and we do not influence the consulate’s decision."
+    }
+  },
+  "languageSwitcher": {
+    "groupLabel": "Interface language",
+    "note": "Switches the interface language only. The language of your document pack is set by the destination country’s requirements."
+  },
+  "landing": {
+    "intro": "Prepare clearer, more consistent visa documents.",
+    "cta": "Sign in or create an account"
+  },
+  "auth": {
+    "login": {
+      "title": "Sign in or create an account",
+      "intro": "Enter your email address and we’ll send you a 6-digit code.",
+      "emailLabel": "Email address",
+      "submit": "Send the code"
+    },
+    "otp": {
+      "title": "Enter your code",
+      "sentTo": "We sent a code to {email}.",
+      "codeLabel": "6-digit code",
+      "submit": "Verify and sign in",
+      "resend": "Send a new code",
+      "changeEmail": "Use a different email address",
+      "failed": "That code is not correct or has expired. Enter it again, or send a new one.",
+      "rateLimited": "A code was sent a moment ago. Wait a moment and try again.",
+      "sendFailed": "We could not send the code. Try again."
+    },
+    "notConfigured": "Sign-in is not available yet: the authentication service has not been configured.",
+    "signOut": "Sign out"
+  },
+  "dashboard": {
+    "title": "My applications",
+    "signedInAs": "Signed in as {email}",
+    "empty": {
+      "title": "You do not have any applications yet",
+      "body": "Applications you create will appear here."
+    }
+  },
+  "errorSummary": {
+    "title": "There is something to fix before you continue"
+  },
   "errors": {
     "notFound": {
       "title": "This page cannot be found",

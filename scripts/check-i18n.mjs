@@ -63,6 +63,17 @@ function argumentsOf(ast, found = new Set()) {
   return found;
 }
 
+/**
+ * Remove comment spans before looking for copy.
+ *
+ * A comment explaining why a Chinese string is where it is must not itself
+ * count as that string. JSX comments matter as much as ordinary ones: they are
+ * the natural place to write the explanation.
+ */
+function stripComments(line) {
+  return line.replace(/\{?\/\*[\s\S]*?\*\/\}?/g, "").replace(/\/\/.*$/, "");
+}
+
 function walk(dir, files = []) {
   for (const entry of readdirSync(dir)) {
     if (entry === "node_modules" || entry.startsWith(".")) continue;
@@ -165,9 +176,11 @@ for (const file of walk(SOURCE_DIR)) {
   const lines = readFileSync(file, "utf8").split("\n");
   lines.forEach((line, index) => {
     const trimmed = line.trim();
-    if (trimmed.startsWith("//") || trimmed.startsWith("*") || trimmed.startsWith("/*")) return;
+    // Lines inside a multi-line block comment, and single-line comments of
+    // every shape, carry no copy.
+    if (trimmed.startsWith("*")) return;
     if (line.includes("i18n-exempt")) return;
-    if (CJK.test(line)) {
+    if (CJK.test(stripComments(line))) {
       fail(
         `${relative(ROOT, file)}:${index + 1}`,
         `Chinese text outside the catalogue: ${trimmed}`,

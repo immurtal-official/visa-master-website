@@ -60,3 +60,17 @@
     padding-inline: var(--gutter-desktop);
   }
 }
+
+/* The switcher sits in the header on wide screens and in the footer on narrow
+   ones, so it never takes one of the few top-level slots a phone has. When the
+   collapsed navigation arrives it moves inside that, per the design system —
+   until then the footer copy is the mobile path, and it is always reachable. */
+.vm-header-language {
+  display: none;
+}
+
+@media (min-width: 768px) {
+  .vm-header-language {
+    display: block;
+  }
+}

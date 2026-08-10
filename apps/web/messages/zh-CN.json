@@ -3,6 +3,51 @@
     "title": "签证大师",
     "description": "把签证材料准备得更清楚、更一致。"
   },
+  "chrome": {
+    "footer": {
+      "disclaimer": "本服务不代办签证，也不影响使领馆的审批结果。"
+    }
+  },
+  "languageSwitcher": {
+    "groupLabel": "界面语言",
+    "note": "仅切换界面语言。材料包的语言由目的国的要求决定。"
+  },
+  "landing": {
+    "intro": "把签证材料准备得更清楚、更一致。",
+    "cta": "登录或创建账号"
+  },
+  "auth": {
+    "login": {
+      "title": "登录或创建账号",
+      "intro": "输入邮箱地址，我们会发送一个 6 位验证码。",
+      "emailLabel": "邮箱地址",
+      "submit": "发送验证码"
+    },
+    "otp": {
+      "title": "输入验证码",
+      "sentTo": "验证码已发送到 {email}。",
+      "codeLabel": "6 位验证码",
+      "submit": "验证并登录",
+      "resend": "重新发送验证码",
+      "changeEmail": "换一个邮箱地址",
+      "failed": "验证码不正确或已过期。重新输入，或点击重新发送。",
+      "rateLimited": "验证码刚刚发送过。稍等一会再试。",
+      "sendFailed": "验证码发送失败。请再试一次。"
+    },
+    "notConfigured": "登录暂不可用：认证服务还没有配置。",
+    "signOut": "退出登录"
+  },
+  "dashboard": {
+    "title": "我的申请",
+    "signedInAs": "已登录：{email}",
+    "empty": {
+      "title": "你还没有申请",
+      "body": "你创建的申请会显示在这里。"
+    }
+  },
+  "errorSummary": {
+    "title": "请先补充以下内容"
+  },
   "errors": {
     "notFound": {
       "title": "找不到这个页面",

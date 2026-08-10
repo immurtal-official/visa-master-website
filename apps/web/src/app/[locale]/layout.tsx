@@ -3,6 +3,8 @@ import type { ReactNode } from "react";
 import { notFound } from "next/navigation";
 import { hasLocale, NextIntlClientProvider } from "next-intl";
 import { getTranslations, setRequestLocale } from "next-intl/server";
+import { SiteFooter } from "@/components/chrome/site-footer";
+import { SiteHeader } from "@/components/chrome/site-header";
 import { routing } from "@/i18n/routing";
 import "../globals.css";
 
@@ -44,8 +46,18 @@ export default async function LocaleLayout({
     // type tokens carry the Chinese line heights by default and re-resolve to
     // the Latin ones under [lang^="en"], so the whole document follows from it.
     <html lang={locale}>
-      <body>
-        <NextIntlClientProvider>{children}</NextIntlClientProvider>
+      <body
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          minBlockSize: "100dvh",
+        }}
+      >
+        <NextIntlClientProvider>
+          <SiteHeader />
+          <div style={{ flex: 1 }}>{children}</div>
+          <SiteFooter />
+        </NextIntlClientProvider>
       </body>
     </html>
   );
