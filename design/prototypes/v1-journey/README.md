@@ -12,15 +12,14 @@ the ground rule in [`../../README.md`](../../README.md).
 
 ## Screens
 
-```
-路线      01 路线查询 · 02 暂不支持→等待名单 · 03 创建申请 · 04 代他人·授权同意
-填写资料  01 任务清单(hub) · 02 护照·校验错误 · 03 出行日期 · 04 签证历史·我不确定
-          05 换设备继续
-上传材料  01 材料清单 · 02 断点续传·恢复 · 03 提交前检查
-支付      01 确认与支付 · 02 微信内·逃生舱 · 03 支付确认中
-处理与复核 01 生成进度 · 02 已驳回·结构化原因 · 03 补材料与重新提交
-交付      01 材料包交付
-```
+Twenty screens across seven groups — 路线 (route check, waitlist, application
+creation, third-party consent), 填写资料 (task-list hub, three intake steps, a
+staged validation error, device handoff), 上传材料 (checklist, resumable-upload
+recovery, pre-submit check), 支付 (checkout, the WeChat escape-hatch
+interstitial, webhook-pending confirmation), 处理与复核 (pipeline progress,
+structured rejection, resubmission), and 交付. **The sidebar inside the
+prototype is the authoritative list**; this paragraph is orientation, not an
+inventory.
 
 ## What is deliberately fake
 
@@ -42,9 +41,18 @@ so the thing runs:
   objects rather than the catalogue, because the prototype catalogue holds flat
   strings only. In production this is a non-issue: option labels come from the
   schema and resolve through ICU message keys like any other string.
-- **The employment gate, route support, and pricing** reflect the V1 decisions
-  in [`../../product/04_MVP_Scope_V1_V2.md`](../../product/04_MVP_Scope_V1_V2.md)
-  at the time of capture. The scope doc governs, not this file.
+- **The pack-language claim.** The route-check screen states this route
+  delivers Spanish and English documents (「这条路线交付西班牙语与英语文件」).
+  The *pattern* — pack language named per route, independent of UI language —
+  is exactly right and is the thing to copy. The *specific combination* is the
+  prototype's invention: no document in this repo has verified what languages
+  the Chengdu consulate actually requires. Verify against the official
+  requirements before this string ships anywhere real.
+- **The employment gate, route support, pricing (¥299), and the 180-day pack
+  retention** reflect the V1 decisions in
+  [`../../product/04_MVP_Scope_V1_V2.md`](../../product/04_MVP_Scope_V1_V2.md)
+  at the time of capture. The scope doc governs, not this file — if a number
+  here disagrees with the scope doc, the prototype is the one that is wrong.
 
 ## What it says nothing about
 
