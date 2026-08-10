@@ -5,7 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "pnpm run check:i18n && next build",
+    "check:i18n": "tsx ../../scripts/check-i18n.mjs",
     "start": "next start",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit"
@@ -24,6 +25,7 @@
     "@types/react-dom": "^19.2.0",
     "eslint": "^9.0.0",
     "eslint-config-next": "16.3.0",
+    "eslint-plugin-i18next": "^6.1.5",
     "tailwindcss": "^4.3.0",
     "typescript": "^5.9.0"
   }
