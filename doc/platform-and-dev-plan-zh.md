@@ -301,15 +301,15 @@ export interface Executor {
 
 #### 第 1 周 —— 地基：仓库、鉴权、VM
 - **目标：** 所有账号和骨架都就位；用户可以注册。
-- **任务：** 搭建 monorepo 骨架；创建 Supabase 项目 `visa-master-staging` 与 `visa-master-prod`；Vercel 项目关联到 GitHub；迁移 `0001_profiles.sql`（`auth.users` 的镜像 + 角色枚举 `user|operator|admin`）、`0002_jobs.sql`（架构 Chapter B 的 `jobs` 表 —— 上文 B.1 只是它的最小草图；保留 Chapter B 的状态名以及 `attempt`/`max_attempts`、`idempotency_key`、预算列，并补充 `failure_reason text`、`tokens_in bigint`、`tokens_out bigint`）、`0003_usage_events.sql`；配置 Supabase Auth 邮箱 OTP；`apps/web` 登录/登出 + RLS 保护下的空白仪表盘。开通 CAX31：Ubuntu 24.04 LTS，`ufw` 拒绝一切入站，Tailscale SSH，unattended-upgrades，Docker + compose 插件，0600 权限的 env 文件。
-- **完成标准（DoD）:** 在 Vercel 生产 URL 上完成 注册 → OTP → 仪表盘 的流程；从 VM 用 `psql` 连接 Supabase 连接池成功；VM 上没有任何公网端口开放（从外部 `nmap` 扫不到任何东西）。
+- **任务：** 搭建 monorepo 骨架；创建 Supabase 项目 `visa-master-staging` 与 `visa-master-prod`；Vercel 项目关联到 GitHub；迁移 `0001_profiles.sql`（`auth.users` 的镜像 + 角色枚举 `user|operator|admin`）、`0002_jobs.sql`（架构 Chapter B 的 `jobs` 表 —— 上文 B.1 只是它的最小草图；保留 Chapter B 的状态名以及 `attempt`/`max_attempts`、`idempotency_key`、预算列，并补充 `failure_reason text`、`tokens_in bigint`、`tokens_out bigint`）、`0003_usage_events.sql`；配置 Supabase Auth 邮箱 OTP；`apps/web` 登录/登出 + RLS 保护下的空白仪表盘。`apps/web` 脚手架**随第一个页面一起交付 i18n 骨架**（2026-08-10 修订，源自设计阶段审计 —— [design/product/04](../design/product/04_MVP_Scope_V1_V2.md)）：经 `next-intl` 的语言前缀路由（`/zh/…`、`/en/…`）、承载两种语言的 ICU 词条表，以及一道构建检查 —— 出现硬编码的用户可见字符串、或任一语言缺少某个 key 时构建失败。登录页和仪表盘本身就带用户可见文案，所以词条表必须先于任何页面存在；在长大的代码库下事后补装等于重写（[国际化](../design/guidelines/internationalization-zh.md) §3、§8）。开通 CAX31：Ubuntu 24.04 LTS，`ufw` 拒绝一切入站，Tailscale SSH，unattended-upgrades，Docker + compose 插件，0600 权限的 env 文件。
+- **完成标准（DoD）:** 在 Vercel 生产 URL 上完成 注册 → OTP → 仪表盘 的流程，**`/zh` 与 `/en` 两个路径都可用，每个字符串都从词条表解析**；任一语言缺 key 时构建失败；从 VM 用 `psql` 连接 Supabase 连接池成功；VM 上没有任何公网端口开放（从外部 `nmap` 扫不到任何东西）。
 - **演示：** 在手机上注册；展示空白仪表盘和已封闭的 VM。
 
 #### 第 2 周 —— 结构化信息采集 + 上传
 - **目标：** 在任何 agent 存在之前，就把完整的申根旅游签信息采集为经过校验的结构化数据。
-- **任务：** `packages/core`：`IntakeSchengenTourismV1` zod schema（申请人、护照、就业、行程日期/路线、财务、既往签证） + `rules/schengen-spain.ts`（确定性的必备材料计算 —— 即 ADR-002 中的代码校验）；`apps/web` 中的多步表单，客户端校验复用同一 schema；`POST /api/uploads/sign` → 指向私有 `uploads/{user_id}/{upload_id}` 的签名上传 URL（护照扫描件、银行流水、在职证明）；`POST /api/jobs` 在服务端校验、快照经过脱敏的 `input`（payload 内不含 user_id/email —— v0.3 §11），插入 `status='queued'`、`kind='pack.schengen.v1'`（墙钟 `deadline_at` 在**租约时刻**设置，而不是入队时 —— 排队等待绝不能消耗运行预算）；`GET /api/jobs/:id`（受 RLS 约束）用于轮询。
-- **完成标准（DoD）:** 非法采集数据会被拒绝，并给出来自共享 schema 的字段级错误；一次完成的采集会产生一条 `queued` 作业行以及 Storage 中的文件；此时还没有任何东西消费队列。
-- **演示：** 在移动端端到端完成信息采集；展示 `jobs` 行和已上传的对象。
+- **任务：** `packages/core`：`IntakeSchengenTourismV1` zod schema（申请人、护照、就业、行程日期/路线、财务、既往签证） + `rules/schengen-spain.ts`（确定性的必备材料计算 —— 即 ADR-002 中的代码校验）。**校验问题携带消息 key 加参数**（如 `passport.expiry.tooSoon` + `{monthsRequired: 3}`），绝不携带句子 —— 由前端按当前语言解析（[国际化](../design/guidelines/internationalization-zh.md) §3）；这条规则从第一个 schema 起就生效，因为它是整套 i18n 里唯一无法低成本事后补救的部分。`apps/web` 中的多步表单，客户端校验复用同一 schema，并落地**草稿持久化**（2026-08-10 修订，源自设计阶段审计 —— [design/product/04](../design/product/04_MVP_Scope_V1_V2.md)）：草稿行（`jobs.status='draft'` 或独立的 drafts 表）+ 基于共享 schema partial 的逐步自动保存 + 登录后精确恢复到最后一个未完成步骤 —— 在微信 webview 里被打断才是中位数会话，没有服务端草稿的 intake 会弄丢它的用户（[移动端平权](../design/guidelines/mobile-parity-zh.md) §3.3）。`POST /api/uploads/sign` → 指向私有 `uploads/{user_id}/{upload_id}` 的签名上传 URL（护照扫描件、银行流水、在职证明）；`POST /api/jobs` 在服务端校验、快照经过脱敏的 `input`（payload 内不含 user_id/email —— v0.3 §11），插入 `status='queued'`、`kind='pack.schengen.v1'`（墙钟 `deadline_at` 在**租约时刻**设置，而不是入队时 —— 排队等待绝不能消耗运行预算）；`GET /api/jobs/:id`（受 RLS 约束）用于轮询。
+- **完成标准（DoD）:** 非法采集数据会被拒绝，并给出来自共享 schema 的字段级错误，**且错误在两种语言下都由消息 key 渲染**；填到一半中途放弃的采集，在登出/登录后能在同一步骤恢复且数据完好；一次完成的采集会产生一条 `queued` 作业行以及 Storage 中的文件；此时还没有任何东西消费队列。
+- **演示：** 在移动端端到端完成信息采集 —— 包括中途杀掉标签页、登录后续填；展示 `jobs` 行和已上传的对象。
 
 #### 第 3 周 —— conductor + Hermes 执行器：第一个云端产出的签证包
 这是成败攸关的一周；这里的一切都已在本地验证过，现在是把它们换个家。
