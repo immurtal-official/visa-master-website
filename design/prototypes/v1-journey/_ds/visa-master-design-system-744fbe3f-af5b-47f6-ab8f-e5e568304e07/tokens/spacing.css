@@ -1,0 +1,14 @@
+:root{
+--space-0:0;--space-1:4px;--space-2:8px;--space-3:12px;--space-4:16px;--space-5:20px;--space-6:24px;--space-8:32px;--space-10:40px;--space-12:48px;--space-16:64px;--space-20:80px;--space-24:96px;
+
+/* touch + layout */
+--touch-min:44px;              /* 44x44pt minimum, everywhere, both platforms */
+--control-h-sm:36px;--control-h:44px;--control-h-lg:52px;
+--gutter-mobile:16px;--gutter-desktop:32px;
+--measure-question:34em;       /* one-question-per-page column, CJK-measured */
+--measure-prose:38em;
+--container-max:1200px;--container-narrow:760px;
+--bottom-bar-h:72px;
+--safe-bottom:env(safe-area-inset-bottom,0px);
+--safe-top:env(safe-area-inset-top,0px);
+}

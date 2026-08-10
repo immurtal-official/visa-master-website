@@ -1,0 +1,1700 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="_ds/visa-master-design-system-744fbe3f-af5b-47f6-ab8f-e5e568304e07/tokens/fonts.css">
+<link rel="stylesheet" href="_ds/visa-master-design-system-744fbe3f-af5b-47f6-ab8f-e5e568304e07/tokens/colors.css">
+<link rel="stylesheet" href="_ds/visa-master-design-system-744fbe3f-af5b-47f6-ab8f-e5e568304e07/tokens/typography.css">
+<link rel="stylesheet" href="_ds/visa-master-design-system-744fbe3f-af5b-47f6-ab8f-e5e568304e07/tokens/spacing.css">
+<link rel="stylesheet" href="_ds/visa-master-design-system-744fbe3f-af5b-47f6-ab8f-e5e568304e07/tokens/radius.css">
+<link rel="stylesheet" href="_ds/visa-master-design-system-744fbe3f-af5b-47f6-ab8f-e5e568304e07/tokens/elevation.css">
+<link rel="stylesheet" href="_ds/visa-master-design-system-744fbe3f-af5b-47f6-ab8f-e5e568304e07/tokens/motion.css">
+<link rel="stylesheet" href="_ds/visa-master-design-system-744fbe3f-af5b-47f6-ab8f-e5e568304e07/tokens/layout.css">
+<link rel="stylesheet" href="_ds/visa-master-design-system-744fbe3f-af5b-47f6-ab8f-e5e568304e07/tokens/base.css">
+<link rel="stylesheet" href="_ds/visa-master-design-system-744fbe3f-af5b-47f6-ab8f-e5e568304e07/styles.css">
+<script src="_ds/visa-master-design-system-744fbe3f-af5b-47f6-ab8f-e5e568304e07/_ds_bundle.js"></script>
+<style>
+html,body{margin:0;padding:0}
+*{box-sizing:border-box}
+a{color:var(--blue-600)}
+a:hover{color:var(--blue-800)}
+@keyframes vmspin{to{transform:rotate(360deg)}}
+@keyframes vmpulse{0%,100%{opacity:.35}50%{opacity:1}}
+</style>
+</helmet>
+<div style="display:flex;height:100dvh;background:var(--ink-100);font-family:var(--font-sans);color:var(--text-body)">
+
+<aside style="flex:none;width:252px;height:100%;overflow:auto;background:var(--blue-900);padding:18px 10px 40px">
+<div style="padding:2px 10px 14px;font-size:11px;letter-spacing:.1em;color:rgba(255,255,255,.45)">VISA MASTER · V1 PROTOTYPE</div>
+<sc-for list="{{ rail }}" as="g" hint-placeholder-count="6">
+<div style="margin-block-end:12px">
+<div style="padding:6px 10px;font-size:11px;letter-spacing:.06em;color:rgba(255,255,255,.42)">{{ g.title }}</div>
+<sc-for list="{{ g.items }}" as="it" hint-placeholder-count="3">
+<button type="button" onClick="{{ it.go }}" style="display:flex;align-items:center;gap:9px;width:100%;min-height:34px;padding:6px 10px;margin-block-end:1px;border:0;border-radius:6px;text-align:start;cursor:pointer;font-family:inherit;font-size:13px;line-height:1.4;background:{{ it.bg }};color:{{ it.fg }}">
+<span style="flex:none;width:16px;font-family:var(--font-num);font-size:10px;opacity:.55">{{ it.n }}</span>
+<span style="min-width:0">{{ it.label }}</span>
+</button>
+</sc-for>
+</div>
+</sc-for>
+</aside>
+
+<div style="flex:1;min-width:0;display:flex;flex-direction:column">
+<div style="flex:none;display:flex;align-items:center;gap:18px;flex-wrap:wrap;padding:12px 20px;background:#fff;border-block-end:1px solid var(--border-subtle)">
+<div style="min-width:0">
+<div style="font-size:14px;font-weight:var(--fw-semibold);color:var(--text-heading)">{{ screenTitle }}</div>
+<div style="font-family:var(--font-num);font-size:12px;color:var(--text-faint)">{{ screenRoute }}</div>
+</div>
+<div style="display:flex;gap:2px;padding:3px;background:var(--ink-100);border-radius:8px">
+<button type="button" onClick="{{ setNarrow }}" style="min-height:30px;padding:0 12px;border:0;border-radius:6px;cursor:pointer;font-family:var(--font-num);font-size:12px;background:{{ narrowBg }};color:{{ narrowFg }}">375</button>
+<button type="button" onClick="{{ setWide }}" style="min-height:30px;padding:0 12px;border:0;border-radius:6px;cursor:pointer;font-family:var(--font-num);font-size:12px;background:{{ wideBg }};color:{{ wideFg }}">1280</button>
+</div>
+<div style="margin-inline-start:auto">{{ langSwitcher }}</div>
+</div>
+
+<div ref="{{ canvasRef }}" style="flex:1;min-height:0;overflow:auto;display:grid;place-items:center;padding:20px">
+<div style="width:{{ boxW }}px;height:{{ boxH }}px;flex:none">
+<div style="width:{{ frameW }}px;height:{{ frameH }}px;transform:scale({{ scale }});transform-origin:top left;background:var(--surface-page);border:1px solid var(--ink-300);border-radius:{{ frameRadius }};box-shadow:var(--shadow-3);overflow:hidden;display:flex;flex-direction:column">
+<div style="flex:1;min-height:0;overflow:auto;display:flex;flex-direction:column">
+
+<sc-if value="{{ showHeader }}" hint-placeholder-val="{{ true }}">
+<x-import component-from-global-scope="VisaMasterDesignSystem_744fbe.SiteHeader" style="width:100%" nav="{{ s.nav }}" compact="{{ m }}" language="{{ headerLang }}" action="{{ headerAction }}" onMenu="{{ toggleMenu }}" hint-size="100%,64px"></x-import>
+<sc-if value="{{ menuOpen }}" hint-placeholder-val="{{ false }}">
+<div style="padding:12px var(--gutter-mobile) 16px;background:#fff;border-block-end:1px solid var(--border-subtle)">
+<sc-for list="{{ s.nav }}" as="n" hint-placeholder-count="3">
+<a href="#" style="display:flex;align-items:center;min-height:44px;font-size:15px;text-decoration:none">{{ n.label }}</a>
+</sc-for>
+<div style="margin-block-start:8px;padding-block-start:12px;border-block-start:1px solid var(--border-subtle)">{{ navLang }}</div>
+</div>
+</sc-if>
+</sc-if>
+
+<sc-if value="{{ is.route }}" hint-placeholder-val="{{ true }}">
+<main style="flex:1;padding:{{ padTop }}px {{ gutter }}px 40px">
+<div style="max-inline-size:var(--container-narrow);margin-inline:auto">
+<h1 style="margin:0;font-size:{{ h1 }}px;line-height:1.4;font-weight:var(--fw-semibold);color:var(--text-heading)">{{ s.route.title }}</h1>
+<p style="margin:10px 0 0;font-size:15px;line-height:1.75;color:var(--text-muted);max-inline-size:var(--measure-prose)">{{ s.route.lede }}</p>
+<div style="display:grid;gap:20px;margin-block-start:28px;max-inline-size:var(--measure-question)">
+<x-import component-from-global-scope="VisaMasterDesignSystem_744fbe.Select" label="{{ s.route.cityL }}" hint="{{ s.route.cityH }}" options="{{ s.route.cities }}" value="chengdu" hint-size="100%,86px"></x-import>
+<x-import component-from-global-scope="VisaMasterDesignSystem_744fbe.Select" label="{{ s.route.destL }}" options="{{ s.route.dests }}" value="es" hint-size="100%,72px"></x-import>
+<x-import component-from-global-scope="VisaMasterDesignSystem_744fbe.Select" label="{{ s.route.typeL }}" hint="{{ s.route.typeH }}" options="{{ s.route.types }}" value="tourism" hint-size="100%,86px"></x-import>
+<x-import component-from-global-scope="VisaMasterDesignSystem_744fbe.Select" label="{{ s.route.workL }}" hint="{{ s.route.workH }}" options="{{ s.route.works }}" value="employed" hint-size="100%,86px"></x-import>
+</div>
+<div style="margin-block-start:28px">
+<x-import component-from-global-scope="VisaMasterDesignSystem_744fbe.Card" tone="accent" hint-size="100%,220px">
+<x-import component-from-global-scope="VisaMasterDesignSystem_744fbe.Badge" tone="success" icon="circle-check" hint-size="160px,26px">{{ s.route.okBadge }}</x-import>
+<h2 style="margin:12px 0 0;font-size:20px;line-height:1.45;font-weight:var(--fw-semibold);color:var(--text-heading)">{{ s.route.okTitle }}</h2>
+<p style="margin:8px 0 0;font-size:14px;line-height:1.75;color:var(--text-muted)">{{ s.route.okBody }}</p>
+<div style="margin-block-start:14px"><x-import component-from-global-scope="VisaMasterDesignSystem_744fbe.Callout" tone="quiet" icon="languages" hint-size="100%,64px">{{ s.route.packLang }}</x-import></div>
+<div style="display:flex;gap:10px;flex-wrap:wrap;margin-block-start:16px">
+<x-import component-from-global-scope="VisaMasterDesignSystem_744fbe.Button" variant="primary" size="lg" onClick="{{ go.create }}" hint-size="180px,52px">{{ s.route.cta }}</x-import>
+<x-import component-from-global-scope="VisaMasterDesignSystem_744fbe.Button" variant="ghost" size="lg" onClick="{{ go.waitlist }}" hint-size="160px,52px">{{ s.route.other }}</x-import>
+</div>
+</x-import>
+</div>
+<div style="margin-block-start:24px"><x-import component-from-global-scope="VisaMasterDesignSystem_744fbe.TrustRow" items="{{ s.trust }}" hint-size="100%,28px"></x-import></div>
+</div>
+</main>
+</sc-if>
+
+<sc-if value="{{ is.waitlist }}" hint-placeholder-val="{{ false }}">
+<main style="flex:1;padding:{{ padTop }}px {{ gutter }}px 40px">
+<div style="max-inline-size:var(--container-narrow);margin-inline:auto">
+<x-import component-from-global-scope="VisaMasterDesignSystem_744fbe.BackLink" onClick="{{ go.route }}" hint-size="140px,44px">{{ s.back }}</x-import>
+<div style="margin-block-start:20px">
+<x-import component-from-global-scope="VisaMasterDesignSystem_744fbe.Callout" tone="info" title="{{ s.waitlist.title }}" icon="info" hint-size="100%,120px">{{ s.waitlist.body }}</x-import>
+</div>
+<div style="margin-block-start:24px;max-inline-size:var(--measure-question)">
+<h2 style="margin:0;font-size:18px;line-height:1.5;font-weight:var(--fw-semibold);color:var(--text-heading)">{{ s.waitlist.formTitle }}</h2>
+<p style="margin:8px 0 18px;font-size:14px;line-height:1.75;color:var(--text-muted)">{{ s.waitlist.formHint }}</p>
+<div style="display:grid;gap:18px">
+<x-import component-from-global-scope="VisaMasterDesignSystem_744fbe.Input" label="{{ s.waitlist.cityL }}" value="成都" width="md" hint-size="100%,72px"></x-import>
+<x-import component-from-global-scope="VisaMasterDesignSystem_744fbe.Input" label="{{ s.waitlist.destL }}" value="{{ s.waitlist.destV }}" width="md" hint-size="100%,72px"></x-import>
+<x-import component-from-global-scope="VisaMasterDesignSystem_744fbe.Input" label="{{ s.waitlist.phoneL }}" hint="{{ s.waitlist.phoneH }}" value="138 0000 0000" width="md" hint-size="100%,86px"></x-import>
+</div>
+<div style="margin-block-start:20px;display:flex;gap:10px;flex-wrap:wrap">
+<x-import component-from-global-scope="VisaMasterDesignSystem_744fbe.Button" variant="primary" hint-size="160px,44px">{{ s.waitlist.cta }}</x-import>
+<x-import component-from-global-scope="VisaMasterDesignSystem_744fbe.Button" variant="ghost" onClick="{{ go.route }}" hint-size="140px,44px">{{ s.waitlist.back }}</x-import>
+</div>
+<p style="margin:16px 0 0;font-size:13px;line-height:1.7;color:var(--text-faint);max-inline-size:var(--measure-prose)">{{ s.waitlist.note }}</p>
+</div>
+</div>
+</main>
+</sc-if>
+
+<sc-if value="{{ is.create }}" hint-placeholder-val="{{ false }}">
+<main style="flex:1;padding:{{ padTop }}px {{ gutter }}px 40px">
+<div style="max-inline-size:var(--container-narrow);margin-inline:auto">
+<x-import component-from-global-scope="VisaMasterDesignSystem_744fbe.BackLink" onClick="{{ go.route }}" hint-size="140px,44px">{{ s.back }}</x-import>
+<h1 style="margin:18px 0 0;font-size:{{ h1 }}px;line-height:1.4;font-weight:var(--fw-semibold);color:var(--text-heading)">{{ s.create.title }}</h1>
+<p style="margin:10px 0 0;font-size:15px;line-height:1.75;color:var(--text-muted);max-inline-size:var(--measure-prose)">{{ s.create.lede }}</p>
+<div style="margin-block-start:24px">
+<x-import component-from-global-scope="VisaMasterDesignSystem_744fbe.Card" header="{{ s.create.sumHeader }}" hint-size="100%,240px">
+<dl style="margin:0;display:grid;grid-template-columns:{{ dlCols }};gap:12px 20px;font-size:14px;line-height:1.7">
+<sc-for list="{{ s.create.rows }}" as="r" hint-placeholder-count="5">
+<dt style="color:var(--text-faint)">{{ r.k }}</dt>
+<dd style="margin:0;color:var(--text-heading)">{{ r.v }}</dd>
+</sc-for>
+</dl>
+</x-import>
+</div>
+<div style="margin-block-start:24px;max-inline-size:var(--measure-question)">
+<x-import component-from-global-scope="VisaMasterDesignSystem_744fbe.Question" as="h2" question="{{ s.create.whoQ }}" hint="{{ s.create.whoH }}" hint-size="100%,220px">
+<x-import component-from-global-scope="VisaMasterDesignSystem_744fbe.RadioGroup" name="behalf" options="{{ s.create.whoOpts }}" value="{{ behalf }}" onChange="{{ setBehalf }}" hint-size="100%,140px"></x-import>
+</x-import>
+</div>
+<sc-if value="{{ isBehalf }}" hint-placeholder-val="{{ false }}">
+<div style="margin-block-start:24px;max-inline-size:var(--measure-question);display:grid;gap:18px">
+<x-import component-from-global-scope="VisaMasterDesignSystem_744fbe.Callout" tone="info" title="{{ s.create.otherTitle }}" icon="user-check" hint-size="100%,110px">{{ s.create.otherBody }}</x-import>
+<x-import component-from-global-scope="VisaMasterDesignSystem_744fbe.Input" label="{{ s.create.aName }}" hint="{{ s.create.aNameH }}" width="lg" hint-size="100%,86px"></x-import>
+<x-import component-from-global-scope="VisaMasterDesignSystem_744fbe.Input" label="{{ s.create.aRel }}" width="md" hint-size="100%,72px"></x-import>
+<x-import component-from-global-scope="VisaMasterDesignSystem_744fbe.Input" label="{{ s.create.aPhone }}" hint="{{ s.create.aPhoneH }}" width="md" hint-size="100%,86px"></x-import>
+</div>
+</sc-if>
+<div style="margin-block-start:24px;max-inline-size:var(--measure-question)">
+<x-import component-from-global-scope="VisaMasterDesignSystem_744fbe.Callout" tone="quiet" icon="languages" hint-size="100%,64px">{{ s.packLangNote }}</x-import>
+</div>
+</div>
+</main>
+<x-import component-from-global-scope="VisaMasterDesignSystem_744fbe.StickyActionBar" style="width:100%" note="{{ s.create.barNote }}" hint-size="100%,72px">
+<x-import component-from-global-scope="VisaMasterDesignSystem_744fbe.Button" variant="primary" size="lg" block="{{ m }}" onClick="{{ createNext }}" hint-size="200px,52px">{{ s.create.cta }}</x-import>
+</x-import>
+</sc-if>
+
+<sc-if value="{{ is.consent }}" hint-placeholder-val="{{ false }}">
+<main style="flex:1;padding:{{ padTop }}px {{ gutter }}px 40px">
+<div style="max-inline-size:var(--container-narrow);margin-inline:auto">
+<x-import component-from-global-scope="VisaMasterDesignSystem_744fbe.BackLink" onClick="{{ go.create }}" hint-size="140px,44px">{{ s.back }}</x-import>
+<div style="margin-block-start:20px;max-inline-size:var(--measure-question)">
+<x-import component-from-global-scope="VisaMasterDesignSystem_744fbe.Question" as="h1" question="{{ s.consent.q }}" hint="{{ s.consent.hint }}" footnote="{{ s.consent.foot }}" hint-size="100%,320px">
+<x-import component-from-global-scope="VisaMasterDesignSystem_744fbe.CheckboxGroup" name="consent" options="{{ s.consent.opts }}" value="{{ consentVal }}" onChange="{{ setConsent }}" hint-size="100%,200px"></x-import>
+</x-import>
+</div>
+<div style="margin-block-start:22px;max-inline-size:var(--measure-question)">
+<x-import component-from-global-scope="VisaMasterDesignSystem_744fbe.Callout" tone="info" icon="shield-check" title="{{ s.consent.calloutT }}" hint-size="100%,120px">{{ s.consent.calloutB }}</x-import>
+</div>
+</div>
+</main>
+<x-import component-from-global-scope="VisaMasterDesignSystem_744fbe.StickyActionBar" style="width:100%" note="{{ s.consent.barNote }}" hint-size="100%,72px">
+<x-import component-from-global-scope="VisaMasterDesignSystem_744fbe.Button" variant="primary" size="lg" block="{{ m }}" onClick="{{ go.hub }}" hint-size="200px,52px">{{ s.consent.cta }}</x-import>
+</x-import>
+</sc-if>
+
+<sc-if value="{{ is.hub }}" hint-placeholder-val="{{ false }}">
+<main style="flex:1;padding:{{ padTop }}px {{ gutter }}px 40px">
+<div style="max-inline-size:var(--container-narrow);margin-inline:auto">
+<h1 style="margin:0;font-size:{{ h1 }}px;line-height:1.4;font-weight:var(--fw-semibold);color:var(--text-heading)">{{ s.hub.title }}</h1>
+<p style="margin:10px 0 0;font-size:15px;line-height:1.75;color:var(--text-muted);max-inline-size:var(--measure-prose)">{{ s.hub.lede }}</p>
+<div style="margin-block-start:20px"><x-import component-from-global-scope="VisaMasterDesignSystem_744fbe.StepProgress" section="{{ s.hub.section }}" step="12" total="34" sections="{{ s.hub.sections }}" hint-size="100%,56px"></x-import></div>
+<div style="margin-block-start:24px">
+<x-import component-from-global-scope="VisaMasterDesignSystem_744fbe.TaskList" sections="{{ s.hub.sectionsList }}" onSelect="{{ selectTask }}" hint-size="100%,520px"></x-import>
+</div>
+<div style="margin-block-start:20px"><x-import component-from-global-scope="VisaMasterDesignSystem_744fbe.SaveResumeNotice" savedAt="{{ s.savedAt }}" email="chen@example.com" hint-size="100%,90px"></x-import></div>
+</div>
+</main>
+</sc-if>
+
+<sc-if value="{{ is.passport }}" hint-placeholder-val="{{ false }}">
+<div style="padding:14px {{ gutter }}px;background:#fff;border-block-end:1px solid var(--border-subtle)">
+<div style="max-inline-size:var(--container-narrow);margin-inline:auto"><x-import component-from-global-scope="VisaMasterDesignSystem_744fbe.StepProgress" section="{{ s.passport.section }}" step="6" total="34" sections="{{ s.hub.sections }}" hint-size="100%,56px"></x-import></div>
+</div>
+<main style="flex:1;padding:{{ padTop }}px {{ gutter }}px 40px">
+<div style="max-inline-size:var(--container-narrow);margin-inline:auto">
+<x-import component-from-global-scope="VisaMasterDesignSystem_744fbe.ErrorSummary" title="{{ s.passport.errTitle }}" errors="{{ s.passport.errors }}" onJump="{{ jump }}" hint-size="100%,140px"></x-import>
+<div style="margin-block-start:24px;max-inline-size:var(--measure-question);display:grid;gap:28px">
+<x-import component-from-global-scope="VisaMasterDesignSystem_744fbe.Question" as="h1" question="{{ s.passport.q }}" hint="{{ s.passport.hint }}" hint-size="100%,240px">
+<x-import component-from-global-scope="VisaMasterDesignSystem_744fbe.Input" id="passportNo" label="{{ s.passport.noL }}" hint="{{ s.passport.noH }}" error="{{ s.passport.noErr }}" value="E1234567" width="sm" hint-size="100%,120px"></x-import>
+</x-import>
+<x-import component-from-global-scope="VisaMasterDesignSystem_744fbe.DateInput" label="{{ s.passport.expL }}" hint="{{ s.passport.expH }}" error="{{ s.passport.expErr }}" value="{{ expiry }}" onChange="{{ setExpiry }}" hint-size="100%,150px"></x-import>
+</div>
+</div>
+</main>
+<x-import component-from-global-scope="VisaMasterDesignSystem_744fbe.StickyActionBar" style="width:100%" note="{{ s.autosaved }}" secondary="{{ skipBtn }}" hint-size="100%,72px">
+<x-import component-from-global-scope="VisaMasterDesignSystem_744fbe.Button" variant="primary" size="lg" block="{{ m }}" onClick="{{ go.dates }}" hint-size="160px,52px">{{ s.continue }}</x-import>
+</x-import>
+</sc-if>
+
+<sc-if value="{{ is.dates }}" hint-placeholder-val="{{ false }}">
+<div style="padding:14px {{ gutter }}px;background:#fff;border-block-end:1px solid var(--border-subtle)">
+<div style="max-inline-size:var(--container-narrow);margin-inline:auto"><x-import component-from-global-scope="VisaMasterDesignSystem_744fbe.StepProgress" section="{{ s.dates.section }}" step="12" total="34" sections="{{ s.hub.sections }}" hint-size="100%,56px"></x-import></div>
+</div>
+<main style="flex:1;padding:{{ padTop }}px {{ gutter }}px 40px">
+<div style="max-inline-size:var(--container-narrow);margin-inline:auto">
+<x-import component-from-global-scope="VisaMasterDesignSystem_744fbe.BackLink" onClick="{{ go.passport }}" hint-size="140px,44px">{{ s.back }}</x-import>
+<div style="margin-block-start:20px;max-inline-size:var(--measure-question)">
+<x-import component-from-global-scope="VisaMasterDesignSystem_744fbe.Question" as="h1" question="{{ s.dates.q }}" hint="{{ s.dates.hint }}" hint-size="100%,260px">
+<x-import component-from-global-scope="VisaMasterDesignSystem_744fbe.DateInput" hint="{{ s.dates.dHint }}" value="{{ depart }}" onChange="{{ setDepart }}" hint-size="100%,130px"></x-import>
+</x-import>
+</div>
+<div style="margin-block-start:24px;max-inline-size:var(--measure-question);display:grid;gap:16px">
+<x-import component-from-global-scope="VisaMasterDesignSystem_744fbe.Callout" tone="quiet" icon="info" hint-size="100%,64px">{{ s.dates.note }}</x-import>
+<x-import component-from-global-scope="VisaMasterDesignSystem_744fbe.SaveResumeNotice" savedAt="{{ s.savedAt }}" email="chen@example.com" onSend="{{ go.handoff }}" hint-size="100%,90px"></x-import>
+</div>
+<sc-if value="{{ m }}" hint-placeholder-val="{{ false }}">
+<div style="margin-block-start:20px">
+<x-import component-from-global-scope="VisaMasterDesignSystem_744fbe.Button" variant="secondary" block="{{ true }}" icon="scan-line" onClick="{{ go.handoff }}" hint-size="100%,44px">{{ s.handoffBtn }}</x-import>
+</div>
+</sc-if>
+</div>
+</main>
+<x-import component-from-global-scope="VisaMasterDesignSystem_744fbe.StickyActionBar" style="width:100%" note="{{ s.autosaved }}" secondary="{{ handoffBtn }}" hint-size="100%,72px">
+<x-import component-from-global-scope="VisaMasterDesignSystem_744fbe.Button" variant="primary" size="lg" block="{{ m }}" onClick="{{ go.history }}" hint-size="160px,52px">{{ s.continue }}</x-import>
+</x-import>
+</sc-if>
+
+<sc-if value="{{ is.history }}" hint-placeholder-val="{{ false }}">
+<div style="padding:14px {{ gutter }}px;background:#fff;border-block-end:1px solid var(--border-subtle)">
+<div style="max-inline-size:var(--container-narrow);margin-inline:auto"><x-import component-from-global-scope="VisaMasterDesignSystem_744fbe.StepProgress" section="{{ s.history.section }}" step="27" total="34" sections="{{ s.hub.sections }}" hint-size="100%,56px"></x-import></div>
+</div>
+<main style="flex:1;padding:{{ padTop }}px {{ gutter }}px 40px">
+<div style="max-inline-size:var(--container-narrow);margin-inline:auto">
+<x-import component-from-global-scope="VisaMasterDesignSystem_744fbe.BackLink" onClick="{{ go.dates }}" hint-size="140px,44px">{{ s.back }}</x-import>
+<div style="margin-block-start:20px;max-inline-size:var(--measure-question)">
+<x-import component-from-global-scope="VisaMasterDesignSystem_744fbe.Question" as="h1" question="{{ s.history.q }}" hint="{{ s.history.hint }}" hint-size="100%,300px">
+<x-import component-from-global-scope="VisaMasterDesignSystem_744fbe.RadioGroup" name="history" options="{{ s.history.opts }}" value="{{ hist }}" onChange="{{ setHist }}" hint-size="100%,240px"></x-import>
+</x-import>
+</div>
+<sc-if value="{{ histUnsure }}" hint-placeholder-val="{{ false }}">
+<div style="margin-block-start:22px;max-inline-size:var(--measure-question)">
+<x-import component-from-global-scope="VisaMasterDesignSystem_744fbe.Callout" tone="warning" icon="triangle-alert" title="{{ s.history.unsureT }}" hint-size="100%,130px">{{ s.history.unsureB }}</x-import>
+</div>
+</sc-if>
+</div>
+</main>
+<x-import component-from-global-scope="VisaMasterDesignSystem_744fbe.StickyActionBar" style="width:100%" note="{{ s.autosaved }}" hint-size="100%,72px">
+<x-import component-from-global-scope="VisaMasterDesignSystem_744fbe.Button" variant="primary" size="lg" block="{{ m }}" onClick="{{ go.upload }}" hint-size="160px,52px">{{ s.continue }}</x-import>
+</x-import>
+</sc-if>
+
+<sc-if value="{{ is.handoff }}" hint-placeholder-val="{{ false }}">
+<main style="flex:1;padding:{{ padTop }}px {{ gutter }}px 40px">
+<div style="max-inline-size:var(--container-narrow);margin-inline:auto">
+<x-import component-from-global-scope="VisaMasterDesignSystem_744fbe.BackLink" onClick="{{ go.dates }}" hint-size="140px,44px">{{ s.back }}</x-import>
+<h1 style="margin:18px 0 0;font-size:{{ h1 }}px;line-height:1.4;font-weight:var(--fw-semibold);color:var(--text-heading)">{{ s.handoff.title }}</h1>
+<p style="margin:10px 0 0;font-size:15px;line-height:1.75;color:var(--text-muted);max-inline-size:var(--measure-prose)">{{ s.handoff.lede }}</p>
+<div style="display:grid;gap:16px;margin-block-start:24px;align-items:start">
+<x-import component-from-global-scope="VisaMasterDesignSystem_744fbe.DeviceHandoff" mode="continue" url="{{ handoffUrl }}" code="{{ handoffCode }}" qrSrc="{{ qrSrc }}" minutes="30" state="waiting" hint-size="100%,300px"></x-import>
+<div style="display:grid;grid-template-columns:{{ twoCols2 }};gap:16px;align-items:start">
+<x-import component-from-global-scope="VisaMasterDesignSystem_744fbe.Card" header="{{ s.handoff.linkH }}" hint-size="100%,180px">
+<p style="margin:0 0 12px;font-size:14px;line-height:1.75;color:var(--text-muted)">{{ s.handoff.linkBody }}</p>
+<div style="display:flex;gap:10px;flex-wrap:wrap">
+<x-import component-from-global-scope="VisaMasterDesignSystem_744fbe.Button" variant="secondary" icon="mail" hint-size="160px,44px">{{ s.handoff.email }}</x-import>
+<x-import component-from-global-scope="VisaMasterDesignSystem_744fbe.Button" variant="secondary" icon="link" hint-size="160px,44px">{{ s.handoff.sms }}</x-import>
+</div>
+</x-import>
+<x-import component-from-global-scope="VisaMasterDesignSystem_744fbe.Callout" tone="quiet" icon="shield-check" hint-size="100%,90px">{{ s.handoff.note }}</x-import>
+</div>
+</div>
+</div>
+</main>
+</sc-if>
+
+<sc-if value="{{ is.upload }}" hint-placeholder-val="{{ false }}">
+<main style="flex:1;padding:{{ padTop }}px {{ gutter }}px 40px">
+<div style="max-inline-size:var(--container-max);margin-inline:auto">
+<h1 style="margin:0;font-size:{{ h1 }}px;line-height:1.4;font-weight:var(--fw-semibold);color:var(--text-heading)">{{ s.upload.title }}</h1>
+<p style="margin:10px 0 0;font-size:15px;line-height:1.75;color:var(--text-muted);max-inline-size:var(--measure-prose)">{{ s.upload.lede }}</p>
+<div style="display:grid;grid-template-columns:{{ uploadCols }};gap:28px;margin-block-start:24px;align-items:start">
+<div>
+<h2 style="margin:0 0 12px;font-size:16px;font-weight:var(--fw-semibold);color:var(--text-heading)">{{ s.upload.listTitle }}</h2>
+<x-import component-from-global-scope="VisaMasterDesignSystem_744fbe.UploadChecklist" items="{{ s.upload.items }}" onAction="{{ jump }}" hint-size="100%,520px"></x-import>
+</div>
+<div style="display:grid;gap:16px">
+<sc-if value="{{ m }}" hint-placeholder-val="{{ false }}">
+<x-import component-from-global-scope="VisaMasterDesignSystem_744fbe.Card" header="{{ s.upload.captureH }}" hint-size="100%,320px">
+<x-import component-from-global-scope="VisaMasterDesignSystem_744fbe.CameraCaptureLoop" pages="{{ pages }}" guide="{{ s.upload.guide }}" label="{{ s.upload.pageLabel }}" onCapture="{{ addPage }}" onRemove="{{ removePage }}" onMove="{{ movePage }}" hint-size="100%,260px"></x-import>
+<div style="display:flex;gap:8px;flex-wrap:wrap;margin-block-start:14px">
+<x-import component-from-global-scope="VisaMasterDesignSystem_744fbe.Button" variant="secondary" icon="camera" hint-size="100px,44px">{{ s.upload.camera }}</x-import>
+<x-import component-from-global-scope="VisaMasterDesignSystem_744fbe.Button" variant="secondary" icon="image" hint-size="100px,44px">{{ s.upload.album }}</x-import>
+<x-import component-from-global-scope="VisaMasterDesignSystem_744fbe.Button" variant="secondary" icon="file" hint-size="100px,44px">{{ s.upload.files }}</x-import>
+</div>
+</x-import>
+</sc-if>
+<sc-if value="{{ desktop }}" hint-placeholder-val="{{ true }}">
+<x-import component-from-global-scope="VisaMasterDesignSystem_744fbe.Card" header="{{ s.upload.dropH }}" hint-size="100%,420px">
+<x-import component-from-global-scope="VisaMasterDesignSystem_744fbe.ResumableUploader" files="{{ s.upload.files1 }}" hint="{{ s.upload.dropHint }}" hint-size="100%,340px"></x-import>
+<div style="margin-block-start:14px"><x-import component-from-global-scope="VisaMasterDesignSystem_744fbe.Callout" tone="quiet" icon="scan-line" hint-size="100%,80px">{{ s.upload.scanner }}</x-import></div>
+</x-import>
+</sc-if>
+<x-import component-from-global-scope="VisaMasterDesignSystem_744fbe.Callout" tone="quiet" icon="lock" title="{{ s.upload.privacyT }}" hint-size="100%,110px">{{ s.upload.privacyB }}</x-import>
+<x-import component-from-global-scope="VisaMasterDesignSystem_744fbe.Button" variant="ghost" icon="scan-line" onClick="{{ go.handoff }}" hint-size="200px,44px">{{ s.upload.phoneCam }}</x-import>
+</div>
+</div>
+</div>
+</main>
+<x-import component-from-global-scope="VisaMasterDesignSystem_744fbe.StickyActionBar" style="width:100%" note="{{ s.upload.barNote }}" hint-size="100%,72px">
+<x-import component-from-global-scope="VisaMasterDesignSystem_744fbe.Button" variant="primary" size="lg" block="{{ m }}" onClick="{{ go.precheck }}" hint-size="200px,52px">{{ s.upload.cta }}</x-import>
+</x-import>
+</sc-if>
+
+<sc-if value="{{ is.recover }}" hint-placeholder-val="{{ false }}">
+<main style="flex:1;padding:{{ padTop }}px {{ gutter }}px 40px">
+<div style="max-inline-size:var(--container-narrow);margin-inline:auto">
+<x-import component-from-global-scope="VisaMasterDesignSystem_744fbe.BackLink" onClick="{{ go.upload }}" hint-size="140px,44px">{{ s.back }}</x-import>
+<h1 style="margin:18px 0 0;font-size:{{ h1 }}px;line-height:1.4;font-weight:var(--fw-semibold);color:var(--text-heading)">{{ s.recover.title }}</h1>
+<div style="margin-block-start:16px">
+<x-import component-from-global-scope="VisaMasterDesignSystem_744fbe.Callout" tone="warning" icon="cloud-check" title="{{ s.recover.calloutT }}" hint-size="100%,120px">{{ s.recover.calloutB }}</x-import>
+</div>
+<div style="margin-block-start:20px">
+<x-import component-from-global-scope="VisaMasterDesignSystem_744fbe.ResumableUploader" files="{{ s.recover.files }}" hint="{{ s.recover.hint }}" onRetry="{{ jump }}" hint-size="100%,420px"></x-import>
+</div>
+<p style="margin:18px 0 0;font-size:13px;line-height:1.7;color:var(--text-faint);max-inline-size:var(--measure-prose)">{{ s.recover.note }}</p>
+</div>
+</main>
+</sc-if>
+
+<sc-if value="{{ is.precheck }}" hint-placeholder-val="{{ false }}">
+<main style="flex:1;padding:{{ padTop }}px {{ gutter }}px 40px">
+<div style="max-inline-size:var(--container-narrow);margin-inline:auto">
+<x-import component-from-global-scope="VisaMasterDesignSystem_744fbe.BackLink" onClick="{{ go.upload }}" hint-size="140px,44px">{{ s.back }}</x-import>
+<h1 style="margin:18px 0 0;font-size:{{ h1 }}px;line-height:1.4;font-weight:var(--fw-semibold);color:var(--text-heading)">{{ s.precheck.title }}</h1>
+<p style="margin:10px 0 0;font-size:15px;line-height:1.75;color:var(--text-muted);max-inline-size:var(--measure-prose)">{{ s.precheck.lede }}</p>
+<div style="margin-block-start:18px">
+<x-import component-from-global-scope="VisaMasterDesignSystem_744fbe.Callout" tone="warning" icon="git-compare-arrows" title="{{ s.precheck.calloutT }}" hint-size="100%,110px">{{ s.precheck.calloutB }}</x-import>
+</div>
+<div style="margin-block-start:20px">
+<x-import component-from-global-scope="VisaMasterDesignSystem_744fbe.ConsistencyReport" summary="{{ s.precheck.summary }}" items="{{ s.precheck.items }}" onResolve="{{ jump }}" hint-size="100%,420px"></x-import>
+</div>
+<div style="margin-block-start:20px">
+<x-import component-from-global-scope="VisaMasterDesignSystem_744fbe.Callout" tone="quiet" icon="info" hint-size="100%,90px">{{ s.precheck.noAi }}</x-import>
+</div>
+</div>
+</main>
+<x-import component-from-global-scope="VisaMasterDesignSystem_744fbe.StickyActionBar" style="width:100%" note="{{ s.precheck.barNote }}" hint-size="100%,72px">
+<x-import component-from-global-scope="VisaMasterDesignSystem_744fbe.Button" variant="primary" size="lg" block="{{ m }}" onClick="{{ go.checkout }}" hint-size="200px,52px">{{ s.precheck.cta }}</x-import>
+</x-import>
+</sc-if>
+
+<sc-if value="{{ showCheckout }}" hint-placeholder-val="{{ false }}">
+<main style="flex:1;padding:{{ padTop }}px {{ gutter }}px 40px">
+<div style="max-inline-size:var(--container-narrow);margin-inline:auto">
+<x-import component-from-global-scope="VisaMasterDesignSystem_744fbe.BackLink" onClick="{{ go.precheck }}" hint-size="140px,44px">{{ s.back }}</x-import>
+<h1 style="margin:18px 0 0;font-size:{{ h1 }}px;line-height:1.4;font-weight:var(--fw-semibold);color:var(--text-heading)">{{ s.checkout.title }}</h1>
+<div style="margin-block-start:20px">
+<x-import component-from-global-scope="VisaMasterDesignSystem_744fbe.Card" header="{{ s.checkout.sumH }}" footer="{{ priceRow }}" hint-size="100%,280px">
+<dl style="margin:0;display:grid;grid-template-columns:{{ dlCols }};gap:12px 20px;font-size:14px;line-height:1.7">
+<sc-for list="{{ s.checkout.rows }}" as="r" hint-placeholder-count="5">
+<dt style="color:var(--text-faint)">{{ r.k }}</dt>
+<dd style="margin:0;color:var(--text-heading)">{{ r.v }}</dd>
+</sc-for>
+</dl>
+</x-import>
+</div>
+<div style="margin-block-start:18px;display:grid;gap:14px">
+<x-import component-from-global-scope="VisaMasterDesignSystem_744fbe.Callout" tone="quiet" icon="languages" title="{{ s.checkout.langT }}" hint-size="100%,110px">{{ s.checkout.langB }}</x-import>
+<x-import component-from-global-scope="VisaMasterDesignSystem_744fbe.Callout" tone="info" icon="circle-alert" title="{{ s.checkout.scopeT }}" hint-size="100%,140px">{{ s.checkout.scopeB }}</x-import>
+<x-import component-from-global-scope="VisaMasterDesignSystem_744fbe.Callout" tone="quiet" icon="credit-card" title="{{ s.checkout.payT }}" hint-size="100%,110px">{{ s.checkout.payB }}</x-import>
+</div>
+<div style="margin-block-start:18px;max-inline-size:var(--measure-question)">
+<x-import component-from-global-scope="VisaMasterDesignSystem_744fbe.CheckboxGroup" name="agree" options="{{ s.checkout.agree }}" value="{{ agreeVal }}" onChange="{{ setAgree }}" hint-size="100%,140px"></x-import>
+</div>
+<sc-if value="{{ m }}" hint-placeholder-val="{{ false }}">
+<div style="margin-block-start:20px">
+<x-import component-from-global-scope="VisaMasterDesignSystem_744fbe.Button" variant="secondary" block="{{ true }}" onClick="{{ go.escape }}" hint-size="100%,44px">{{ s.checkout.wechat }}</x-import>
+</div>
+</sc-if>
+</div>
+</main>
+<x-import component-from-global-scope="VisaMasterDesignSystem_744fbe.StickyActionBar" style="width:100%" note="{{ s.checkout.barNote }}" secondary="{{ wechatBtn }}" hint-size="100%,72px">
+<x-import component-from-global-scope="VisaMasterDesignSystem_744fbe.Button" variant="primary" size="lg" block="{{ m }}" icon="external-link" onClick="{{ go.pending }}" hint-size="240px,52px">{{ s.checkout.cta }}</x-import>
+</x-import>
+</sc-if>
+
+<x-import component-from-global-scope="VisaMasterDesignSystem_744fbe.WeChatEscape" open="{{ is.escape }}" reason="alipay" url="{{ payUrl }}" token-minutes="30" onDismiss="{{ go.checkout }}" hint-size="100%,100%"></x-import>
+
+<sc-if value="{{ is.pending }}" hint-placeholder-val="{{ false }}">
+<main style="flex:1;padding:{{ padTop }}px {{ gutter }}px 40px">
+<div style="max-inline-size:var(--container-narrow);margin-inline:auto">
+<div style="display:flex;align-items:center;gap:12px">
+<span style="display:inline-block;width:22px;height:22px;border:2px solid var(--ink-200);border-top-color:var(--blue-600);border-radius:50%;animation:vmspin 900ms linear infinite"></span>
+<h1 style="margin:0;font-size:{{ h1 }}px;line-height:1.4;font-weight:var(--fw-semibold);color:var(--text-heading)">{{ s.pending.title }}</h1>
+</div>
+<p style="margin:14px 0 0;font-size:15px;line-height:1.75;color:var(--text-muted);max-inline-size:var(--measure-prose)">{{ s.pending.body }}</p>
+<div style="margin-block-start:20px;display:grid;gap:14px;max-inline-size:var(--measure-prose)">
+<x-import component-from-global-scope="VisaMasterDesignSystem_744fbe.Callout" tone="quiet" icon="cloud-check" title="{{ s.pending.whyT }}" hint-size="100%,120px">{{ s.pending.whyB }}</x-import>
+<x-import component-from-global-scope="VisaMasterDesignSystem_744fbe.Callout" tone="quiet" icon="info" hint-size="100%,90px">{{ s.pending.close }}</x-import>
+</div>
+<div style="margin-block-start:20px;display:flex;gap:10px;flex-wrap:wrap">
+<x-import component-from-global-scope="VisaMasterDesignSystem_744fbe.Button" variant="secondary" onClick="{{ go.progress }}" hint-size="180px,44px">{{ s.pending.refresh }}</x-import>
+<x-import component-from-global-scope="VisaMasterDesignSystem_744fbe.Button" variant="ghost" hint-size="140px,44px">{{ s.pending.help }}</x-import>
+</div>
+</div>
+</main>
+</sc-if>
+
+<sc-if value="{{ is.progress }}" hint-placeholder-val="{{ false }}">
+<main style="flex:1;padding:{{ padTop }}px {{ gutter }}px 40px">
+<div style="max-inline-size:var(--container-narrow);margin-inline:auto">
+<x-import component-from-global-scope="VisaMasterDesignSystem_744fbe.Badge" tone="info" icon="clock" hint-size="180px,26px">{{ s.progress.badge }}</x-import>
+<h1 style="margin:12px 0 0;font-size:{{ h1 }}px;line-height:1.4;font-weight:var(--fw-semibold);color:var(--text-heading)">{{ s.progress.title }}</h1>
+<p style="margin:10px 0 0;font-size:15px;line-height:1.75;color:var(--text-muted);max-inline-size:var(--measure-prose)">{{ s.progress.lede }}</p>
+<div style="margin-block-start:24px">
+<x-import component-from-global-scope="VisaMasterDesignSystem_744fbe.PipelineProgress" current="{{ pipeCurrent }}" notes="{{ s.progress.notes }}" eta-minutes="{{ pipeEta }}" hint-size="100%,420px"></x-import>
+</div>
+<div style="margin-block-start:20px;display:grid;gap:14px;max-inline-size:var(--measure-prose)">
+<x-import component-from-global-scope="VisaMasterDesignSystem_744fbe.Callout" tone="quiet" icon="message-circle-question-mark" title="{{ s.progress.smsT }}" hint-size="100%,120px">{{ s.progress.smsB }}</x-import>
+</div>
+</div>
+</main>
+</sc-if>
+
+<sc-if value="{{ is.rejected }}" hint-placeholder-val="{{ false }}">
+<main style="flex:1;padding:{{ padTop }}px {{ gutter }}px 40px">
+<div style="max-inline-size:var(--container-narrow);margin-inline:auto">
+<x-import component-from-global-scope="VisaMasterDesignSystem_744fbe.Badge" tone="error" icon="circle-alert" hint-size="200px,26px">{{ s.rejected.badge }}</x-import>
+<h1 style="margin:12px 0 0;font-size:{{ h1 }}px;line-height:1.4;font-weight:var(--fw-semibold);color:var(--text-heading)">{{ s.rejected.title }}</h1>
+<p style="margin:10px 0 0;font-size:15px;line-height:1.75;color:var(--text-muted);max-inline-size:var(--measure-prose)">{{ s.rejected.lede }}</p>
+<div style="margin-block-start:18px">
+<x-import component-from-global-scope="VisaMasterDesignSystem_744fbe.Callout" tone="error" icon="user-check" title="{{ s.rejected.calloutT }}" hint-size="100%,120px">{{ s.rejected.calloutB }}</x-import>
+</div>
+<ul style="list-style:none;margin:20px 0 0;padding:0;display:grid;gap:12px">
+<sc-for list="{{ s.rejected.reasons }}" as="r" hint-placeholder-count="3">
+<li style="background:#fff;border:1px solid var(--border-subtle);border-radius:var(--radius-card);overflow:hidden">
+<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:12px 16px;background:var(--ink-50);border-block-end:1px solid var(--border-subtle)">
+<span style="font-size:15px;font-weight:var(--fw-semibold);color:var(--text-heading)">{{ r.title }}</span>
+<code style="margin-inline-start:auto;font-family:var(--font-num);font-size:11px;color:var(--text-faint)">{{ r.code }}</code>
+</div>
+<dl style="margin:0;padding:14px 16px;display:grid;grid-template-columns:{{ reasonCols }};gap:10px 18px;font-size:14px;line-height:1.75">
+<dt style="color:var(--text-faint)">{{ s.rejected.lWhat }}</dt><dd style="margin:0">{{ r.what }}</dd>
+<dt style="color:var(--text-faint)">{{ s.rejected.lWhy }}</dt><dd style="margin:0">{{ r.why }}</dd>
+<dt style="color:var(--text-faint)">{{ s.rejected.lHow }}</dt><dd style="margin:0">{{ r.how }}</dd>
+</dl>
+</li>
+</sc-for>
+</ul>
+<div style="margin-block-start:20px">
+<x-import component-from-global-scope="VisaMasterDesignSystem_744fbe.Callout" tone="quiet" icon="banknote" hint-size="100%,90px">{{ s.rejected.money }}</x-import>
+</div>
+</div>
+</main>
+<x-import component-from-global-scope="VisaMasterDesignSystem_744fbe.StickyActionBar" style="width:100%" note="{{ s.rejected.barNote }}" hint-size="100%,72px">
+<x-import component-from-global-scope="VisaMasterDesignSystem_744fbe.Button" variant="primary" size="lg" block="{{ m }}" onClick="{{ go.resubmit }}" hint-size="200px,52px">{{ s.rejected.cta }}</x-import>
+</x-import>
+</sc-if>
+
+<sc-if value="{{ is.resubmit }}" hint-placeholder-val="{{ false }}">
+<main style="flex:1;padding:{{ padTop }}px {{ gutter }}px 40px">
+<div style="max-inline-size:var(--container-max);margin-inline:auto">
+<h1 style="margin:0;font-size:{{ h1 }}px;line-height:1.4;font-weight:var(--fw-semibold);color:var(--text-heading)">{{ s.resubmit.title }}</h1>
+<p style="margin:10px 0 0;font-size:15px;line-height:1.75;color:var(--text-muted);max-inline-size:var(--measure-prose)">{{ s.resubmit.lede }}</p>
+<div style="display:grid;grid-template-columns:{{ uploadCols }};gap:28px;margin-block-start:22px;align-items:start">
+<div>
+<h2 style="margin:0 0 12px;font-size:16px;font-weight:var(--fw-semibold);color:var(--text-heading)">{{ s.resubmit.listTitle }}</h2>
+<x-import component-from-global-scope="VisaMasterDesignSystem_744fbe.UploadChecklist" items="{{ s.resubmit.items }}" onAction="{{ jump }}" hint-size="100%,420px"></x-import>
+<div style="margin-block-start:16px">
+<x-import component-from-global-scope="VisaMasterDesignSystem_744fbe.ConsistencyReport" items="{{ s.resubmit.checks }}" onResolve="{{ go.dates }}" hint-size="100%,220px"></x-import>
+</div>
+</div>
+<div style="display:grid;gap:16px">
+<sc-if value="{{ m }}" hint-placeholder-val="{{ false }}">
+<x-import component-from-global-scope="VisaMasterDesignSystem_744fbe.Card" header="{{ s.resubmit.captureH }}" hint-size="100%,300px">
+<x-import component-from-global-scope="VisaMasterDesignSystem_744fbe.CameraCaptureLoop" pages="{{ pages }}" guide="{{ s.resubmit.guide }}" label="{{ s.upload.pageLabel }}" onCapture="{{ addPage }}" onRemove="{{ removePage }}" onMove="{{ movePage }}" hint-size="100%,240px"></x-import>
+</x-import>
+</sc-if>
+<sc-if value="{{ desktop }}" hint-placeholder-val="{{ true }}">
+<x-import component-from-global-scope="VisaMasterDesignSystem_744fbe.Card" header="{{ s.resubmit.dropH }}" hint-size="100%,300px">
+<x-import component-from-global-scope="VisaMasterDesignSystem_744fbe.ResumableUploader" files="{{ s.resubmit.files }}" hint="{{ s.upload.dropHint }}" hint-size="100%,240px"></x-import>
+</x-import>
+</sc-if>
+<x-import component-from-global-scope="VisaMasterDesignSystem_744fbe.Callout" tone="warning" icon="clock" title="{{ s.resubmit.timeT }}" hint-size="100%,130px">{{ s.resubmit.timeB }}</x-import>
+</div>
+</div>
+</div>
+</main>
+<x-import component-from-global-scope="VisaMasterDesignSystem_744fbe.StickyActionBar" style="width:100%" note="{{ s.resubmit.barNote }}" hint-size="100%,72px">
+<x-import component-from-global-scope="VisaMasterDesignSystem_744fbe.Button" variant="primary" size="lg" block="{{ m }}" onClick="{{ go.progress }}" hint-size="220px,52px">{{ s.resubmit.cta }}</x-import>
+</x-import>
+</sc-if>
+
+<sc-if value="{{ is.delivery }}" hint-placeholder-val="{{ false }}">
+<div style="padding:{{ padTop }}px {{ gutter }}px 22px;background:#fff;border-block-end:1px solid var(--border-subtle)">
+<div style="max-inline-size:var(--container-max);margin-inline:auto">
+<x-import component-from-global-scope="VisaMasterDesignSystem_744fbe.Badge" tone="success" icon="circle-check" hint-size="240px,26px">{{ s.delivery.badge }}</x-import>
+<h1 style="margin:12px 0 0;font-size:{{ h1 }}px;line-height:1.4;font-weight:var(--fw-semibold);color:var(--text-heading)">{{ s.delivery.title }}</h1>
+<p style="margin:10px 0 0;font-size:15px;line-height:1.75;color:var(--text-muted);max-inline-size:44em">{{ s.delivery.lede }}</p>
+<div style="margin-block-start:14px"><x-import component-from-global-scope="VisaMasterDesignSystem_744fbe.TrustRow" items="{{ s.delivery.trust }}" hint-size="100%,28px"></x-import></div>
+</div>
+</div>
+<main style="flex:1;padding:22px {{ gutter }}px 48px">
+<div style="max-inline-size:var(--container-max);margin-inline:auto">
+<x-import component-from-global-scope="VisaMasterDesignSystem_744fbe.Callout" tone="quiet" icon="languages" title="{{ s.delivery.langT }}" hint-size="100%,110px">{{ s.delivery.langB }}</x-import>
+<div style="display:grid;grid-template-columns:{{ deliveryCols }};gap:28px;margin-block-start:20px;align-items:start">
+<x-import component-from-global-scope="VisaMasterDesignSystem_744fbe.Card" padding="8px" header="{{ s.delivery.treeH }}" footer="{{ printBundle }}" hint-size="100%,520px">
+<x-import component-from-global-scope="VisaMasterDesignSystem_744fbe.PackFileTree" tree="{{ s.delivery.tree }}" selectedId="{{ sel }}" onSelect="{{ select }}" hint-size="100%,460px"></x-import>
+</x-import>
+<div style="display:grid;gap:22px">
+<x-import component-from-global-scope="VisaMasterDesignSystem_744fbe.Card" hint-size="100%,560px">
+<x-import component-from-global-scope="VisaMasterDesignSystem_744fbe.FilePreview" file="{{ file }}" hint-size="100%,520px"></x-import>
+</x-import>
+<x-import component-from-global-scope="VisaMasterDesignSystem_744fbe.Card" header="{{ s.delivery.checkH }}" hint-size="100%,380px">
+<x-import component-from-global-scope="VisaMasterDesignSystem_744fbe.ConsistencyReport" summary="{{ s.delivery.checkSummary }}" items="{{ s.delivery.checks }}" hint-size="100%,320px"></x-import>
+</x-import>
+<x-import component-from-global-scope="VisaMasterDesignSystem_744fbe.CitationPanel" checkedAt="2026-08-01" sources="{{ s.delivery.sources }}" caveats="{{ s.delivery.caveats }}" hint-size="100%,300px"></x-import>
+</div>
+</div>
+</div>
+</main>
+</sc-if>
+
+<sc-if value="{{ is.deliveryWechat }}" hint-placeholder-val="{{ false }}">
+<div style="flex:none;display:flex;align-items:center;gap:8px;padding:8px {{ gutter }}px;background:var(--ink-100);border-block-end:1px solid var(--border-subtle);font-size:12px;color:var(--text-faint)">
+<span>{{ s.wechat.chrome }}</span>
+<span style="margin-inline-start:auto;letter-spacing:2px">···</span>
+</div>
+<main style="flex:1;padding:{{ padTop }}px {{ gutter }}px 40px">
+<div style="max-inline-size:var(--container-narrow);margin-inline:auto">
+<x-import component-from-global-scope="VisaMasterDesignSystem_744fbe.Badge" tone="success" icon="circle-check" hint-size="240px,26px">{{ s.delivery.badge }}</x-import>
+<h1 style="margin:12px 0 0;font-size:{{ h1 }}px;line-height:1.4;font-weight:var(--fw-semibold);color:var(--text-heading)">{{ s.delivery.title }}</h1>
+<div style="margin-block-start:20px">
+<x-import component-from-global-scope="VisaMasterDesignSystem_744fbe.Card" padding="8px" header="{{ s.delivery.treeH }}" hint-size="100%,420px">
+<x-import component-from-global-scope="VisaMasterDesignSystem_744fbe.PackFileTree" tree="{{ s.delivery.tree }}" selectedId="{{ sel }}" onSelect="{{ select }}" defaultOpen="{{ wechatOpen }}" hint-size="100%,380px"></x-import>
+</x-import>
+</div>
+<div style="margin-block-start:18px">
+<x-import component-from-global-scope="VisaMasterDesignSystem_744fbe.Card" hint-size="100%,480px">
+<x-import component-from-global-scope="VisaMasterDesignSystem_744fbe.FilePreview" file="{{ file }}" hint-size="100%,440px"></x-import>
+</x-import>
+</div>
+</div>
+</main>
+<x-import component-from-global-scope="VisaMasterDesignSystem_744fbe.WeChatEscape" open="{{ escapeOpen }}" reason="download" url="{{ packUrl }}" token-minutes="30" onDismiss="{{ dismissEscape }}" hint-size="100%,100%"></x-import>
+</sc-if>
+
+<sc-if value="{{ showFooter }}" hint-placeholder-val="{{ true }}">
+<x-import component-from-global-scope="VisaMasterDesignSystem_744fbe.SiteFooter" style="width:100%" columns="{{ s.footerCols }}" note="{{ s.footerNote }}" record="{{ s.icp }}" language="{{ footerLang }}" hint-size="100%,320px"></x-import>
+</sc-if>
+
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1440,&quot;height&quot;:900}}">
+const ZH = {
+  nav: [{ label: "支持路线" }, { label: "如何运作" }, { label: "价格" }, { label: "帮助" }],
+  trust: [
+    { label: "官方来源核对", icon: "book-open-text" },
+    { label: "材料自动生成", icon: "files" },
+    { label: "一致性校验", icon: "git-compare-arrows" },
+    { label: "人工复核后交付", icon: "user-check" },
+  ],
+  packLangNote: "仅切换界面语言。材料包的语言由目的国的要求决定：这条路线交付西班牙语与英语文件。",
+  footerCols: [
+    { title: "产品", links: ["支持路线", "如何运作", "样例材料包", "价格"] },
+    { title: "信任", links: ["隐私与安全", "AI 与人工复核", "免责声明", "退款说明"] },
+    { title: "支持", links: ["帮助中心", "常见问题", "联系我们"] },
+  ],
+  footerNote: "本服务不代办签证，也不影响使领馆的审批结果。我们做的是材料准备与一致性检查。",
+  route: {
+    title: "先查一下这条路线现在能不能用",
+    lede: "我们只做已经跑通、且有官方来源支撑的路线。不支持的组合不会创建申请，也不会收费。",
+    cityL: "你现在住在哪个城市？",
+    cityH: "按常住地判断领区。成都归成都领区。",
+    cities: [{ value: "chengdu", label: "成都" }, { value: "chongqing", label: "重庆" }, { value: "beijing", label: "北京" }],
+    destL: "你要去哪个国家？",
+    dests: [{ value: "es", label: "西班牙" }, { value: "fr", label: "法国" }, { value: "us", label: "美国" }],
+    typeL: "签证类型",
+    typeH: "V1 只做个人旅游签。探亲、商务、会议是后续路线。",
+    types: [{ value: "tourism", label: "个人旅游" }, { value: "family", label: "探亲访友" }, { value: "business", label: "商务" }],
+    workL: "你现在的就业状态",
+    workH: "V1 只服务在职申请人——在读和退休申请人的模板集还没验证过。",
+    works: [{ value: "employed", label: "在职" }, { value: "student", label: "在读" }, { value: "retired", label: "退休" }],
+    okBadge: "已验证路线",
+    okTitle: "成都领区 → 西班牙申根个人旅游签",
+    okBody: "这条路线我们做过，要求快照核对于 2026-08-01。单次材料包 ¥299，包含官方来源核对、材料生成、一致性校验和人工复核。",
+    packLang: "材料包语言：西班牙语与英语。这由西班牙的要求决定，和你的界面语言无关。",
+    cta: "创建申请",
+    other: "我要去别的国家",
+  },
+  waitlist: {
+    title: "这条路线我们暂时还做不了",
+    body: "成都 → 美国 B1/B2 不在支持范围内。我们现在只做成都领区 → 西班牙申根个人旅游签，下一步扩展的是相邻申根目的地和相邻领区。留个联系方式，做通了通知你。",
+    formTitle: "加入等待名单",
+    formHint: "只记居住城市和目的地，不会创建申请，也不会开始收费。",
+    cityL: "居住城市",
+    destL: "想去哪里",
+    destV: "美国 B1/B2",
+    phoneL: "手机号",
+    phoneH: "只用于这一条通知，通知过后即删除。",
+    cta: "加入等待名单",
+    back: "换一条路线再查",
+    note: "等待名单是一条轻量记录，不是申请。你随时可以回到路线查询试别的组合。",
+  },
+  create: {
+    title: "创建申请",
+    lede: "创建后会生成申请编号，草稿保存在服务端，换设备也能接着填。",
+    sumHeader: "申请概览",
+    rows: [
+      { k: "路线", v: "成都领区 → 西班牙申根个人旅游签" },
+      { k: "预计出行", v: "2026-09-14" },
+      { k: "交付内容", v: "官方来源核对、材料生成、一致性校验、人工复核" },
+      { k: "价格", v: "¥299（一次性，驳回后重新提交不重复收费）" },
+      { k: "材料包语言", v: "西班牙语 · 英语" },
+    ],
+    whoQ: "这份申请是给谁办的？",
+    whoH: "代他人申请时，申请人和账号持有人在数据里是分开的两个人，材料里出现的始终是申请人。",
+    whoOpts: [
+      { value: "self", title: "我自己", hint: "账号持有人就是申请人。" },
+      { value: "other", title: "我为另一个人办", hint: "V1 支持一名操作者加一名申请人。上传材料前需要先取得申请人的同意。" },
+    ],
+    otherTitle: "申请人 ≠ 账号持有人",
+    otherBody: "下面填的是实际申请人的信息。所有生成的文件用申请人的姓名、单位和地址，不会用你的。",
+    aName: "申请人姓名（与护照一致）",
+    aNameH: "拼音大写，例如 CHEN LIWEI。",
+    aRel: "你和申请人的关系",
+    aPhone: "申请人手机号",
+    aPhoneH: "用于向申请人本人发送授权同意确认。",
+    barNote: "创建后可随时删除，删除即清除已上传材料。",
+    cta: "创建申请草稿",
+  },
+  consent: {
+    q: "上传材料前，需要申请人本人同意",
+    hint: "你要上传的是另一个人的护照、银行流水和在职材料。按《个人信息保护法》，处理这些信息需要他本人的单独同意。同意记录会写进申请，可以随时撤回。",
+    foot: "撤回同意后我们会停止处理并删除已上传的材料。",
+    opts: [
+      { value: "c1", title: "申请人已同意由我代为上传并处理其个人信息", hint: "包括护照、户口、银行流水、在职与收入材料。" },
+      { value: "c2", title: "申请人已同意接收本次申请相关的短信通知", hint: "状态变更和补材料请求会同时发给你和申请人。" },
+      { value: "c3", title: "我已把服务范围和不承诺过签的说明告知申请人" },
+    ],
+    calloutT: "我们会向申请人本人核对一次",
+    calloutB: "创建后会给申请人手机号发一条确认短信。他点确认之后，你才能开始上传。",
+    barNote: "三项都需要勾选才能继续。",
+    cta: "记录同意，开始填写",
+  },
+  hub: {
+    title: "填写资料",
+    lede: "一共八节，每节都能单独进出。答完一题就保存一次，中途关掉页面不会丢。",
+    section: "护照信息",
+    sections: [
+      { name: "基本信息", state: "done" }, { name: "护照信息", state: "current" },
+      { name: "居住地", state: "todo" }, { name: "工作与收入", state: "todo" },
+      { name: "旅行计划", state: "todo" }, { name: "同行与资助", state: "todo" },
+      { name: "签证历史", state: "todo" }, { name: "确认提交", state: "todo" },
+    ],
+    taskSections: [
+      { id: "you", title: "关于申请人", description: "这几节决定申请表上的身份信息，也是所有生成文件的基准。", items: [
+        { id: "t1", key: "hub", title: "申请人基本信息", hint: "姓名、出生日期、婚姻状况", state: "done" },
+        { id: "t2", key: "passport", title: "护照信息", hint: "有 2 处需要修改", state: "problem" },
+        { id: "t3", key: "hub", title: "当前居住地与领区", hint: "成都 · 已按常住地判断领区", state: "done" },
+      ] },
+      { id: "trip", title: "工作与行程", items: [
+        { id: "t4", key: "hub", title: "工作、收入与资产", hint: "还差 4 题", state: "progress" },
+        { id: "t5", key: "dates", title: "旅行计划", hint: "出发日期、行程、住宿", state: "progress" },
+        { id: "t6", key: "hub", title: "同行人与资助情况", hint: "独自出行则只有 2 题", state: "todo" },
+      ] },
+      { id: "submit", title: "历史与提交", items: [
+        { id: "t7", key: "history", title: "签证历史与出境记录", hint: "过去五年的申根记录", state: "todo" },
+        { id: "t8", key: "upload", title: "确认与上传材料", state: "locked", after: "签证历史与出境记录" },
+      ] },
+    ],
+  },
+  passport: {
+    section: "护照信息",
+    errTitle: "有 2 处需要修改后才能继续",
+    errors: [
+      { field: "passportNo", message: "护照号码需要 9 位，请检查后重新填写" },
+      { field: "passportExpiry", message: "护照有效期需要在返程后至少 3 个月，请确认到期日" },
+    ],
+    q: "你的护照号码是多少？",
+    hint: "填资料页右上角那一串，字母加数字。这个号码会出现在申请表和所有生成的文件里，填错要整包重做。",
+    noL: "护照号码",
+    noH: "例如 E12345678，共 9 位。",
+    noErr: "护照号码需要 9 位，请检查后重新填写",
+    expL: "护照有效期至",
+    expH: "看资料页的 Date of expiry。",
+    expErr: "护照有效期需要在返程后至少 3 个月。按 2026-09-14 返程算，到期日不能早于 2026-12-14。",
+  },
+  dates: {
+    section: "旅行计划",
+    q: "你打算什么时候出发？",
+    hint: "填计划的入境日期。之后还能改，我们用它算材料需要覆盖的时间范围——银行流水的月份、保险的起止、在职证明的落款期限都跟着它走。",
+    dHint: "例如 2026 年 09 月 01 日",
+    note: "这一步只影响材料清单，不会提交给使领馆。",
+  },
+  history: {
+    section: "签证历史",
+    q: "过去 5 年里，你去过申根国家吗？",
+    hint: "申请表上有这一栏。如果去过，使馆会看你上一次的记录；如果记不清，选「我不确定」，我们会在清单里提醒你翻旧护照核对，不会替你猜。",
+    opts: [
+      { value: "yes", title: "去过", hint: "接下来会问你最近一次的时间和国家。" },
+      { value: "no", title: "没去过", hint: "这是第一次申请申根签证。" },
+      { value: "unsure", title: "我不确定", hint: "记不清或护照不在手边，可以先这样填。" },
+    ],
+    unsureT: "选了「我不确定」之后会发生什么",
+    unsureB: "材料包里这一栏按「待申请人确认」生成，不会填一个我们不知道的答案。00_从这里开始 的清单里会多一条：递交前翻一下旧护照，把这一栏补上。",
+  },
+  handoff: {
+    title: "换一台设备继续",
+    lede: "草稿在服务端，不在这台设备上。换设备接着填，或者用手机当相机拍材料，都从你离开的那一步继续。",
+    linkH: "把链接发给自己",
+    linkBody: "链接 30 分钟内有效，只能用一次。用过之后要重新登录才能再生成。",
+    email: "发到我的邮箱",
+    sms: "发短信到手机",
+    note: "换设备不会丢东西。正在上传的文件会保留进度，未提交的答案照样在。",
+  },
+  upload: {
+    title: "上传材料",
+    lede: "每一项都写了为什么需要。我们现在只检查格式、大小、页数和拍摄清晰度——内容要等生成和人工复核阶段才看。",
+    listTitle: "材料清单 · 还差 2 项必需材料",
+    captureH: "银行流水 · 逐页拍摄",
+    guide: "整页入框，含银行盖章。避开反光，四角都要在画面里。",
+    pageLabel: "第 {n} 页",
+    camera: "拍照",
+    album: "相册",
+    files: "文件",
+    dropH: "拖拽上传",
+    dropHint: "支持 JPG、PNG、HEIC、PDF。扫描件多页 PDF 可以直接拖进来。",
+    scanner: "有扫描仪的话，扫描件通常比拍照清楚。多页 PDF 是一等来源，不用拆成图片。",
+    privacyT: "这些文件存在哪里",
+    privacyB: "加密存储，只有生成流水线和复核你这份申请的运营人员能看到。交付 30 天后自动清除，你也可以随时要求删除。",
+    phoneCam: "用手机当相机拍这些材料",
+    barNote: "护照资料页与银行流水缺页，补齐后才能提交。",
+    cta: "继续，去提交前检查",
+    items: [
+      { id: "passport", title: "护照资料页", rationale: "申请表上的号码、姓名和有效期都从这一页核对，也是所有生成文件的基准。", state: "done", detail: "格式与清晰度检查通过 · MRZ 可读", files: ["passport-01.jpg"] },
+      { id: "bank", title: "近三个月银行流水", rationale: "使馆据此判断你能不能负担这次行程。需要页码连续、有银行盖章。", state: "redo", detail: "只收到 5 页，第 3 页缺失。六个月的流水很少只有 5 页，建议重新导出完整版。", files: ["bank-01.jpg", "bank-02.jpg", "bank-04.jpg", "bank-05.jpg", "bank-06.jpg"] },
+      { id: "employment", title: "在职证明与准假信", rationale: "证明你有稳定工作和回国的理由。模板我们已经生成好，这里上传公司盖章后的版本。", state: "checking", detail: "正在做服务端清晰度复检" },
+      { id: "hukou", title: "户口簿", rationale: "用于核对户籍地和家庭关系，成都领区要求提供。", state: "todo" },
+      { id: "insurance", title: "申根医疗保险单", rationale: "保额不低于 3 万欧元，覆盖全部行程日期。可以出签前再买，先上传报价单也行。", state: "optional", detail: "可以之后补" },
+      { id: "booking", title: "机票与住宿预订单", rationale: "行程表要和你填的日期对得上。用可取消的预订即可，不建议提前出票。", state: "todo" },
+    ],
+    files1: [
+      { name: "bank-statement-2026-05.pdf", size: "3.2 MB", progress: 100 },
+      { name: "bank-statement-2026-06.pdf", size: "3.4 MB", progress: 100 },
+      { name: "employment-letter-scan.pdf", size: "1.1 MB", progress: 64 },
+    ],
+  },
+  recover: {
+    title: "上传中断了，进度还在",
+    calloutT: "网络断在 62%，已保留的分块没有丢",
+    calloutB: "文件是分块传的，服务端记着你传到哪一块。点「继续上传」从断点接着传，不用从头再来。切到微信聊天再回来也一样。",
+    hint: "支持 JPG、PNG、HEIC、PDF。",
+    files: [
+      { name: "bank-statement-2026-07.pdf", size: "4.8 MB", progress: 62, state: "failed" },
+      { name: "passport-data-page.jpg", size: "1.9 MB", progress: 100 },
+    ],
+    note: "只有服务端确认收到，这一项才算上传成功。在那之前清单上不会显示「已收到」。",
+  },
+  precheck: {
+    title: "提交前检查",
+    lede: "这是付款前的最后一步。我们把你填的信息和上传的材料对了一遍，有两处对不上。",
+    calloutT: "有 1 处需要你确认，1 处建议核对",
+    calloutB: "不改也能提交，但对不上的地方会原样进入材料包，人工复核时很可能被驳回。",
+    summary: "共检查 42 项：40 项一致，1 项需要确认，1 项建议核对。",
+    noAi: "这一步是确定性规则检查，跑在你自己的浏览器和我们的服务端上，不调用任何 AI，也不做内容识别。付款之后才开始生成。",
+    barNote: "改完再来也可以，草稿一直在。",
+    cta: "确认无误，去支付",
+    items: [
+      { id: "p1", field: "出行日期", severity: "conflict",
+        readings: [{ source: "旅行计划（你填的）", value: "2026-09-14" }, { source: "酒店预订单", value: "2026-09-21" }],
+        action: "两个日期差了一周。以哪个为准？行程单、保险起止和银行流水的月份都跟着它走。" },
+      { id: "p2", field: "在职起始日期", severity: "check",
+        readings: [{ source: "工作信息（你填的）", value: "2021-03-01" }, { source: "在职证明草稿", value: "2021-05-01" }],
+        action: "建议以社保记录为准。递交前让公司核对一下这个日期。" },
+      { id: "p3", field: "护照有效期", severity: "pass",
+        readings: [{ source: "护照资料页", value: "2031-04-18" }, { source: "计划返程", value: "2026-09-28" }] },
+    ],
+  },
+  checkout: {
+    title: "确认与支付",
+    sumH: "订单摘要",
+    rows: [
+      { k: "路线", v: "成都领区 → 西班牙申根个人旅游签" },
+      { k: "申请人", v: "陈立伟 · CHEN LIWEI" },
+      { k: "预计出行", v: "2026-09-14" },
+      { k: "交付内容", v: "官方来源核对、材料生成、一致性校验、人工复核、在线材料包" },
+      { k: "预计交付", v: "生成约 10 分钟，人工复核以小时计" },
+    ],
+    price: "一次性",
+    priceValue: "¥299",
+    langT: "材料包语言：西班牙语与英语",
+    langB: "由西班牙的要求决定，和你现在读的界面语言无关。材料包里每份文件都会标出它自己的语言。",
+    scopeT: "我们做什么，不做什么",
+    scopeB: "我们准备材料并做一致性检查。本服务不代办签证，也不影响使领馆的审批结果，不承诺过签。如果材料不足，我们会逐项说明原因，你改完重新提交，不重复收费。",
+    payT: "支付方式：支付宝，在系统浏览器中完成",
+    payB: "V1 只支持支付宝。在微信里打开时不会尝试跳转——会给你一个带登录状态的链接，到系统浏览器里付。",
+    agree: [
+      { value: "a1", title: "我已阅读并同意服务范围与免责说明", hint: "包括不承诺签证结果这一条。" },
+      { value: "a2", title: "我同意按隐私政策处理我上传的个人信息", hint: "交付 30 天后自动清除，可随时要求提前删除。" },
+    ],
+    barNote: "付款成功记为一次材料包额度，申请随之入队。",
+    cta: "用支付宝支付 ¥299",
+    wechat: "我现在在微信里打开",
+  },
+  pending: {
+    title: "支付确认中",
+    body: "支付宝已经收到你的付款请求。我们在等支付平台的回调确认，通常几秒，偶尔一两分钟。",
+    whyT: "为什么不是立刻显示已支付",
+    whyB: "支付状态由支付平台的回调决定，不由你跳回来这一下决定。就算跳转失败、页面关掉，或者你回到微信里打开，重新拉一次都会看到正确的状态。",
+    close: "这个页面可以关掉。确认之后我们会发短信给你。",
+    refresh: "刷新支付状态",
+    help: "支付遇到问题",
+  },
+  progress: {
+    badge: "材料生成中 · 已进行 4 分钟",
+    title: "正在准备你的材料包",
+    lede: "生成大约 10 分钟，之后进入人工复核，通常以小时计。这一页随时可以关掉。",
+    smsT: "状态变了会发短信",
+    smsB: "复核通过或需要补材料，都会发到 138 0000 0000。短信里的链接直接落到当前状态页，不用重新登录。",
+    notes: {
+      sources: "读取西班牙驻华使馆与 BLS 成都中心当前公布的材料要求，记录来源与快照日期。",
+      generate: "生成申请表逐字段填写指引、逐日行程、cover letter、在职与准假证明模板。",
+      consistency: "把生成的文件和你填的信息、上传的材料互相比对，记录冲突。",
+      review: "运营人员逐份看过之后才会交付。没有任何材料包会跳过这一步自动发出。",
+    },
+  },
+  rejected: {
+    badge: "人工复核未通过",
+    title: "有 3 处需要补齐，补完可以重新生成",
+    lede: "复核人员看过全部材料，列出了具体问题。不是拒绝服务——材料包额度还在，改完重新提交不再收费。",
+    calloutT: "复核意见 · 2026-08-09 16:40",
+    calloutB: "银行流水缺页和在职证明的日期问题会直接导致使馆退材料，所以这一版没有交付。剩下的部分已经生成好了，重新提交时会一并更新。",
+    lWhat: "缺什么",
+    lWhy: "为什么",
+    lHow: "怎么补",
+    reasons: [
+      { title: "银行流水缺第 3 页", code: "missing_document.bank_statement_pages",
+        what: "收到 5 页，第 3 页（2026 年 6 月）缺失。",
+        why: "使馆要求近三个月流水页码连续。缺页会被当作有意隐去，通常当场退材料。",
+        how: "回银行 App 重新导出完整 PDF，或者补拍缺的那一页。" },
+      { title: "在职证明落款日期过早", code: "stale_document.employment_letter",
+        what: "公司盖章的落款日期是 2026-05-20，距离你 2026-09-01 的预约超过 3 个月。",
+        why: "成都签证中心要求在职证明在递交前 30 天内出具。",
+        how: "让公司按同一模板重新出一份，落款日期改成最近，重新上传。" },
+      { title: "出行日期与酒店预订不一致", code: "inconsistent_field.travel_dates",
+        what: "你填的入境日是 2026-09-14，酒店预订单上是 2026-09-21。",
+        why: "行程单、保险起止和资金覆盖期都按入境日算，对不上会被质疑行程真实性。",
+        how: "去「旅行计划」把日期改成实际的，或者换一份日期一致的预订单。" },
+    ],
+    money: "材料包额度保留，重新提交不再收费。本次尝试计入上限（已用 1 次，共 3 次）。",
+    barNote: "补齐 3 项后才能重新提交。",
+    cta: "去补材料",
+  },
+  resubmit: {
+    title: "补材料并重新提交",
+    lede: "只有下面这 3 项需要动，其他答案和已上传的材料都还在。",
+    listTitle: "需要补的材料",
+    captureH: "银行流水第 3 页 · 拍摄",
+    guide: "整页入框，含页码与银行盖章。",
+    dropH: "补传文件",
+    timeT: "重新提交 = 重新生成一次",
+    timeB: "这不是「重新检查」。系统会用新材料完整跑一次生成，约需 10 分钟，之后重新进入机器 QA 和人工复核。",
+    barNote: "还差 1 项：在职证明尚未重新上传。",
+    cta: "重新提交（约 10 分钟）",
+    items: [
+      { id: "r1", title: "银行流水第 3 页", rationale: "使馆要求近三个月流水页码连续，缺页通常当场退材料。", state: "done", detail: "格式与清晰度检查通过", files: ["bank-03.jpg"] },
+      { id: "r2", title: "重新出具的在职证明", rationale: "落款日期需要在递交前 30 天内。", state: "todo", detail: "待你上传" },
+    ],
+    checks: [
+      { id: "r3", field: "出行日期", severity: "conflict",
+        readings: [{ source: "旅行计划（你填的）", value: "2026-09-14" }, { source: "酒店预订单", value: "2026-09-21" }],
+        action: "这一项要改的是填写内容，不是上传件。去「旅行计划」改日期。" },
+    ],
+    files: [
+      { name: "bank-statement-page-03.pdf", size: "0.9 MB", progress: 100 },
+    ],
+  },
+  delivery: {
+    badge: "已完成人工复核 · 2026-08-09",
+    title: "西班牙申根个人旅游签 · 材料包已准备好",
+    lede: "共 18 份文件。先看 00_Start_Here 里的总检查清单，按上面的顺序打印、签字、递交。还有 1 项建议你核对。",
+    trust: [
+      { label: "官方来源核对于 2026-08-01", icon: "book-open-text" },
+      { label: "42 项一致性校验", icon: "git-compare-arrows" },
+      { label: "人工复核 · 李工", icon: "user-check" },
+    ],
+    langT: "每份文件用它自己的语言，和你的界面语言无关",
+    langB: "西班牙要求申请表和确认问卷用西班牙语，BLS 成都中心的清单是英语，给你看的说明是中文。文件名在两种界面语言下完全一样——递交时使馆看到的就是这些名字。",
+    treeH: "材料包 · 18 份",
+    checkH: "一致性校验",
+    checkSummary: "共检查 42 项：40 项一致，1 项建议核对，1 项已按社保记录修正。",
+    tree: [
+      { id: "s0", name: "00_Start_Here · 从这里开始", children: [
+        { id: "f01", name: "00-01_总检查清单_Read-First.pdf", kind: "pdf", language: "zh-CN", status: "ready" },
+        { id: "f02", name: "00-02_递交材料索引.pdf", kind: "pdf", language: "zh-CN", status: "ready" },
+        { id: "f03", name: "00-03_打印合订版_Print-Bundle.pdf", kind: "pdf", language: "zh-CN", status: "ready" } ] },
+      { id: "s1", name: "01_Official_Documents · 官方文件", count: 4, children: [
+        { id: "f11", name: "01-01_Solicitud_de_visado_Schengen.pdf", kind: "pdf", language: "es", status: "official" },
+        { id: "f12", name: "01-02_BLS_Chengdu_Checklist.pdf", kind: "pdf", language: "en", status: "official" },
+        { id: "f13", name: "01-03_Cuestionario_de_confirmacion.pdf", kind: "pdf", language: "es", status: "official" },
+        { id: "f14", name: "01-04_逐字段填写指引.pdf", kind: "pdf", language: "zh-CN", status: "ready" } ] },
+      { id: "s2", name: "02_Editable_Templates · 可编辑模板", count: 4, children: [
+        { id: "f21", name: "02-01_Employment_Letter.docx", kind: "doc", language: "en", status: "ready" },
+        { id: "f22", name: "02-02_Leave_Approval.docx", kind: "doc", language: "en", status: "ready" },
+        { id: "f23", name: "02-03_Itinerario_diario.docx", kind: "doc", language: "es", status: "review" },
+        { id: "f24", name: "02-04_Cover_Letter.docx", kind: "doc", language: "en", status: "ready" } ] },
+      { id: "s3", name: "03_本人材料待添加 · Your Documents To Add", count: 6, children: [
+        { id: "f31", name: "护照与照片/", kind: "folder", language: "zh-CN", status: "ready" },
+        { id: "f32", name: "户口簿/", kind: "folder", language: "zh-CN", status: "ready" },
+        { id: "f33", name: "在职与公司材料/", kind: "folder", language: "zh-CN", status: "ready" },
+        { id: "f34", name: "银行流水/", kind: "folder", language: "zh-CN", status: "waiting" },
+        { id: "f35", name: "保险/", kind: "folder", language: "zh-CN", status: "waiting" },
+        { id: "f36", name: "交通与住宿预订单/", kind: "folder", language: "en", status: "ready" } ] },
+      { id: "s4", name: "04_Sources_and_Warnings · 来源与警示", children: [
+        { id: "f41", name: "04-01_引用来源清单.pdf", kind: "pdf", language: { code: "zh-CN", name: "中文 · English" }, status: "ready" },
+        { id: "f42", name: "04-02_当前注意事项.pdf", kind: "pdf", language: "zh-CN", status: "ready" } ] },
+    ],
+    files: {
+      f01: { name: "00-01_总检查清单_Read-First.pdf", pages: 2, updated: "刚刚生成",
+        purpose: "按递交顺序列出全部 18 份材料，标明哪些要原件、哪些要复印件、哪些需要签字。这份是给你看的，不递交。",
+        instructions: ["先打印这一份，按上面的顺序准备其他材料。", "面签当天把它放在最上面，逐项对一遍。"],
+        print: "A4 单面打印，黑白即可" },
+      f11: { name: "01-01_Solicitud_de_visado_Schengen.pdf", pages: 4, updated: "已按你的信息填好",
+        purpose: "西班牙使馆发布的申根签证申请表原件，我们按你填写的信息生成了填好的版本。表格本身是西班牙语，这是使馆要求的语言，不能换成中文或英文。",
+        instructions: ["彩色或黑白打印均可，双面打印会被退回，请单面打印。", "第 4 页底部需要本人手写签名，签名要和护照上一致。"],
+        print: "A4 单面打印，共 4 页" },
+      f23: { name: "02-03_Itinerario_diario.docx", pages: 3, updated: "2 小时前更新",
+        purpose: "逐日行程单，西班牙语。按你填的 2026-09-14 入境、九天行程生成，含城市、住宿地址与交通方式。签证官用它判断行程是否真实、是否与预订单一致。",
+        instructions: ["用 Word 或 WPS 打开，核对城市和酒店名称是否与预订单一致。", "不需要签字，打印即可。"],
+        print: "A4 单面打印，共 3 页" },
+      f34: { name: "银行流水/", pages: 0, updated: "还缺第 3 页",
+        purpose: "这一类是你要自己准备的原件。需要近三个月、页码连续、有银行盖章的流水。我们不能替你生成，只能告诉你要求。",
+        instructions: ["回到「上传材料」补第 3 页，或直接带纸质盖章件去递交。"],
+        print: "银行打印并盖章的原件" },
+      f41: { name: "04-01_引用来源清单.pdf", pages: 2, updated: "核对于 2026-08-01",
+        purpose: "这份材料包里每一条要求的出处，含链接和抓取日期。如果使馆的要求在你递交前发生变化，以官方页面为准。",
+        instructions: ["递交前扫一眼「当前注意事项」，确认没有新变化。"],
+        print: "不需要打印，参考用" },
+    },
+    checks: [
+      { id: "d1", field: "在职起始日期", severity: "pass",
+        readings: [{ source: "在职证明", value: "2021-05-01" }, { source: "社保记录", value: "2021-05-01" }],
+        action: "复核时已按社保记录统一，两处现在一致。" },
+      { id: "d2", field: "住宿地址", severity: "check",
+        readings: [{ source: "行程单（第 4 天）", value: "Carrer de Mallorca 401, Barcelona" }, { source: "酒店预订单", value: "Carrer de Mallorca 410, Barcelona" }],
+        action: "门牌号差一位，可能是预订单笔误。递交前和酒店确认一下，以预订单为准改行程单。" },
+      { id: "d3", field: "护照有效期", severity: "pass",
+        readings: [{ source: "护照资料页", value: "2031-04-18" }, { source: "计划返程", value: "2026-09-28" }] },
+    ],
+    sources: [
+      { title: "西班牙驻华大使馆 · 短期签证材料要求", publisher: "Consulado General de España", url: "exteriores.gob.es", quote: "银行对账单需覆盖最近三个月，页码连续并加盖银行印章。" },
+      { title: "BLS International 成都中心 · 递交须知", publisher: "BLS Spain Visa China", url: "blsspainvisa.cn" },
+      { title: "申根签证通用要求（Visa Code）", publisher: "European Commission", url: "ec.europa.eu" },
+    ],
+    caveats: [
+      "最终是否受理与批准由使领馆决定。本服务不代办签证，也不承诺结果。",
+      "要求快照核对于 2026-08-01。距今超过 30 天时，递交前请再看一眼官方页面。",
+    ],
+  },
+};
+
+const EN = {
+  nav: [{ label: "Supported routes" }, { label: "How it works" }, { label: "Pricing" }, { label: "Help" }],
+  trust: [
+    { label: "Checked against official sources", icon: "book-open-text" },
+    { label: "Documents generated for you", icon: "files" },
+    { label: "Cross-checked for consistency", icon: "git-compare-arrows" },
+    { label: "Human-reviewed before delivery", icon: "user-check" },
+  ],
+  packLangNote: "Switches the interface language only. The language of your document pack is set by the destination country's requirements — this route delivers Spanish and English files.",
+  footerCols: [
+    { title: "Product", links: ["Supported routes", "How it works", "Sample pack", "Pricing"] },
+    { title: "Trust", links: ["Privacy and security", "AI and human review", "Service boundaries", "Refunds"] },
+    { title: "Support", links: ["Help centre", "Frequently asked questions", "Contact us"] },
+  ],
+  footerNote: "We are not a visa agency and we have no influence on the consulate's decision. What we do is prepare your documents and check them against each other.",
+  route: {
+    title: "First, check whether we can handle this route",
+    lede: "We only take routes we have already completed and can back with an official source. An unsupported combination never creates an application, and you are never charged for one.",
+    cityL: "Which city do you currently live in?",
+    cityH: "The consular district follows your usual residence. Chengdu is served by the Chengdu district.",
+    cities: [{ value: "chengdu", label: "Chengdu" }, { value: "chongqing", label: "Chongqing" }, { value: "beijing", label: "Beijing" }],
+    destL: "Which country are you travelling to?",
+    dests: [{ value: "es", label: "Spain" }, { value: "fr", label: "France" }, { value: "us", label: "United States" }],
+    typeL: "Type of visa",
+    typeH: "V1 handles individual tourism only. Family visits, business and conference travel are later routes.",
+    types: [{ value: "tourism", label: "Individual tourism" }, { value: "family", label: "Visiting family or friends" }, { value: "business", label: "Business" }],
+    workL: "What is your current employment status?",
+    workH: "V1 serves employed applicants only — we have not validated the template set for students or retirees yet.",
+    works: [{ value: "employed", label: "Employed" }, { value: "student", label: "Studying" }, { value: "retired", label: "Retired" }],
+    okBadge: "Validated route",
+    okTitle: "Chengdu consular district → Spain, Schengen individual tourist visa",
+    okBody: "We have completed this route before. The requirements snapshot was checked on 2026-08-01. One pack costs ¥299 and covers the official-source check, document generation, the consistency check and human review.",
+    packLang: "Pack language: Spanish and English. That is set by Spain's requirements and has nothing to do with the language you read the site in.",
+    cta: "Create the application",
+    other: "I am going somewhere else",
+  },
+  waitlist: {
+    title: "We cannot handle this route yet",
+    body: "Chengdu → United States B1/B2 is outside what we support. Right now we only do Chengdu consular district → Spain, Schengen individual tourism, and the next expansion is a neighbouring Schengen destination and a neighbouring consular district. Leave a number and we will tell you when this one works.",
+    formTitle: "Join the waiting list",
+    formHint: "We record your city and your destination, nothing else. This does not create an application and there is nothing to pay.",
+    cityL: "City you live in",
+    destL: "Where you want to go",
+    destV: "United States B1/B2",
+    phoneL: "Mobile number",
+    phoneH: "Used for this one message only, then deleted.",
+    cta: "Join the waiting list",
+    back: "Check a different route",
+    note: "The waiting list is a lightweight record, not an application. You can go back to the route check and try another combination whenever you like.",
+  },
+  create: {
+    title: "Create the application",
+    lede: "Creating it gives you an application number. The draft is stored on our servers, so you can pick it up on another device.",
+    sumHeader: "Application summary",
+    rows: [
+      { k: "Route", v: "Chengdu district → Spain, Schengen individual tourism" },
+      { k: "Planned travel", v: "2026-09-14" },
+      { k: "What you get", v: "Official-source check, generated documents, consistency check, human review" },
+      { k: "Price", v: "¥299 one-off — resubmitting after a rejection is not charged again" },
+      { k: "Pack language", v: "Spanish · English" },
+    ],
+    whoQ: "Who is this application for?",
+    whoH: "When you apply for someone else, the applicant and the account holder are two separate people in our records. The documents always carry the applicant.",
+    whoOpts: [
+      { value: "self", title: "Myself", hint: "The account holder is the applicant." },
+      { value: "other", title: "Someone else, and I am handling it", hint: "V1 supports exactly one operator and one applicant. We need the applicant's consent before anything is uploaded." },
+    ],
+    otherTitle: "The applicant is not the account holder",
+    otherBody: "What you fill in below is the actual applicant's information. Every generated file uses the applicant's name, employer and address — never yours.",
+    aName: "Applicant's name, exactly as on the passport",
+    aNameH: "Pinyin in capitals, for example CHEN LIWEI.",
+    aRel: "Your relationship to the applicant",
+    aPhone: "Applicant's mobile number",
+    aPhoneH: "Used to send the applicant their own consent confirmation.",
+    barNote: "You can delete the application at any time; deleting it removes every uploaded document.",
+    cta: "Create the draft application",
+  },
+  consent: {
+    q: "Before anything is uploaded, the applicant has to agree to it",
+    hint: "You are about to upload another person's passport, bank statements and employment documents. Under the Personal Information Protection Law, handling that material needs their separate, explicit consent. The record of that consent is stored with the application and can be withdrawn at any point.",
+    foot: "If consent is withdrawn we stop processing and delete everything already uploaded.",
+    opts: [
+      { value: "c1", title: "The applicant agrees that I may upload and handle their personal information", hint: "This covers the passport, household registration, bank statements and employment and income documents." },
+      { value: "c2", title: "The applicant agrees to receive text messages about this application", hint: "Status changes and requests for more documents go to both of you." },
+      { value: "c3", title: "I have told the applicant what this service does and that no approval is promised" },
+    ],
+    calloutT: "We will confirm this with the applicant directly",
+    calloutB: "Once the application is created we text the applicant's number. You can start uploading after they confirm.",
+    barNote: "All three need to be ticked before you can continue.",
+    cta: "Record consent and start",
+  },
+  hub: {
+    title: "Fill in your information",
+    lede: "Eight sections, and you can go in and out of any of them. Every answer is saved as you give it, so closing the page loses nothing.",
+    section: "Passport",
+    sections: [
+      { name: "About you", state: "done" }, { name: "Passport", state: "current" },
+      { name: "Where you live", state: "todo" }, { name: "Work and income", state: "todo" },
+      { name: "Travel plans", state: "todo" }, { name: "Companions and funding", state: "todo" },
+      { name: "Visa history", state: "todo" }, { name: "Check and submit", state: "todo" },
+    ],
+    taskSections: [
+      { id: "you", title: "About the applicant", description: "These sections set the identity on the form, and every generated document follows them.", items: [
+        { id: "t1", key: "hub", title: "About the applicant", hint: "Name, date of birth, marital status", state: "done" },
+        { id: "t2", key: "passport", title: "Passport", hint: "Two things need fixing", state: "problem" },
+        { id: "t3", key: "hub", title: "Where you live and your consular district", hint: "Chengdu · district set from your usual residence", state: "done" },
+      ] },
+      { id: "trip", title: "Work and travel", items: [
+        { id: "t4", key: "hub", title: "Work, income and savings", hint: "Four questions left", state: "progress" },
+        { id: "t5", key: "dates", title: "Travel plans", hint: "Departure date, itinerary, accommodation", state: "progress" },
+        { id: "t6", key: "hub", title: "Companions and who is paying", hint: "Two questions if you travel alone", state: "todo" },
+      ] },
+      { id: "submit", title: "History and submission", items: [
+        { id: "t7", key: "history", title: "Visa history and past travel", hint: "Your Schengen record over the last five years", state: "todo" },
+        { id: "t8", key: "upload", title: "Check and upload documents", state: "locked", after: "Visa history and past travel" },
+      ] },
+    ],
+  },
+  passport: {
+    section: "Passport",
+    errTitle: "Two things need fixing before you can continue",
+    errors: [
+      { field: "passportNo", message: "A passport number has 9 characters. Check yours and enter it again." },
+      { field: "passportExpiry", message: "Your passport has to stay valid for 3 months after you return. Check the expiry date." },
+    ],
+    q: "What is your passport number?",
+    hint: "It is the string of letters and digits at the top right of the data page. This number goes onto the application form and into every generated file, so an error here means the whole pack has to be produced again.",
+    noL: "Passport number",
+    noH: "For example E12345678 — nine characters.",
+    noErr: "A passport number has 9 characters. Check yours and enter it again.",
+    expL: "Passport valid until",
+    expH: "Look for “Date of expiry” on the data page.",
+    expErr: "Your passport has to stay valid for 3 months after you return. With a return date of 2026-09-14, it cannot expire before 2026-12-14.",
+  },
+  dates: {
+    section: "Travel plans",
+    q: "When do you plan to travel?",
+    hint: "Give the date you plan to enter the Schengen area. You can change it later — we use it to work out the period your documents have to cover: which months of bank statements, the insurance dates, and how recent the employment letter has to be.",
+    dHint: "For example 2026 / 09 / 01",
+    note: "This answer only affects your document list. It is not sent to the consulate.",
+  },
+  history: {
+    section: "Visa history",
+    q: "Have you been to a Schengen country in the last 5 years?",
+    hint: "The application form asks this. If you have, the consulate will look at your previous record. If you cannot remember, choose “I'm not sure” — we will remind you to check your old passport rather than guessing on your behalf.",
+    opts: [
+      { value: "yes", title: "Yes, I have", hint: "We will ask when, and which country, next." },
+      { value: "no", title: "No, I have not", hint: "This is your first Schengen application." },
+      { value: "unsure", title: "I'm not sure", hint: "You cannot remember, or your old passport is not to hand. This is a fine answer for now." },
+    ],
+    unsureT: "What happens when you choose “I'm not sure”",
+    unsureB: "That field is generated as “to be confirmed by the applicant” — we will not write an answer we do not have. The checklist in 00_Start_Here gains one more line: check your old passport before you submit and fill this in.",
+  },
+  handoff: {
+    title: "Carry on from another device",
+    lede: "The draft lives on our servers, not on this device. Move to a computer, or use your phone as the camera for your documents — either way you resume at the step you left.",
+    linkH: "Send the link to yourself",
+    linkBody: "The link is valid for 30 minutes and works once. After it is used you need to log in again to make another.",
+    email: "Email it to me",
+    sms: "Text it to my phone",
+    note: "Switching devices loses nothing. An upload in progress keeps its progress, and unsubmitted answers stay where they are.",
+  },
+  upload: {
+    title: "Upload your documents",
+    lede: "Every item says why it is needed. At this stage we only check the format, the size, the page count and how clear the photograph is — the contents are read later, during generation and human review.",
+    listTitle: "Document checklist · two required items still missing",
+    captureH: "Bank statement · photograph page by page",
+    guide: "Get the whole page in frame, including the bank's stamp. Avoid glare, and keep all four corners visible.",
+    pageLabel: "Page {n}",
+    camera: "Camera",
+    album: "Photos",
+    files: "Files",
+    dropH: "Drag and drop",
+    dropHint: "JPG, PNG, HEIC and PDF. Multi-page scans can be dropped straight in as a single PDF.",
+    scanner: "If you have a scanner, a scan is usually clearer than a photograph. Multi-page PDFs are a first-class source here — there is no need to split them into images.",
+    privacyT: "Where these files are kept",
+    privacyB: "Encrypted, and visible only to the generation pipeline and the person reviewing your application. They are purged 30 days after delivery, and you can ask for them to be deleted sooner at any point.",
+    phoneCam: "Use your phone as the camera for these",
+    barNote: "The passport data page and the bank statement are incomplete. Both are needed before you can submit.",
+    cta: "Continue to the pre-submission check",
+    items: [
+      { id: "passport", title: "Passport data page", rationale: "The number, the name and the expiry date on the form are all checked against this page, and every generated document follows it.", state: "done", detail: "Format and clarity check passed · machine-readable zone legible", files: ["passport-01.jpg"] },
+      { id: "bank", title: "Bank statements for the last three months", rationale: "The consulate uses these to judge whether you can cover the cost of the trip. The page numbers have to run without gaps and the bank's stamp has to be on them.", state: "redo", detail: "Five pages received; page 3 (June 2026) is missing. A three-month statement is rarely five pages — exporting a fresh complete PDF is usually easier than photographing the gap.", files: ["bank-01.jpg", "bank-02.jpg", "bank-04.jpg", "bank-05.jpg", "bank-06.jpg"] },
+      { id: "employment", title: "Employment letter and approved leave", rationale: "It shows that you have steady work and a reason to come home. We have already generated the template — upload the version your company has signed and stamped.", state: "checking", detail: "Running the server-side clarity re-check" },
+      { id: "hukou", title: "Household registration booklet", rationale: "Used to confirm your registered address and family relationships. The Chengdu consular district asks for it.", state: "todo" },
+      { id: "insurance", title: "Schengen medical insurance certificate", rationale: "At least €30,000 of cover, spanning every day of the trip. You can buy it after approval — a quotation is enough for now.", state: "optional", detail: "Can follow later" },
+      { id: "booking", title: "Flight and accommodation bookings", rationale: "The itinerary has to match the dates you gave us. A cancellable booking is fine; we do not suggest buying tickets in advance.", state: "todo" },
+    ],
+    files1: [
+      { name: "bank-statement-2026-05.pdf", size: "3.2 MB", progress: 100 },
+      { name: "bank-statement-2026-06.pdf", size: "3.4 MB", progress: 100 },
+      { name: "employment-letter-scan.pdf", size: "1.1 MB", progress: 64 },
+    ],
+  },
+  recover: {
+    title: "The upload was interrupted. Your progress is still here.",
+    calloutT: "The connection dropped at 62%, and the chunks already sent are safe",
+    calloutB: "Files go up in chunks and the server remembers which chunk you reached. Choose “Resume upload” and it carries on from there rather than starting again — the same is true if you switch to a chat and come back.",
+    hint: "JPG, PNG, HEIC and PDF.",
+    files: [
+      { name: "bank-statement-2026-07.pdf", size: "4.8 MB", progress: 62, state: "failed" },
+      { name: "passport-data-page.jpg", size: "1.9 MB", progress: 100 },
+    ],
+    note: "An item counts as uploaded only once the server confirms it. Until then the checklist will not say it has been received.",
+  },
+  precheck: {
+    title: "Check before you submit",
+    lede: "This is the last step before payment. We compared what you filled in against what you uploaded, and two things do not line up.",
+    calloutT: "One item needs confirming, one is worth checking",
+    calloutB: "You can submit without changing them, but anything that disagrees goes into the pack as it stands and will most likely be sent back at human review.",
+    summary: "42 items checked: 40 consistent, 1 needs confirming, 1 worth checking.",
+    noAi: "This step is a deterministic rule check that runs in your browser and on our servers. No AI is involved and nothing reads the contents of your documents. Generation starts after payment.",
+    barNote: "You can come back and change these later — the draft stays.",
+    cta: "Everything is correct, go to payment",
+    items: [
+      { id: "p1", field: "Date of travel", severity: "conflict",
+        readings: [{ source: "Travel plans (your answer)", value: "2026-09-14" }, { source: "Hotel booking", value: "2026-09-21" }],
+        action: "The two dates are a week apart. Which one is right? The itinerary, the insurance dates and the months of bank statements all follow it." },
+      { id: "p2", field: "Employment start date", severity: "check",
+        readings: [{ source: "Work details (your answer)", value: "2021-03-01" }, { source: "Draft employment letter", value: "2021-05-01" }],
+        action: "We suggest using the date on your social-insurance record. Ask your employer to confirm it before you submit." },
+      { id: "p3", field: "Passport validity", severity: "pass",
+        readings: [{ source: "Passport data page", value: "2031-04-18" }, { source: "Planned return", value: "2026-09-28" }] },
+    ],
+  },
+  checkout: {
+    title: "Confirm and pay",
+    sumH: "Order summary",
+    rows: [
+      { k: "Route", v: "Chengdu district → Spain, Schengen individual tourism" },
+      { k: "Applicant", v: "CHEN LIWEI · 陈立伟" },
+      { k: "Planned travel", v: "2026-09-14" },
+      { k: "What you get", v: "Official-source check, generated documents, consistency check, human review, online pack" },
+      { k: "Expected delivery", v: "About 10 minutes to generate; human review takes hours, not minutes" },
+    ],
+    price: "One-off",
+    priceValue: "¥299",
+    langT: "Pack language: Spanish and English",
+    langB: "That is set by Spain's requirements and has nothing to do with the language you are reading this in. Every file in the pack is labelled with its own language.",
+    scopeT: "What we do, and what we do not do",
+    scopeB: "We prepare your documents and check them against each other. We are not a visa agency, we have no influence on the consulate's decision, and we promise no outcome. If something is missing we tell you exactly what, and resubmitting after you fix it is not charged again.",
+    payT: "Payment: Alipay, completed in your system browser",
+    payB: "V1 supports Alipay only. Opened inside WeChat, this page will not attempt a redirect — it hands you a link that carries your login over to the system browser.",
+    agree: [
+      { value: "a1", title: "I have read and accept what this service does and does not cover", hint: "Including the part where no visa outcome is promised." },
+      { value: "a2", title: "I agree that my uploaded personal information is handled as described in the privacy policy", hint: "Purged 30 days after delivery, and deletable on request at any time." },
+    ],
+    barNote: "A successful payment is recorded as one pack credit, and the application is queued straight away.",
+    cta: "Pay ¥299 with Alipay",
+    wechat: "I am inside WeChat right now",
+  },
+  pending: {
+    title: "Confirming your payment",
+    body: "Alipay has your payment request. We are waiting for the platform's callback to confirm it — usually a few seconds, occasionally a minute or two.",
+    whyT: "Why this is not instant",
+    whyB: "Payment state is decided by the platform's callback, not by your return trip to this page. Even if the redirect failed, or you closed the page, or you reopened it inside WeChat, a refresh will show the correct state.",
+    close: "You can close this page. We will text you once it is confirmed.",
+    refresh: "Refresh payment status",
+    help: "Something went wrong with payment",
+  },
+  progress: {
+    badge: "Generating documents · 4 minutes in",
+    title: "We are putting your pack together",
+    lede: "Generation takes about 10 minutes, then it goes to human review, which usually takes hours. You can close this page whenever you like.",
+    smsT: "We text you when something changes",
+    smsB: "Whether review passes or we need more from you, a message goes to 138 0000 0000. The link in it lands on the current state directly, with no second login.",
+    notes: {
+      sources: "Reading what the Spanish consulate and the BLS Chengdu centre currently publish, and recording each source with the date it was captured.",
+      generate: "Producing the field-by-field form guidance, the day-by-day itinerary, the cover letter, and the employment and leave templates.",
+      consistency: "Comparing the generated files against your answers and your uploads, and recording every conflict.",
+      review: "A person reads every document before anything is delivered. No pack skips this step and goes out automatically.",
+    },
+  },
+  rejected: {
+    badge: "Human review did not pass",
+    title: "Three things need fixing, then we can generate the pack again",
+    lede: "A reviewer read the whole pack and listed exactly what is wrong. This is not a refusal of service — your pack credit is intact and resubmitting costs nothing.",
+    calloutT: "Reviewer's notes · 2026-08-09 16:40",
+    calloutB: "The missing statement page and the date on the employment letter would both get your application handed back at the counter, so this version was not delivered. Everything else is already generated and will be carried over when you resubmit.",
+    lWhat: "What is missing",
+    lWhy: "Why it matters",
+    lHow: "How to fix it",
+    reasons: [
+      { title: "Bank statement is missing page 3", code: "missing_document.bank_statement_pages",
+        what: "Five pages arrived; page 3, covering June 2026, is not among them.",
+        why: "The consulate requires three months of statements with unbroken page numbering. A gap reads as something deliberately removed and is normally handed straight back.",
+        how: "Export a fresh complete PDF from your banking app, or photograph the missing page." },
+      { title: "Employment letter is dated too long ago", code: "stale_document.employment_letter",
+        what: "The company stamped it on 2026-05-20, more than three months before your appointment on 2026-09-01.",
+        why: "The Chengdu visa centre requires the employment letter to be issued within 30 days of submission.",
+        how: "Ask your company to issue the same template again with a recent date, and upload it." },
+      { title: "Travel dates do not match the hotel booking", code: "inconsistent_field.travel_dates",
+        what: "You gave 2026-09-14 as your entry date; the hotel booking says 2026-09-21.",
+        why: "The itinerary, the insurance period and the funds coverage are all calculated from the entry date. A mismatch invites questions about whether the trip is real.",
+        how: "Change the date under Travel plans to the real one, or supply a booking that matches it." },
+    ],
+    money: "Your pack credit is kept and resubmitting is not charged. This attempt counts towards the limit — one used, three in total.",
+    barNote: "All three need to be resolved before you can resubmit.",
+    cta: "Go and fix these",
+  },
+  resubmit: {
+    title: "Add what is missing and resubmit",
+    lede: "Only these three things need attention. Every other answer and every document you already uploaded stays exactly as it is.",
+    listTitle: "What we still need",
+    captureH: "Bank statement page 3 · photograph",
+    guide: "Whole page in frame, with the page number and the bank's stamp visible.",
+    dropH: "Upload the replacements",
+    timeT: "Resubmitting means generating the whole pack again",
+    timeB: "This is not a re-check. The system runs the full generation again with the new material, which takes about 10 minutes, and then goes back through machine QA and human review.",
+    barNote: "One item left: the new employment letter has not been uploaded yet.",
+    cta: "Resubmit — about 10 minutes",
+    items: [
+      { id: "r1", title: "Bank statement, page 3", rationale: "The consulate requires unbroken page numbering across three months; a gap is normally handed straight back.", state: "done", detail: "Format and clarity check passed", files: ["bank-03.jpg"] },
+      { id: "r2", title: "Reissued employment letter", rationale: "It has to be dated within 30 days of the day you submit.", state: "todo", detail: "Waiting on you" },
+    ],
+    checks: [
+      { id: "r3", field: "Date of travel", severity: "conflict",
+        readings: [{ source: "Travel plans (your answer)", value: "2026-09-14" }, { source: "Hotel booking", value: "2026-09-21" }],
+        action: "This one is an answer to change, not a document to upload. Go to Travel plans and correct the date." },
+    ],
+    files: [
+      { name: "bank-statement-page-03.pdf", size: "0.9 MB", progress: 100 },
+    ],
+  },
+  delivery: {
+    badge: "Human review complete · 2026-08-09",
+    title: "Spain, Schengen tourist visa · your pack is ready",
+    lede: "Eighteen documents. Start with the read-first checklist in 00_Start_Here and work down it: print, sign, submit. One item is still worth checking.",
+    trust: [
+      { label: "Official sources checked 2026-08-01", icon: "book-open-text" },
+      { label: "42 consistency checks", icon: "git-compare-arrows" },
+      { label: "Human review · Li", icon: "user-check" },
+    ],
+    langT: "Each file is in its own language, whatever language you read the site in",
+    langB: "Spain requires the application form and the confirmation questionnaire in Spanish; the BLS Chengdu checklist is in English; the guidance written for you is in Chinese. File names are identical in both interface languages — these are the names the consulate will see.",
+    treeH: "Document pack · 18 files",
+    checkH: "Consistency check",
+    checkSummary: "42 items checked: 40 consistent, 1 worth checking, 1 corrected against the social-insurance record.",
+    tree: [
+      { id: "s0", name: "00_Start_Here · 从这里开始", children: [
+        { id: "f01", name: "00-01_总检查清单_Read-First.pdf", kind: "pdf", language: "zh-CN", status: "ready" },
+        { id: "f02", name: "00-02_递交材料索引.pdf", kind: "pdf", language: "zh-CN", status: "ready" },
+        { id: "f03", name: "00-03_打印合订版_Print-Bundle.pdf", kind: "pdf", language: "zh-CN", status: "ready" } ] },
+      { id: "s1", name: "01_Official_Documents · 官方文件", count: 4, children: [
+        { id: "f11", name: "01-01_Solicitud_de_visado_Schengen.pdf", kind: "pdf", language: "es", status: "official" },
+        { id: "f12", name: "01-02_BLS_Chengdu_Checklist.pdf", kind: "pdf", language: "en", status: "official" },
+        { id: "f13", name: "01-03_Cuestionario_de_confirmacion.pdf", kind: "pdf", language: "es", status: "official" },
+        { id: "f14", name: "01-04_逐字段填写指引.pdf", kind: "pdf", language: "zh-CN", status: "ready" } ] },
+      { id: "s2", name: "02_Editable_Templates · 可编辑模板", count: 4, children: [
+        { id: "f21", name: "02-01_Employment_Letter.docx", kind: "doc", language: "en", status: "ready" },
+        { id: "f22", name: "02-02_Leave_Approval.docx", kind: "doc", language: "en", status: "ready" },
+        { id: "f23", name: "02-03_Itinerario_diario.docx", kind: "doc", language: "es", status: "review" },
+        { id: "f24", name: "02-04_Cover_Letter.docx", kind: "doc", language: "en", status: "ready" } ] },
+      { id: "s3", name: "03_本人材料待添加 · Your Documents To Add", count: 6, children: [
+        { id: "f31", name: "护照与照片/", kind: "folder", language: "zh-CN", status: "ready" },
+        { id: "f32", name: "户口簿/", kind: "folder", language: "zh-CN", status: "ready" },
+        { id: "f33", name: "在职与公司材料/", kind: "folder", language: "zh-CN", status: "ready" },
+        { id: "f34", name: "银行流水/", kind: "folder", language: "zh-CN", status: "waiting" },
+        { id: "f35", name: "保险/", kind: "folder", language: "zh-CN", status: "waiting" },
+        { id: "f36", name: "交通与住宿预订单/", kind: "folder", language: "en", status: "ready" } ] },
+      { id: "s4", name: "04_Sources_and_Warnings · 来源与警示", children: [
+        { id: "f41", name: "04-01_引用来源清单.pdf", kind: "pdf", language: { code: "zh-CN", name: "中文 · English" }, status: "ready" },
+        { id: "f42", name: "04-02_当前注意事项.pdf", kind: "pdf", language: "zh-CN", status: "ready" } ] },
+    ],
+    files: {
+      f01: { name: "00-01_总检查清单_Read-First.pdf", pages: 2, updated: "generated just now",
+        purpose: "Lists all 18 documents in submission order and marks which have to be originals, which are copies, and which need a signature. This one is for you — it is not submitted.",
+        instructions: ["Print this first and prepare everything else in the order it gives.", "Keep it on top on the day and work down it item by item."],
+        print: "Print A4, single-sided; black and white is fine" },
+      f11: { name: "01-01_Solicitud_de_visado_Schengen.pdf", pages: 4, updated: "filled in from your answers",
+        purpose: "The Schengen application form as published by the Spanish consulate, filled in with the information you gave us. The form itself is in Spanish because that is the language the consulate requires; it cannot be swapped for Chinese or English.",
+        instructions: ["Colour or black and white are both fine, but print single-sided — double-sided copies are refused.", "Sign the bottom of page 4 by hand. The signature has to match your passport."],
+        print: "Print A4 single-sided, 4 pages" },
+      f23: { name: "02-03_Itinerario_diario.docx", pages: 3, updated: "updated 2 hours ago",
+        purpose: "The day-by-day itinerary, in Spanish. Built from your 2026-09-14 entry date and nine-day trip, with cities, accommodation addresses and how you travel between them. The visa officer uses it to judge whether the trip is real and matches your bookings.",
+        instructions: ["Open it in Word or WPS and check the city and hotel names against your bookings.", "No signature needed — just print it."],
+        print: "Print A4 single-sided, 3 pages" },
+      f34: { name: "银行流水/", pages: 0, updated: "page 3 still missing",
+        purpose: "This folder is for originals you collect yourself: three months of statements, unbroken page numbers, stamped by the bank. We cannot generate these — we can only tell you what is required.",
+        instructions: ["Go back to Uploads and add page 3, or bring the stamped paper originals to your appointment."],
+        print: "Bank-printed and stamped originals" },
+      f41: { name: "04-01_引用来源清单.pdf", pages: 2, updated: "checked 2026-08-01",
+        purpose: "Where every requirement in this pack came from, with links and capture dates. If the consulate changes something before you submit, the official page wins.",
+        instructions: ["Glance at “current warnings” before you go, to be sure nothing has changed."],
+        print: "No need to print — reference only" },
+    },
+    checks: [
+      { id: "d1", field: "Employment start date", severity: "pass",
+        readings: [{ source: "Employment letter", value: "2021-05-01" }, { source: "Social insurance record", value: "2021-05-01" }],
+        action: "Reconciled during review against the social-insurance record. The two now agree." },
+      { id: "d2", field: "Accommodation address", severity: "check",
+        readings: [{ source: "Itinerary, day 4", value: "Carrer de Mallorca 401, Barcelona" }, { source: "Hotel booking", value: "Carrer de Mallorca 410, Barcelona" }],
+        action: "The street numbers differ by one digit, most likely a typo in the booking. Confirm with the hotel and change the itinerary to match the booking." },
+      { id: "d3", field: "Passport validity", severity: "pass",
+        readings: [{ source: "Passport data page", value: "2031-04-18" }, { source: "Planned return", value: "2026-09-28" }] },
+    ],
+    sources: [
+      { title: "Embassy of Spain in China · short-stay document requirements", publisher: "Consulado General de España", url: "exteriores.gob.es", quote: "Bank statements must cover the last three months, with unbroken page numbers and the bank's stamp." },
+      { title: "BLS International Chengdu · submission guidance", publisher: "BLS Spain Visa China", url: "blsspainvisa.cn" },
+      { title: "General Schengen requirements (Visa Code)", publisher: "European Commission", url: "ec.europa.eu" },
+    ],
+    caveats: [
+      "The consulate decides whether to accept and approve your application. We are not an agency and promise no outcome.",
+      "The requirements snapshot was checked on 2026-08-01. If that is more than 30 days before you submit, look at the official page once more first.",
+    ],
+  },
+};
+
+const RAIL = [
+  { zh: "路线", en: "Route", items: [
+    { id: "route", zh: "路线查询", en: "Route check", route: "/zh/start" },
+    { id: "waitlist", zh: "暂不支持 · 等待名单", en: "Unsupported · waiting list", route: "/zh/start?result=unsupported" },
+    { id: "create", zh: "创建申请", en: "Create application", route: "/zh/applications/new" },
+    { id: "consent", zh: "代他人 · 授权同意", en: "On behalf · consent", route: "/zh/applications/new/consent" },
+  ] },
+  { zh: "填写资料", en: "Intake", items: [
+    { id: "hub", zh: "任务清单", en: "Task list", route: "/zh/applications/a-7f21/intake" },
+    { id: "passport", zh: "护照 · 校验错误", en: "Passport · validation error", route: "…/intake/passport" },
+    { id: "dates", zh: "出行日期", en: "Departure date", route: "…/intake/travel-dates" },
+    { id: "history", zh: "签证历史 · 我不确定", en: "Visa history · not sure", route: "…/intake/schengen-history" },
+    { id: "handoff", zh: "换设备继续", en: "Continue elsewhere", route: "…/intake/handoff" },
+  ] },
+  { zh: "上传材料", en: "Documents", items: [
+    { id: "upload", zh: "材料清单", en: "Upload checklist", route: "…/documents" },
+    { id: "recover", zh: "断点续传 · 恢复", en: "Resumable upload · recovery", route: "…/documents?upload=interrupted" },
+    { id: "precheck", zh: "提交前检查", en: "Pre-submission check", route: "…/review" },
+  ] },
+  { zh: "支付", en: "Payment", items: [
+    { id: "checkout", zh: "确认与支付", en: "Confirm and pay", route: "…/checkout" },
+    { id: "escape", zh: "微信内 · 逃生舱", en: "In WeChat · escape hatch", route: "…/checkout?container=wechat" },
+    { id: "pending", zh: "支付确认中", en: "Confirming payment", route: "…/checkout/return" },
+  ] },
+  { zh: "处理与复核", en: "Processing", items: [
+    { id: "progress", zh: "生成进度", en: "Generation progress", route: "/zh/applications/a-7f21" },
+    { id: "rejected", zh: "已驳回 · 结构化原因", en: "Rejected · structured reason", route: "/zh/applications/a-7f21" },
+    { id: "resubmit", zh: "补材料与重新提交", en: "More documents · resubmit", route: "…/resubmit" },
+  ] },
+  { zh: "交付", en: "Delivery", items: [
+    { id: "delivery", zh: "材料包", en: "Document pack", route: "…/delivery" },
+    { id: "deliveryWechat", zh: "材料包 · 微信内", en: "Document pack · in WeChat", route: "…/delivery?container=wechat" },
+  ] },
+];
+
+/* Prototype-only copy, registered as catalogue keys so every user-facing string in this
+   file is read through t() like the design system's own microcopy. */
+const PROTO_STRINGS = {
+  "zh-CN": {
+    "proto.continue": "继续",
+    "proto.skip": "跳过这一题",
+    "proto.autosaved": "已自动保存，可随时关闭页面",
+    "proto.handoffBtn": "在其他设备继续",
+    "proto.saveExit": "保存并退出",
+    "proto.printBundle": "打开打印合订 PDF",
+    "proto.wechatChrome": "微信内置浏览器",
+    "proto.icp": "蜀ICP备00000000号",
+  },
+  en: {
+    "proto.continue": "Continue",
+    "proto.skip": "Skip this question",
+    "proto.autosaved": "Saved automatically — you can close this page at any time",
+    "proto.handoffBtn": "Continue on another device",
+    "proto.saveExit": "Save and exit",
+    "proto.printBundle": "Open the print bundle PDF",
+    "proto.wechatChrome": "WeChat's built-in browser",
+    "proto.icp": "蜀ICP备00000000号",
+  },
+};
+
+/* Placeholder QR. In the product the server mints this image because it encodes a
+   one-time token; DeviceHandoff only renders what it is handed. */
+const QR_SRC = (() => {
+  const N = 25, S = 4;
+  let seed = 20260809, r = () => ((seed = (seed * 1103515245 + 12345) & 0x7fffffff) / 0x7fffffff);
+  let d = "";
+  const finder = (x, y) => { d += `M${x * S} ${y * S}h${7 * S}v${7 * S}h${-7 * S}z M${(x + 1) * S} ${(y + 1) * S}v${5 * S}h${5 * S}v${-5 * S}z M${(x + 2) * S} ${(y + 2) * S}h${3 * S}v${3 * S}h${-3 * S}z`; };
+  for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) {
+    const inFinder = (x < 8 && y < 8) || (x > N - 9 && y < 8) || (x < 8 && y > N - 9);
+    if (!inFinder && r() > 0.52) d += `M${x * S} ${y * S}h${S}v${S}h${-S}z`;
+  }
+  finder(0, 0); finder(N - 7, 0); finder(0, N - 7);
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${N * S}" height="${N * S}" viewBox="0 0 ${N * S} ${N * S}"><rect width="100%" height="100%" fill="#fff"/><path fill="#0b2545" fill-rule="evenodd" d="${d}"/></svg>`;
+  return "data:image/svg+xml;utf8," + encodeURIComponent(svg);
+})();
+
+const SESSION = {
+  savedAt: "2026-08-09 14:32",
+  email: "chen@example.com",
+  payUrl: "https://visamaster.cn/p/a-7f21/pay?t=9f3c1a",
+  packUrl: "https://visamaster.cn/p/a-7f21/pack?t=4b8e02",
+  handoffUrl: "https://visamaster.cn/d/a-7f21?t=71c4de",
+  handoffCode: "H4K 92T",
+};
+
+const NO_HEADER = [];
+const FOOTER_ON = ["route", "waitlist"];
+
+class Component extends DCLogic {
+  state = {
+    lang: "zh-CN", screen: "route", vw: 1280, scale: 1, ready: false, menu: false,
+    behalf: "self", consent: ["c1"], hist: "unsure",
+    agree: ["a1"], sel: "f11",
+    pages: [{ id: "p1" }, { id: "p2" }, { id: "p3" }],
+    expiry: { year: "2026", month: "11", day: "02" },
+    depart: { year: "2026", month: "09", day: "14" },
+  };
+
+  componentDidMount() {
+    this._t = setInterval(() => {
+      if (window.VisaMasterDesignSystem_744fbe) {
+        clearInterval(this._t);
+        this.registerStrings();
+        this.applyLocale(this.state.lang);
+        this.setState({ ready: true });
+      }
+    }, 40);
+    this._onResize = () => this.measure();
+    window.addEventListener("resize", this._onResize);
+  }
+  componentWillUnmount() { clearInterval(this._t); window.removeEventListener("resize", this._onResize); }
+  componentDidUpdate() { this.measure(); }
+
+  ds() { return window.VisaMasterDesignSystem_744fbe || {}; }
+  applyLocale(l) { const { Locale } = this.ds(); if (Locale) Locale.set(l); }
+
+  /* Register the prototype's keys in the design system catalogue, once the bundle is up. */
+  registerStrings() {
+    const { CATALOGUE } = this.ds();
+    if (!CATALOGUE) return;
+    /* Checked against the table itself, not a latch: the bundle can re-execute and hand
+       back a fresh CATALOGUE, and the keys have to be put back when it does. */
+    Object.keys(PROTO_STRINGS).forEach((l) => {
+      const table = CATALOGUE[l];
+      if (table && table["proto.icp"] === undefined) Object.assign(table, PROTO_STRINGS[l]);
+    });
+  }
+
+  /* The design system's own t(), used unchanged. Before the bundle has loaded there is
+     nothing to look up yet, so the first paint reads PROTO_STRINGS directly. */
+  t(key, vars) {
+    const ds = this.ds();
+    if (ds.t) return ds.t(key, vars);
+    const loc = ds.Locale ? ds.Locale.get() : this.state.lang;
+    const raw = (PROTO_STRINGS[loc] || {})[key];
+    if (raw === undefined) return "";
+    return raw.replace(/\{(\w+)\}/g, (m, n) => (vars && vars[n] !== undefined ? String(vars[n]) : m));
+  }
+
+  measure() {
+    const el = this._canvas;
+    if (!el) return;
+    const fw = this.state.vw;
+    const fh = this.frameH();
+    const k = Math.min(1, (el.clientWidth - 40) / fw, (el.clientHeight - 40) / fh);
+    if (k > 0 && Math.abs(k - this.state.scale) > 0.004) this.setState({ scale: k });
+  }
+  frameH() { return this.state.vw === 375 ? 812 : 840; }
+
+  go(id) { return () => this.setState({ screen: id, menu: false }); }
+
+  renderVals() {
+    this.registerStrings();
+    const ds = this.ds();
+    const { LanguageSwitcher, Button } = ds;
+    const lang = this.state.lang;
+    const en = lang === "en";
+    const s = en ? EN : ZH;
+    const m = this.state.vw === 375;
+    const screen = this.state.screen;
+
+    const go = {};
+    RAIL.forEach((g) => g.items.forEach((it) => { go[it.id] = this.go(it.id); }));
+
+    const is = {};
+    RAIL.forEach((g) => g.items.forEach((it) => { is[it.id] = screen === it.id; }));
+
+    const rail = RAIL.map((g) => ({
+      title: en ? g.en : g.zh,
+      items: g.items.map((it, i) => ({
+        n: String(i + 1).padStart(2, "0"),
+        label: en ? it.en : it.zh,
+        go: go[it.id],
+        bg: screen === it.id ? "rgba(255,255,255,.14)" : "transparent",
+        fg: screen === it.id ? "#fff" : "rgba(255,255,255,.72)",
+      })),
+    }));
+
+    let flat = [];
+    RAIL.forEach((g) => g.items.forEach((it) => flat.push(it)));
+    const cur = flat.find((it) => it.id === screen) || flat[0];
+
+    const t = (k, v) => this.t(k, v);
+    const hub = Object.assign({}, s.hub, { sectionsList: s.hub.taskSections });
+
+    const el = (C, p, kids) => (C ? React.createElement(C, p, kids) : null);
+    const dfiles = s.delivery.files;
+
+    return {
+      s: Object.assign({}, s, {
+        hub,
+        savedAt: SESSION.savedAt,
+        back: t("nav.back"),
+        continue: t("proto.continue"),
+        skip: t("proto.skip"),
+        autosaved: t("proto.autosaved"),
+        handoffBtn: t("proto.handoffBtn"),
+        icp: t("proto.icp"),
+        wechat: { chrome: t("proto.wechatChrome") },
+      }),
+      selectTask: (item) => this.setState({ screen: go[item.key] ? item.key : "hub", menu: false }),
+      showCheckout: screen === "checkout" || screen === "escape",
+      payUrl: SESSION.payUrl,
+      packUrl: SESSION.packUrl,
+      handoffUrl: SESSION.handoffUrl,
+      handoffCode: SESSION.handoffCode,
+      qrSrc: QR_SRC,
+      escapeOpen: is.deliveryWechat && !this.state.escapeDismissed,
+      dismissEscape: () => this.setState({ escapeDismissed: true }),
+      pipeCurrent: 1,
+      pipeEta: 6,
+      twoCols2: m ? "1fr" : "1fr 1fr",
+      desktop: !m,
+      uploadCols: m ? "1fr" : "1fr minmax(300px,400px)",
+      deliveryCols: m ? "1fr" : "minmax(320px,430px) 1fr",
+      reasonCols: m ? "1fr" : "110px 1fr",
+      pages: this.state.pages,
+      addPage: () => this.setState({ pages: this.state.pages.concat([{ id: "p" + (this.state.pages.length + 1) }]) }),
+      removePage: (id) => this.setState({ pages: this.state.pages.filter((p) => p.id !== id) }),
+      movePage: (i, d) => {
+        const p = this.state.pages.slice();
+        const j = i + d;
+        if (j < 0 || j >= p.length) return;
+        const t = p[i]; p[i] = p[j]; p[j] = t;
+        this.setState({ pages: p });
+      },
+      agreeVal: this.state.agree,
+      setAgree: (v) => this.setState({ agree: v }),
+      sel: this.state.sel,
+      select: (n) => { if (dfiles[n.id]) this.setState({ sel: n.id }); },
+      file: dfiles[this.state.sel] || dfiles.f11,
+      wechatOpen: ["s0"],
+      priceRow: el("div", { style: { display: "flex", alignItems: "baseline", gap: "10px" } }, [
+        el("span", { key: "k", style: { fontSize: "14px", color: "var(--text-muted)" } }, s.checkout.price),
+        el("span", { key: "v", style: { marginInlineStart: "auto", fontFamily: "var(--font-num)", fontSize: "24px", fontWeight: 600, color: "var(--text-heading)" } }, s.checkout.priceValue),
+      ]),
+      wechatBtn: m ? null : el(Button, { variant: "ghost", onClick: go.escape }, s.checkout.wechat),
+      printBundle: el(Button, { variant: "secondary", block: true, icon: "printer" }, t("proto.printBundle")),
+      m, is, go, rail,
+      screenTitle: en ? cur.en : cur.zh,
+      screenRoute: cur.route,
+      menuOpen: m && this.state.menu,
+      toggleMenu: () => this.setState({ menu: !this.state.menu }),
+      canvasRef: (n) => { this._canvas = n; this.measure(); },
+      frameW: this.state.vw,
+      frameH: this.frameH(),
+      frameRadius: m ? "26px" : "10px",
+      scale: this.state.scale,
+      boxW: Math.round(this.state.vw * this.state.scale),
+      boxH: Math.round(this.frameH() * this.state.scale),
+      gutter: m ? 16 : 32,
+      padTop: m ? 24 : 40,
+      h1: m ? 24 : 30,
+      dlCols: m ? "1fr" : "180px 1fr",
+      twoCols: m ? "1fr" : "260px 1fr",
+      narrowBg: m ? "var(--blue-600)" : "transparent",
+      narrowFg: m ? "#fff" : "var(--text-muted)",
+      wideBg: m ? "transparent" : "var(--blue-600)",
+      wideFg: m ? "var(--text-muted)" : "#fff",
+      setNarrow: () => this.setState({ vw: 375 }),
+      setWide: () => this.setState({ vw: 1280, menu: false }),
+      showHeader: NO_HEADER.indexOf(screen) === -1,
+      showFooter: FOOTER_ON.indexOf(screen) !== -1,
+      behalf: this.state.behalf,
+      isBehalf: this.state.behalf === "other",
+      setBehalf: (v) => this.setState({ behalf: v }),
+      createNext: () => this.setState({ screen: this.state.behalf === "other" ? "consent" : "hub", menu: false }),
+      consentVal: this.state.consent,
+      setConsent: (v) => this.setState({ consent: v }),
+      hist: this.state.hist,
+      histUnsure: this.state.hist === "unsure",
+      setHist: (v) => this.setState({ hist: v }),
+      expiry: this.state.expiry,
+      setExpiry: (v) => this.setState({ expiry: v }),
+      depart: this.state.depart,
+      setDepart: (v) => this.setState({ depart: v }),
+      jump: () => {},
+      langSwitcher: el(LanguageSwitcher, {
+        value: lang, placement: "header",
+        onChange: (l) => { this.applyLocale(l); this.setState({ lang: l }); },
+      }),
+      headerLang: m ? null : el(LanguageSwitcher, {
+        value: lang, placement: "header",
+        onChange: (l) => { this.applyLocale(l); this.setState({ lang: l }); },
+      }),
+      navLang: el(LanguageSwitcher, {
+        value: lang, placement: "nav",
+        onChange: (l) => { this.applyLocale(l); this.setState({ lang: l }); },
+      }),
+      footerLang: el(LanguageSwitcher, {
+        value: lang, placement: "footer", tone: "inverse",
+        onChange: (l) => { this.applyLocale(l); this.setState({ lang: l }); },
+      }),
+      headerAction: el(Button, { size: "sm", variant: "ghost", icon: "save" }, t("proto.saveExit")),
+      skipBtn: el(Button, { variant: "ghost" }, s.skip),
+      handoffBtn: m ? null : el(Button, { variant: "ghost", icon: "scan-line", onClick: go.handoff }, s.handoffBtn),
+    };
+  }
+}
+
+</script>
+</body>
+</html>
