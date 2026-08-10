@@ -1,0 +1,28 @@
+{
+  "meta": {
+    "title": "签证大师",
+    "description": "把签证材料准备得更清楚、更一致。"
+  },
+  "errors": {
+    "notFound": {
+      "title": "找不到这个页面",
+      "body": "这个地址不存在，或者已经移动。"
+    },
+    "unexpected": {
+      "title": "出了点问题",
+      "body": "刚才的操作没有完成。请刷新页面再试一次。"
+    }
+  },
+  "validation": {
+    "required": "请填写这一项。",
+    "invalid": "请检查这一项，然后重新填写。",
+    "email": {
+      "invalid": "请输入有效的邮箱地址。"
+    },
+    "otp": {
+      "invalidFormat": "验证码是 6 位数字，请检查后重新输入。"
+    },
+    "tooShort": "至少需要 {min} 个字符。",
+    "tooLong": "最多 {max} 个字符。"
+  }
+}

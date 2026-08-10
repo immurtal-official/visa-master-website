@@ -1,0 +1,28 @@
+{
+  "meta": {
+    "title": "Visa Master",
+    "description": "Prepare clearer, more consistent visa documents."
+  },
+  "errors": {
+    "notFound": {
+      "title": "This page cannot be found",
+      "body": "This address does not exist, or it has moved."
+    },
+    "unexpected": {
+      "title": "Something went wrong",
+      "body": "That did not complete. Refresh the page and try again."
+    }
+  },
+  "validation": {
+    "required": "Fill in this field.",
+    "invalid": "Check this entry and enter it again.",
+    "email": {
+      "invalid": "Enter a valid email address."
+    },
+    "otp": {
+      "invalidFormat": "Your code is 6 digits. Check it and enter it again."
+    },
+    "tooShort": "{min, plural, one {Enter at least # character.} other {Enter at least # characters.}}",
+    "tooLong": "{max, plural, one {Enter no more than # character.} other {Enter no more than # characters.}}"
+  }
+}
