@@ -1,0 +1,62 @@
+@import "tailwindcss";
+
+/* The design system's token layer, copied verbatim from the design skill apart
+   from the font URLs. These custom properties are the source of truth for every
+   colour, size, radius and duration in the app; Tailwind utilities below only
+   name them. Order matters — base.css wires the body typography and must land
+   after the tokens it reads. */
+@import "../styles/tokens/fonts.css";
+@import "../styles/tokens/colors.css";
+@import "../styles/tokens/typography.css";
+@import "../styles/tokens/spacing.css";
+@import "../styles/tokens/radius.css";
+@import "../styles/tokens/elevation.css";
+@import "../styles/tokens/motion.css";
+@import "../styles/tokens/layout.css";
+@import "../styles/tokens/base.css";
+
+/* Expose the tokens utilities need. Every value dereferences a token: a raw hex
+   or px here would be a second source of truth for something the design system
+   already decides. */
+@theme inline {
+  --color-surface-page: var(--surface-page);
+  --color-surface-card: var(--surface-card);
+  --color-surface-sunken: var(--surface-sunken);
+  --color-surface-inverse: var(--surface-inverse);
+  --color-surface-accent-soft: var(--surface-accent-soft);
+
+  --color-text-heading: var(--text-heading);
+  --color-text-body: var(--text-body);
+  --color-text-muted: var(--text-muted);
+  --color-text-faint: var(--text-faint);
+  --color-text-inverse: var(--text-inverse);
+  --color-text-link: var(--text-link);
+  --color-text-on-accent: var(--text-on-accent);
+
+  --color-border-subtle: var(--border-subtle);
+  --color-border-default: var(--border-default);
+  --color-border-strong: var(--border-strong);
+
+  --color-action-primary: var(--action-primary);
+
+  --radius-control: var(--radius-control);
+  --radius-card: var(--radius-card);
+  --radius-sheet: var(--radius-sheet);
+
+  --font-sans: var(--font-sans);
+}
+
+/* Page shell. Chinese and English differ in optical density, so the measure is
+   set in em and never in a fixed pixel width. */
+.vm-container {
+  inline-size: 100%;
+  max-inline-size: var(--container-narrow);
+  margin-inline: auto;
+  padding-inline: var(--gutter-mobile);
+}
+
+@media (min-width: 768px) {
+  .vm-container {
+    padding-inline: var(--gutter-desktop);
+  }
+}

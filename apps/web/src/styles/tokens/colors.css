@@ -1,0 +1,58 @@
+:root{
+/* ---- base ramps ---- */
+--blue-50:#eef5fc;--blue-100:#d8e8f7;--blue-200:#b4d1ee;--blue-300:#7fb0df;--blue-400:#4a8ccb;--blue-500:#1f6fb2;--blue-600:#175a94;--blue-700:#124876;--blue-800:#0e385c;--blue-900:#0b2545;
+--teal-50:#e9f6f5;--teal-100:#cdeae7;--teal-200:#a3dbd5;--teal-300:#79c9c1;--teal-400:#3fb0a5;--teal-500:#1d9a8e;--teal-600:#157c73;--teal-700:#10625b;
+--ink-900:#111a24;--ink-800:#1e2831;--ink-700:#33404d;--ink-600:#4b5a68;--ink-500:#68788a;--ink-400:#8c99a8;--ink-300:#c3cdd9;--ink-200:#dde4ec;--ink-100:#edf1f6;--ink-50:#f6f8fb;--white:#ffffff;
+--green-50:#e8f5ed;--green-100:#c9e8d5;--green-500:#1b8a4b;--green-600:#15703c;
+--amber-50:#fdf4e3;--amber-100:#f8e5bd;--amber-500:#b87a00;--amber-600:#96630a;
+--red-50:#fbeeed;--red-100:#f4d6d3;--red-500:#b3453e;--red-600:#933831;
+
+/* ---- semantic: surface ---- */
+--surface-page:var(--ink-50);
+--surface-card:var(--white);
+--surface-sunken:var(--ink-100);
+--surface-inverse:var(--blue-900);
+--surface-accent-soft:var(--blue-50);
+--surface-teal-soft:var(--teal-50);
+--surface-hover:var(--ink-50);
+--surface-selected:var(--blue-50);
+--surface-disabled:var(--ink-100);
+
+/* ---- semantic: text ---- */
+--text-heading:var(--ink-900);
+--text-body:var(--ink-800);
+--text-muted:var(--ink-600);
+--text-faint:var(--ink-500);
+--text-inverse:var(--white);
+--text-link:var(--blue-600);
+--text-link-hover:var(--blue-800);
+--text-on-accent:var(--white);
+
+/* ---- semantic: border ---- */
+--border-subtle:var(--ink-200);
+--border-default:var(--ink-300);
+--border-strong:var(--ink-400);
+--border-accent:var(--blue-500);
+--border-input:var(--ink-400);
+
+/* ---- semantic: action ---- */
+--action-primary:var(--blue-600);
+--action-primary-hover:var(--blue-700);
+--action-primary-active:var(--blue-800);
+--action-secondary-fg:var(--blue-700);
+--action-secondary-border:var(--blue-200);
+--action-secondary-hover:var(--blue-50);
+--action-ghost-hover:var(--ink-100);
+
+/* ---- semantic: status. Red is DE-ESCALATED: a missing document is not a catastrophe. ---- */
+--status-success-fg:var(--green-600);--status-success-bg:var(--green-50);--status-success-border:var(--green-100);
+--status-warning-fg:var(--amber-600);--status-warning-bg:var(--amber-50);--status-warning-border:var(--amber-100);
+--status-error-fg:var(--red-600);--status-error-bg:var(--red-50);--status-error-border:var(--red-100);
+--status-info-fg:var(--blue-700);--status-info-bg:var(--blue-50);--status-info-border:var(--blue-100);
+--status-neutral-fg:var(--ink-600);--status-neutral-bg:var(--ink-100);--status-neutral-border:var(--ink-200);
+
+/* ---- focus: GOV.UK-style high-contrast focus, kept in brand navy/amber ---- */
+--focus-ring:var(--blue-600);
+--focus-ring-offset:var(--white);
+--focus-underlay:var(--ink-900);
+}
