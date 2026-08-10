@@ -40,6 +40,7 @@ Figma file — you don't import a Figma file.
 |---|---|
 | `product/` | Product design material — personas, user journey, information architecture, MVP scope, content strategy (zh-CN) |
 | `guidelines/` | Written design and interaction guidance — layout rules, copy tone, component behaviour, states |
+| `system/` | The exported design system — tokens, components, UI kits, and its `SKILL.md`. This is the durable artifact; the prototypes are snapshots against it |
 | `prototypes/` | Generated prototype code and self-contained HTML/React pages |
 | `assets/` | Screenshots, exported images, and anything visual worth keeping |
 
