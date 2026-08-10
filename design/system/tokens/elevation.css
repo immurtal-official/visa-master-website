@@ -1,0 +1,12 @@
+:root{
+/* Shadows are cool-tinted (navy alpha), never neutral black. Elevation is used sparingly:
+   most surfaces separate with a 1px border on --surface-page, not a shadow. */
+--shadow-0:none;
+--shadow-1:0 1px 2px rgba(11,37,69,.06);
+--shadow-2:0 1px 3px rgba(11,37,69,.08),0 4px 12px rgba(11,37,69,.05);
+--shadow-3:0 2px 6px rgba(11,37,69,.08),0 12px 28px rgba(11,37,69,.09);
+--shadow-sheet:0 -8px 32px rgba(11,37,69,.16);
+--shadow-bar:0 -1px 0 var(--border-subtle);
+--shadow-focus:0 0 0 3px var(--white),0 0 0 6px var(--blue-500);
+--shadow-inset-input:inset 0 1px 1px rgba(11,37,69,.04);
+}

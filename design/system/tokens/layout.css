@@ -1,0 +1,15 @@
+/* Layout rules that exist because the product ships in more than one language.
+   Chinese is the most compact language this product will ever carry: the same
+   sentence in English runs 40–60% longer, German and Russian longer still.
+   Every component must survive +100% expansion over its Chinese string. */
+:root{
+--expansion-budget:2; /* @kind other */ /* design to twice the Chinese string length */
+--nowrap-max-chars:12; /* @kind other */ /* above this, a label must be allowed to wrap */
+}
+/* Logical properties everywhere, so a right-to-left language is a stylesheet change,
+   not a component rewrite. These are defaults; components use the logical form too. */
+body,th,td,caption,legend,label,button,input,select,textarea{text-align:start}
+ul,ol{padding-inline-start:var(--space-5);margin-block:0}
+blockquote{margin-inline:0;padding-inline-start:var(--space-4);border-inline-start:2px solid var(--border-default)}
+/* Text that must never be clipped: no fixed width, no ellipsis on actions. */
+button,[role="button"],a,label,h1,h2,h3,h4,p,li{min-inline-size:0;overflow-wrap:break-word}

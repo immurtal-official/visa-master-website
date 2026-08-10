@@ -1,0 +1,34 @@
+<!-- @dsCard group="Components" viewport="900x620" name="Intake hub — task list, pipeline progress" subtitle="Resumable 25-screen intake; the four-stage pack pipeline" -->
+<!DOCTYPE html><html lang="zh-CN"><head><meta charset="utf-8"><link rel="stylesheet" href="../../styles.css">
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="../../_ds_bundle.js"></script>
+<style>body{background:var(--surface-page);padding:20px}.two{display:grid;grid-template-columns:1fr 400px;gap:24px;align-items:start}.lbl{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--text-faint);margin-bottom:10px}</style>
+</head><body><div id="root"></div>
+<script type="text/babel">
+const { TaskList, PipelineProgress } = window.VisaMasterDesignSystem_744fbe;
+const sections=[
+  {id:"you",title:"基本信息",items:[
+    {id:"id",title:"身份与证件",state:"done"},
+    {id:"family",title:"家庭与联系人",state:"done"}]},
+  {id:"trip",title:"行程与费用",description:"决定你需要哪些材料，先填这一部分。",items:[
+    {id:"dates",title:"出入境日期与路线",state:"progress",hint:"大约 4 分钟"},
+    {id:"money",title:"费用承担与银行流水",state:"todo"},
+    {id:"stay",title:"住宿安排",state:"problem",hint:"酒店订单上的日期与行程对不上"}]},
+  {id:"docs",title:"上传与付款",items:[
+    {id:"upload",title:"上传材料",state:"todo"},
+    {id:"pay",title:"付款",state:"locked",after:"上传材料"}]}];
+function Demo(){return (<div className="two">
+  <div>
+    <div className="lbl">TaskList — the page every step returns to</div>
+    <TaskList sections={sections} onSelect={()=>{}}/>
+  </div>
+  <div>
+    <div className="lbl">PipelineProgress — after submission</div>
+    <PipelineProgress current={2} etaMinutes={40}
+      notes={{sources:"已核对德国驻华使馆 3 个官方页面",consistency:"正在比对护照、在职证明和银行流水上的姓名与日期"}}/>
+  </div>
+</div>);}
+ReactDOM.createRoot(document.getElementById("root")).render(<Demo/>);
+</script></body></html>

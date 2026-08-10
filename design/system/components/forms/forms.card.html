@@ -1,0 +1,30 @@
+<!-- @dsCard group="Components" viewport="700x420" name="Forms — question, inputs, choices" subtitle="One-question-per-page pattern with inline hints and errors" -->
+<!DOCTYPE html><html lang="zh-CN"><head><meta charset="utf-8"><link rel="stylesheet" href="../../styles.css">
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="../../_ds_bundle.js"></script>
+<style>body{background:var(--surface-page);padding:20px}.grid{display:grid;grid-template-columns:1fr 1fr;gap:24px;align-items:start}</style>
+</head><body><div id="root"></div>
+<script type="text/babel">
+const { Question, RadioGroup, Input, Textarea, Select, DateInput, ErrorSummary } = window.VisaMasterDesignSystem_744fbe;
+function Demo(){
+  const [v,setV]=React.useState("tour");
+  const [d,setD]=React.useState({year:"2026",month:"09",day:""});
+  return (<div className="grid">
+    <Question as="h2" question="你这次去申根国家主要做什么？" hint="选择最接近的一项。后面会根据它决定需要哪些材料。">
+      <RadioGroup name="purpose" value={v} onChange={setV} options={[
+        {value:"tour",title:"旅游",hint:"包括探访朋友但不住在对方家里"},
+        {value:"visit",title:"探亲访友",hint:"需要对方出具邀请函"},
+        {value:"biz",title:"商务出差",hint:"需要对方公司邀请函与我方派遣函"}]}/>
+    </Question>
+    <div style={{display:"grid",gap:20}}>
+      <ErrorSummary errors={[{field:"passport-no",message:"护照号码需要 9 位，请检查后重新填写"}]}/>
+      <Input id="passport-no" label="护照号码" hint="请与护照资料页完全一致，包括字母大小写。" width="md" defaultValue="E1234567" error="护照号码需要 9 位，请检查后重新填写"/>
+      <Select label="申请国家" options={["法国","德国","意大利","西班牙"]} placeholder="请选择" width="md"/>
+      <DateInput label="计划出发日期" hint="按你打算入境的第一天填写。" value={d} onChange={setD}/>
+    </div>
+  </div>);
+}
+ReactDOM.createRoot(document.getElementById("root")).render(<Demo/>);
+</script></body></html>

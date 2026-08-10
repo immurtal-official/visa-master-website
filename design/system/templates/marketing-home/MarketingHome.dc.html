@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<!-- @template name="Marketing homepage" description="Trust-first hero: headline, two CTAs, trust row and a pack preview" -->
+<helmet><script src="./ds-base.js"></script></helmet>
+<div style="min-height:100dvh;background:#fff;font-family:var(--font-sans)">
+<x-import component-from-global-scope="VisaMasterDesignSystem_744fbe.SiteHeader" nav="{{ nav }}" language="{{ langSwitch }}" action="{{ headerCta }}" hint-size="100%,64px"></x-import>
+<section style="padding:88px var(--gutter-desktop)">
+<div style="max-inline-size:var(--container-max);margin-inline:auto;display:grid;grid-template-columns:1.05fr .95fr;gap:64px;align-items:center">
+<div>
+<x-import component-from-global-scope="VisaMasterDesignSystem_744fbe.Badge" tone="info" icon="shield-check" hint-size="200px,28px">
+<sc-if value="{{ isZh }}" hint-placeholder-val="{{ true }}">申根 · 英国 · 日本 · 美国 B1/B2</sc-if>
+<sc-if value="{{ isEn }}" hint-placeholder-val="{{ false }}">Schengen · UK · Japan · US B1/B2</sc-if>
+</x-import>
+<sc-if value="{{ isZh }}" hint-placeholder-val="{{ true }}">
+<h1 style="margin-block:20px 0;font-size:var(--type-display-size);line-height:var(--type-display-lh);font-weight:var(--fw-semibold);color:var(--text-heading)">更清楚地准备你的签证材料包</h1>
+<p style="margin-block-start:16px;font-size:18px;line-height:var(--type-body-lh);color:var(--text-muted);max-inline-size:32em">回答一组结构化问题，上传证件与银行流水。我们对照官方要求生成材料，交叉校验日期、城市与在职信息，人工复核后交给你一份可以直接打印递交的材料包。</p>
+<div style="display:flex;flex-wrap:wrap;gap:12px;margin-block-start:28px">
+<x-import component-from-global-scope="VisaMasterDesignSystem_744fbe.Button" variant="primary" size="lg" hint-size="180px,52px">开始准备材料</x-import>
+<x-import component-from-global-scope="VisaMasterDesignSystem_744fbe.Button" variant="secondary" size="lg" iconAfter="arrow-right" hint-size="180px,52px">查看支持路线</x-import>
+</div>
+</sc-if>
+<sc-if value="{{ isEn }}" hint-placeholder-val="{{ false }}">
+<h1 style="margin-block:20px 0;font-size:var(--type-display-size);line-height:var(--type-display-lh);font-weight:var(--fw-semibold);color:var(--text-heading)">Prepare your visa document pack with less guesswork</h1>
+<p style="margin-block-start:16px;font-size:18px;line-height:var(--type-body-lh);color:var(--text-muted);max-inline-size:32em">Answer a structured set of questions and upload your passport and bank statement. We build the documents against the official requirements, cross-check dates, cities and employment details, and hand you a human-reviewed pack you can print and submit as it is.</p>
+<div style="display:flex;flex-wrap:wrap;gap:12px;margin-block-start:28px">
+<x-import component-from-global-scope="VisaMasterDesignSystem_744fbe.Button" variant="primary" size="lg" hint-size="180px,52px">Start preparing my documents</x-import>
+<x-import component-from-global-scope="VisaMasterDesignSystem_744fbe.Button" variant="secondary" size="lg" iconAfter="arrow-right" hint-size="180px,52px">See supported routes</x-import>
+</div>
+</sc-if>
+<div style="margin-block-start:28px"><x-import component-from-global-scope="VisaMasterDesignSystem_744fbe.TrustRow" items="{{ trust }}" hint-size="100%,28px"></x-import></div>
+</div>
+<x-import component-from-global-scope="VisaMasterDesignSystem_744fbe.Card" elevation="{{ two }}" padding="0" header="{{ packHeader }}" hint-size="100%,340px">
+<div style="padding:12px 8px">
+<x-import component-from-global-scope="VisaMasterDesignSystem_744fbe.PackFileTree" tree="{{ pack }}" selectedId="f4" languageNote="{{ off }}" hint-size="100%,300px"></x-import>
+</div>
+<div style="padding:12px 16px;border-block-start:1px solid var(--border-subtle);background:var(--ink-50);font-size:12px;color:var(--text-faint)">
+<sc-if value="{{ isZh }}" hint-placeholder-val="{{ true }}">示例：法国短期旅游签证 · 共 14 份文件</sc-if>
+<sc-if value="{{ isEn }}" hint-placeholder-val="{{ false }}">Example: French short-stay tourist visa · 14 documents</sc-if>
+</div>
+</x-import>
+</div>
+</section>
+<x-import component-from-global-scope="VisaMasterDesignSystem_744fbe.SiteFooter" columns="{{ footerCols }}" language="{{ footerLang }}" note="{{ footerNote }}" record="沪ICP备00000000号-1" hint-size="100%,280px"></x-import>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+const COPY = {
+  "zh-CN": {
+    nav: [{ label: "支持路线" }, { label: "材料包内容" }, { label: "价格" }, { label: "常见问题" }],
+    cta: "开始准备材料",
+    packHeader: "你会拿到这样一份材料包",
+    footerNote: "本服务不代办签证，也不影响使领馆的审批结果。",
+    trust: [
+      { label: "官方来源核对", icon: "book-open-text" },
+      { label: "材料自动生成", icon: "file-text" },
+      { label: "一致性校验", icon: "git-compare-arrows" },
+      { label: "人工复核后交付", icon: "user-check" }],
+    pack: [
+      { id: "s1", name: "从这里开始", children: [
+        { id: "f1", name: "打印与递交清单.pdf", kind: "pdf", language: "zh-CN", status: "ready" }] },
+      { id: "s2", name: "官方文件", count: 4, children: [
+        { id: "f2", name: "申根签证申请表（已填）.pdf", kind: "pdf", language: "fr", status: "ready" },
+        { id: "f3", name: "使馆材料清单（原件）.pdf", kind: "pdf", language: "fr", status: "official" }] },
+      { id: "s3", name: "可编辑模板", children: [
+        { id: "f4", name: "在职证明（模板）.docx", kind: "doc", language: { code: "zh-CN", name: "中文 / English" }, status: "review" }] },
+      { id: "s4", name: "本人材料", children: [
+        { id: "f6", name: "护照资料页.jpg", kind: "img", language: { code: "zh-CN", name: "中文 / English" }, status: "ready" },
+        { id: "f7", name: "银行流水.pdf", kind: "pdf", language: "zh-CN", status: "waiting" }] },
+      { id: "s5", name: "来源与提醒", children: [
+        { id: "f8", name: "本次材料的官方来源", kind: "link", language: "zh-CN", status: "ready" }] }],
+    footerCols: [
+      { title: "服务", links: ["申根签证", "英国签证", "日本签证", "美国 B1/B2"] },
+      { title: "材料包", links: ["包含哪些文件", "一致性校验", "人工复核", "退款说明"] },
+      { title: "帮助", links: ["常见问题", "联系我们", "隐私与数据"] }],
+  },
+  en: {
+    nav: [{ label: "Supported routes" }, { label: "What's in the pack" }, { label: "Pricing" }, { label: "Common questions" }],
+    cta: "Start preparing my documents",
+    packHeader: "This is the pack you receive",
+    footerNote: "We are not a visa agency, and we have no influence on the consulate's decision.",
+    trust: [
+      { label: "Checked against official sources", icon: "book-open-text" },
+      { label: "Documents generated for you", icon: "file-text" },
+      { label: "Cross-document consistency check", icon: "git-compare-arrows" },
+      { label: "Delivered after human review", icon: "user-check" }],
+    pack: [
+      { id: "s1", name: "Start here", children: [
+        { id: "f1", name: "Printing and submission checklist.pdf", kind: "pdf", language: "zh-CN", status: "ready" }] },
+      { id: "s2", name: "Official documents", count: 4, children: [
+        { id: "f2", name: "Schengen application form (completed).pdf", kind: "pdf", language: "fr", status: "ready" },
+        { id: "f3", name: "Consulate document list (original).pdf", kind: "pdf", language: "fr", status: "official" }] },
+      { id: "s3", name: "Editable templates", children: [
+        { id: "f4", name: "Employment letter (template).docx", kind: "doc", language: { code: "zh-CN", name: "中文 / English" }, status: "review" }] },
+      { id: "s4", name: "Your own documents", children: [
+        { id: "f6", name: "Passport data page.jpg", kind: "img", language: { code: "zh-CN", name: "中文 / English" }, status: "ready" },
+        { id: "f7", name: "Bank statement.pdf", kind: "pdf", language: "zh-CN", status: "waiting" }] },
+      { id: "s5", name: "Sources and caveats", children: [
+        { id: "f8", name: "Official sources for this pack", kind: "link", language: "zh-CN", status: "ready" }] }],
+    footerCols: [
+      { title: "Services", links: ["Schengen visa", "UK visa", "Japan visa", "US B1/B2"] },
+      { title: "The pack", links: ["What is included", "Consistency check", "Human review", "Refunds"] },
+      { title: "Help", links: ["Common questions", "Contact us", "Privacy and data"] }],
+  },
+};
+
+class Component extends DCLogic {
+  state = { lang: "zh-CN", ready: false };
+  componentDidMount() {
+    this._t = setInterval(() => {
+      if (window.VisaMasterDesignSystem_744fbe) { clearInterval(this._t); this.apply(this.state.lang); this.setState({ ready: true }); }
+    }, 40);
+  }
+  componentWillUnmount() { clearInterval(this._t); }
+  ds() { return window.VisaMasterDesignSystem_744fbe || {}; }
+  apply(lang) { const { Locale } = this.ds(); if (Locale) Locale.set(lang); }
+  switcher(placement) {
+    const { LanguageSwitcher } = this.ds();
+    if (!LanguageSwitcher) return null;
+    return React.createElement(LanguageSwitcher, {
+      value: this.state.lang, placement,
+      onChange: (lang) => { this.apply(lang); this.setState({ lang }); },
+    });
+  }
+  renderVals() {
+    const { Button } = this.ds();
+    const lang = this.state.lang;
+    const c = COPY[lang];
+    return {
+      two: 2,
+      off: false,
+      isZh: lang === "zh-CN",
+      isEn: lang === "en",
+      nav: c.nav,
+      trust: c.trust,
+      pack: c.pack,
+      packHeader: c.packHeader,
+      footerNote: c.footerNote,
+      footerCols: c.footerCols,
+      headerCta: Button ? React.createElement(Button, { size: "sm" }, c.cta) : null,
+      langSwitch: this.switcher("header"),
+      footerLang: this.switcher("footer"),
+    };
+  }
+}
+</script>
+</body>
+</html>

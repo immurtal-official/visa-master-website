@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<!-- @template name="Pack delivery" description="Delivered pack: file tree, per-file preview, consistency callout and sources" -->
+<helmet><script src="./ds-base.js"></script></helmet>
+<div style="min-height:100dvh;background:var(--surface-page);font-family:var(--font-sans)">
+<x-import component-from-global-scope="VisaMasterDesignSystem_744fbe.SiteHeader" nav="{{ nav }}" language="{{ langSwitch }}" action="{{ downloadAll }}" hint-size="100%,64px"></x-import>
+<div style="padding:28px var(--gutter-desktop);background:#fff;border-block-end:1px solid var(--border-subtle)">
+<div style="max-inline-size:var(--container-max);margin-inline:auto">
+<x-import component-from-global-scope="VisaMasterDesignSystem_744fbe.Badge" tone="success" icon="check" hint-size="240px,28px">已完成人工复核 · 2026-08-08</x-import>
+<sc-if value="{{ isZh }}" hint-placeholder-val="{{ true }}">
+<h1 style="margin-block:12px 0;font-size:30px;line-height:var(--type-h2-lh);font-weight:var(--fw-semibold);color:var(--text-heading)">法国短期旅游签证 · 材料包已准备好</h1>
+<p style="margin-block-start:10px;font-size:15px;line-height:var(--type-body-lh);color:var(--text-muted);max-inline-size:42em">共 14 份文件。先看「打印与递交清单」，按顺序打印即可。还有 1 项需要你确认，见一致性校验。</p>
+</sc-if>
+<sc-if value="{{ isEn }}" hint-placeholder-val="{{ false }}">
+<h1 style="margin-block:12px 0;font-size:30px;line-height:var(--type-h2-lh);font-weight:var(--fw-semibold);color:var(--text-heading)">French short-stay tourist visa · your pack is ready</h1>
+<p style="margin-block-start:10px;font-size:15px;line-height:var(--type-body-lh);color:var(--text-muted);max-inline-size:42em">14 documents. Start with the printing and submission checklist and print in that order. One item still needs confirming — see the consistency check.</p>
+</sc-if>
+<div style="margin-block-start:16px"><x-import component-from-global-scope="VisaMasterDesignSystem_744fbe.TrustRow" items="{{ trust }}" hint-size="100%,28px"></x-import></div>
+</div>
+</div>
+<main style="padding:24px var(--gutter-desktop) 64px">
+<div style="max-inline-size:var(--container-max);margin-inline:auto">
+<div style="margin-block-end:20px">
+<x-import component-from-global-scope="VisaMasterDesignSystem_744fbe.Callout" tone="warning" title="{{ warnTitle }}" hint-size="100%,90px">
+<sc-if value="{{ isZh }}" hint-placeholder-val="{{ true }}">在职证明与社保记录上的入职日期差了两个月。在一致性校验里可以看到具体位置和处理方式。</sc-if>
+<sc-if value="{{ isEn }}" hint-placeholder-val="{{ false }}">The employment letter and the social-insurance record give start dates two months apart. The consistency check shows where and what to do about it.</sc-if>
+</x-import>
+</div>
+<div style="display:grid;grid-template-columns:minmax(280px,340px) 1fr;gap:32px;align-items:start">
+<x-import component-from-global-scope="VisaMasterDesignSystem_744fbe.Card" padding="8px" header="{{ treeHeader }}" footer="{{ downloadFooter }}" hint-size="100%,420px">
+<x-import component-from-global-scope="VisaMasterDesignSystem_744fbe.PackFileTree" tree="{{ tree }}" selectedId="{{ selectedId }}" onSelect="{{ select }}" hint-size="100%,380px"></x-import>
+</x-import>
+<x-import component-from-global-scope="VisaMasterDesignSystem_744fbe.Card" hint-size="100%,560px">
+<x-import component-from-global-scope="VisaMasterDesignSystem_744fbe.FilePreview" file="{{ file }}" hint-size="100%,520px"></x-import>
+<div style="margin-block-start:24px">
+<x-import component-from-global-scope="VisaMasterDesignSystem_744fbe.ConsistencyReport" summary="{{ checkSummary }}" items="{{ checks }}" hint-size="100%,320px"></x-import>
+</div>
+<div style="margin-block-start:24px">
+<x-import component-from-global-scope="VisaMasterDesignSystem_744fbe.CitationPanel" checkedAt="2026-08-01" sources="{{ sources }}" caveats="{{ caveats }}" hint-size="100%,260px"></x-import>
+</div>
+</x-import>
+</div>
+</div>
+</main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+const COPY = {
+  "zh-CN": {
+    nav: [{ label: "我的申请" }, { label: "帮助" }],
+    downloadShort: "全部下载", downloadAll: "全部下载（ZIP）",
+    treeHeader: "材料包 · 14 份",
+    warnTitle: "有 1 项需要你确认",
+    checkSummary: "共检查 42 项，1 项需要你确认，1 项建议核对。",
+    trust: [
+      { label: "官方来源核对于 2026-08-01", icon: "book-open-text" },
+      { label: "42 项一致性校验", icon: "git-compare-arrows" },
+      { label: "人工复核 · 李工", icon: "user-check" }],
+    tree: [
+      { id: "s1", name: "从这里开始", children: [
+        { id: "f1", name: "打印与递交清单.pdf", kind: "pdf", language: "zh-CN", status: "ready" },
+        { id: "f2", name: "面签当天带什么.pdf", kind: "pdf", language: "zh-CN", status: "ready" }] },
+      { id: "s2", name: "官方文件", count: 4, children: [
+        { id: "f3", name: "申根签证申请表（已填）.pdf", kind: "pdf", language: "fr", status: "ready" },
+        { id: "f4", name: "使馆材料清单（原件）.pdf", kind: "pdf", language: "fr", status: "official" }] },
+      { id: "s3", name: "可编辑模板", children: [
+        { id: "f6", name: "在职证明（模板）.docx", kind: "doc", language: { code: "zh-CN", name: "中文 / English" }, status: "review" },
+        { id: "f7", name: "行程说明（模板）.docx", kind: "doc", language: { code: "zh-CN", name: "中文 / English" }, status: "ready" }] },
+      { id: "s4", name: "本人材料", children: [
+        { id: "f9", name: "护照资料页.jpg", kind: "img", language: { code: "zh-CN", name: "中文 / English" }, status: "ready" },
+        { id: "f10", name: "银行流水.pdf", kind: "pdf", language: "zh-CN", status: "waiting" }] },
+      { id: "s5", name: "来源与提醒", children: [
+        { id: "f12", name: "本次材料的官方来源", kind: "link", language: "zh-CN", status: "ready" }] }],
+    files: {
+      f6: { name: "在职证明（模板）.docx", badge: "人工复核中", badgeTone: "info", pages: 1, updated: "2 小时前更新",
+        purpose: "使馆用这份文件确认你有稳定的工作和回国的理由。模板已按你填写的公司名称、职位和入职日期生成，抬头和落款留给公司填。",
+        instructions: ["打印在公司抬头纸上，由 HR 或直属主管签字并加盖公章。", "落款日期需在递交前 30 天内。"] },
+      f1: { name: "打印与递交清单.pdf", badge: "先看这份", badgeTone: "success", pages: 2, updated: "刚刚生成",
+        purpose: "按递交顺序列出全部 14 份材料，标明哪些要原件、哪些要复印件、哪些需要签字。",
+        instructions: ["按清单顺序打印并排好。", "面签当天把这张清单放在最上面。"] },
+      f10: { name: "银行流水.pdf", badge: "待你补充", badgeTone: "warning", pages: 0, updated: "缺少第 3 页",
+        purpose: "使馆用它判断你能负担这次行程的费用。需要覆盖最近三个月、页码连续。",
+        instructions: ["回到「上传材料」重新上传完整版。"] },
+    },
+    checks: [
+      { id: "c1", field: "在职起始日期", severity: "conflict",
+        readings: [{ source: "在职证明", value: "2021-03-01" }, { source: "社保记录", value: "2021-05-01" }],
+        action: "两处日期不一致。请以社保记录为准，或让公司出具一份更正说明。" },
+      { id: "c2", field: "护照有效期", severity: "pass",
+        readings: [{ source: "护照资料页", value: "2031-04-18" }, { source: "计划返程", value: "2026-09-14" }] }],
+    sources: [
+      { title: "法国驻华使馆 · 短期签证材料清单", publisher: "France-Visas", url: "france-visas.gouv.fr", quote: "银行对账单需覆盖最近三个月。" },
+      { title: "申根签证通用要求", publisher: "European Commission", url: "ec.europa.eu" }],
+    caveats: ["最终是否受理与批准由使领馆决定，本服务不代办、不承诺结果。"],
+  },
+  en: {
+    nav: [{ label: "My application" }, { label: "Help" }],
+    downloadShort: "Download all", downloadAll: "Download everything (ZIP)",
+    treeHeader: "Document pack · 14 files",
+    warnTitle: "One item needs confirming",
+    checkSummary: "42 items checked. 1 needs confirming, 1 is worth checking.",
+    trust: [
+      { label: "Official sources checked 2026-08-01", icon: "book-open-text" },
+      { label: "42 consistency checks", icon: "git-compare-arrows" },
+      { label: "Human review · Li", icon: "user-check" }],
+    tree: [
+      { id: "s1", name: "Start here", children: [
+        { id: "f1", name: "Printing and submission checklist.pdf", kind: "pdf", language: "zh-CN", status: "ready" },
+        { id: "f2", name: "What to bring on the day.pdf", kind: "pdf", language: "zh-CN", status: "ready" }] },
+      { id: "s2", name: "Official documents", count: 4, children: [
+        { id: "f3", name: "Schengen application form (completed).pdf", kind: "pdf", language: "fr", status: "ready" },
+        { id: "f4", name: "Consulate document list (original).pdf", kind: "pdf", language: "fr", status: "official" }] },
+      { id: "s3", name: "Editable templates", children: [
+        { id: "f6", name: "Employment letter (template).docx", kind: "doc", language: { code: "zh-CN", name: "中文 / English" }, status: "review" },
+        { id: "f7", name: "Itinerary statement (template).docx", kind: "doc", language: { code: "zh-CN", name: "中文 / English" }, status: "ready" }] },
+      { id: "s4", name: "Your own documents", children: [
+        { id: "f9", name: "Passport data page.jpg", kind: "img", language: { code: "zh-CN", name: "中文 / English" }, status: "ready" },
+        { id: "f10", name: "Bank statement.pdf", kind: "pdf", language: "zh-CN", status: "waiting" }] },
+      { id: "s5", name: "Sources and caveats", children: [
+        { id: "f12", name: "Official sources for this pack", kind: "link", language: "zh-CN", status: "ready" }] }],
+    files: {
+      f6: { name: "Employment letter (template).docx", badge: "In human review", badgeTone: "info", pages: 1, updated: "updated 2 hours ago",
+        purpose: "The consulate uses this to confirm that you have steady work and a reason to come back. The template already carries the employer, job title and start date you gave us; the letterhead and signature are for your company to add.",
+        instructions: ["Print it on company letterhead and have HR or your line manager sign and stamp it.", "The date on it must be within 30 days of your submission."] },
+      f1: { name: "Printing and submission checklist.pdf", badge: "Read this first", badgeTone: "success", pages: 2, updated: "generated just now",
+        purpose: "Lists all 14 documents in submission order, and marks which need to be originals, which are copies, and which need a signature.",
+        instructions: ["Print and arrange the documents in the order on the checklist.", "Keep this checklist on top on the day of your appointment."] },
+      f10: { name: "Bank statement.pdf", badge: "Waiting on you", badgeTone: "warning", pages: 0, updated: "page 3 missing",
+        purpose: "The consulate uses it to judge whether you can cover the cost of the trip. It has to cover the last three months with no gaps in the page numbers.",
+        instructions: ["Go back to Uploads and upload the complete version."] },
+    },
+    checks: [
+      { id: "c1", field: "Employment start date", severity: "conflict",
+        readings: [{ source: "Employment letter", value: "2021-03-01" }, { source: "Social insurance record", value: "2021-05-01" }],
+        action: "The two dates disagree. Use the social-insurance date, or ask your employer for a short correction letter." },
+      { id: "c2", field: "Passport validity", severity: "pass",
+        readings: [{ source: "Passport data page", value: "2031-04-18" }, { source: "Planned return", value: "2026-09-14" }] }],
+    sources: [
+      { title: "French Embassy in China · short-stay document list", publisher: "France-Visas", url: "france-visas.gouv.fr", quote: "Bank statements must cover the last three months." },
+      { title: "General Schengen visa requirements", publisher: "European Commission", url: "ec.europa.eu" }],
+    caveats: ["The consulate decides whether to accept and approve your application. We are not an agency and promise no outcome."],
+  },
+};
+
+class Component extends DCLogic {
+  state = { lang: "zh-CN", sel: "f6", ready: false };
+  componentDidMount() {
+    this._t = setInterval(() => {
+      if (window.VisaMasterDesignSystem_744fbe) { clearInterval(this._t); this.apply(this.state.lang); this.setState({ ready: true }); }
+    }, 40);
+  }
+  componentWillUnmount() { clearInterval(this._t); }
+  ds() { return window.VisaMasterDesignSystem_744fbe || {}; }
+  apply(lang) { const { Locale } = this.ds(); if (Locale) Locale.set(lang); }
+  renderVals() {
+    const { LanguageSwitcher, Button } = this.ds();
+    const lang = this.state.lang;
+    const c = COPY[lang];
+    return {
+      isZh: lang === "zh-CN",
+      isEn: lang === "en",
+      nav: c.nav,
+      trust: c.trust,
+      tree: c.tree,
+      checks: c.checks,
+      sources: c.sources,
+      caveats: c.caveats,
+      checkSummary: c.checkSummary,
+      treeHeader: c.treeHeader,
+      warnTitle: c.warnTitle,
+      selectedId: this.state.sel,
+      select: (n) => this.setState({ sel: n.id }),
+      file: c.files[this.state.sel] || c.files.f6,
+      langSwitch: LanguageSwitcher ? React.createElement(LanguageSwitcher, {
+        value: lang, onChange: (l) => { this.apply(l); this.setState({ lang: l }); },
+      }) : null,
+      downloadAll: Button ? React.createElement(Button, { size: "sm", icon: "download" }, c.downloadShort) : null,
+      downloadFooter: Button ? React.createElement(Button, { variant: "secondary", block: true, icon: "download" }, c.downloadAll) : null,
+    };
+  }
+}
+</script>
+</body>
+</html>

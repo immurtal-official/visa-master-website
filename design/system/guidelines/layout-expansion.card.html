@@ -1,0 +1,16 @@
+<!-- @dsCard group="Layout" viewport="700x300" name="Text expansion" subtitle="Every component survives +100% over its Chinese string" -->
+<!DOCTYPE html><html lang="zh-CN"><head><meta charset="utf-8"><link rel="stylesheet" href="../styles.css">
+<style>body{padding:16px 18px;background:var(--surface-page)}.g{display:grid;grid-template-columns:1fr 1fr;gap:16px}.k{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--text-faint);margin-block-end:8px}.btn{display:inline-flex;align-items:center;justify-content:center;min-height:var(--control-h);padding-inline:var(--space-5);border-radius:var(--radius-control);background:var(--action-primary);color:var(--white);font-size:16px;text-align:center;white-space:normal}.ok{border:1px solid var(--border-subtle);background:var(--white);border-radius:var(--radius-card);padding:14px}.bad{border:1px solid var(--status-warning-border);background:var(--status-warning-bg);border-radius:var(--radius-card);padding:14px}.fixed{inline-size:132px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:block}.note{margin-block-start:10px;font-size:12px;color:var(--text-muted);line-height:1.7}</style>
+</head><body>
+<div class="g">
+<div class="ok"><div class="k">Wraps · no fixed width</div>
+<span class="btn">开始准备材料</span>
+<div style="margin-block-start:8px"><span class="btn" lang="en" data-lang="en" style="font-family:var(--font-latin)">Start preparing my documents</span></div>
+<p class="note">Same button, twice the string. It grows and wraps; the label stays whole.</p></div>
+<div class="bad"><div class="k">Fixed width + ellipsis · never</div>
+<span class="btn"><span class="fixed">开始准备材料</span></span>
+<div style="margin-block-start:8px"><span class="btn" lang="en" data-lang="en" style="font-family:var(--font-latin)"><span class="fixed">Start preparing my documents</span></span></div>
+<p class="note">A truncated action is an unreadable action. No <code>width</code> on anything holding text, no ellipsis on labels, and never a sentence assembled from fragments.</p></div>
+</div>
+<p class="note" style="margin-block-start:14px">Spacing and alignment use logical properties — <code>padding-inline</code>, <code>margin-inline-start</code>, <code>border-inline-start</code>, <code>text-align:start</code> — so a right-to-left language is a stylesheet change, not a component rewrite.</p>
+</body></html>
