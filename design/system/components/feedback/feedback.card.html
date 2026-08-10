@@ -1,0 +1,21 @@
+<!-- @dsCard group="Components" viewport="700x340" name="Feedback — sheet, save & resume" subtitle="Bottom sheet on mobile, dialog on desktop; autosave notice" -->
+<!DOCTYPE html><html lang="zh-CN"><head><meta charset="utf-8"><link rel="stylesheet" href="../../styles.css">
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="../../_ds_bundle.js"></script>
+<style>body{background:var(--surface-page);padding:20px}.two{display:grid;grid-template-columns:300px 1fr;gap:20px;align-items:start}.stage{position:relative;height:280px;border:1px solid var(--border-subtle);border-radius:var(--radius-card);background:var(--white);overflow:hidden}</style>
+</head><body><div id="root"></div>
+<script type="text/babel">
+const { Sheet, SaveResumeNotice, Button } = window.VisaMasterDesignSystem_744fbe;
+function Demo(){return (<div className="two">
+  <div className="stage"><Sheet open mode="sheet" title="换一个申请国家？" description="已填写的答案会保留，只会重新计算需要哪些材料。"
+    actions={<><Button variant="primary" block>确认更换</Button><Button variant="ghost" block>先不换</Button></>}/></div>
+  <div style={{display:"grid",gap:16}}>
+    <div className="stage" style={{height:200}}><Sheet open mode="dialog" title="删除这份上传？" description="删除后需要重新拍一次，其他答案不受影响。"
+      actions={<><Button variant="ghost">取消</Button><Button variant="primary">删除</Button></>}/></div>
+    <SaveResumeNotice savedAt="刚刚" email="ling@example.com" onSend={()=>{}}/>
+  </div>
+</div>);}
+ReactDOM.createRoot(document.getElementById("root")).render(<Demo/>);
+</script></body></html>

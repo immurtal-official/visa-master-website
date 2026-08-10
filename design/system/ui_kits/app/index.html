@@ -1,0 +1,50 @@
+<!-- @dsCard group="Intake & pack app" viewport="1280x900" name="Intake, uploads, pack delivery" subtitle="One question per page, upload checklist, delivered pack — 中文 / English" -->
+<!DOCTYPE html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>签证大师 · 填写与交付</title>
+<link rel="stylesheet" href="../../styles.css">
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="../../_ds_bundle.js"></script>
+<style>body{margin:0;background:var(--surface-page)}@keyframes vm-spin{to{transform:rotate(360deg)}}@keyframes vm-rise{from{transform:translateY(16px)}}@keyframes vm-fade{from{opacity:0}}
+.bar{position:fixed;right:16px;bottom:16px;z-index:99;display:flex;gap:2px;padding:4px;background:var(--white);border:1px solid var(--border-subtle);border-radius:var(--radius-pill);box-shadow:var(--shadow-2)}
+.bar button{min-height:34px;padding:0 12px;border:0;border-radius:var(--radius-pill);background:transparent;color:var(--text-muted);font-size:13px;cursor:pointer}
+.bar button[data-on]{background:var(--action-primary);color:#fff}
+.bar .sep{width:1px;background:var(--border-subtle);margin:4px 4px}
+.phone{width:375px;margin:20px auto;border:1px solid var(--border-default);border-radius:var(--radius-2xl);overflow:hidden;background:var(--white);box-shadow:var(--shadow-3)}</style>
+</head><body><div id="root"></div>
+<script type="text/babel" src="copy.jsx"></script>
+<script type="text/babel" src="AppHeader.jsx"></script>
+<script type="text/babel" src="IntakeStep.jsx"></script>
+<script type="text/babel" src="UploadStep.jsx"></script>
+<script type="text/babel" src="PackDelivery.jsx"></script>
+<script type="text/babel" data-presets="react">
+function App(){
+  const [m,setM]=React.useState(false);
+  const [lang,setLang]=React.useState(new URLSearchParams(location.search).get("lang")==="en"?"en":"zh-CN");
+  const [screen,setScreen]=React.useState("intake");
+  const [q,setQ]=React.useState(0);
+  const shared={mobile:m,lang:lang,onLang:setLang};
+  let view;
+  if(screen==="intake") view=<IntakeStep {...shared} index={q}
+    onNext={()=>{ if(q<2){setQ(q+1)} else {setScreen("upload")} }}
+    onPrev={()=>{ if(q>0)setQ(q-1) }} onExit={()=>setScreen("pack")}/>;
+  else if(screen==="upload") view=<UploadStep {...shared} onNext={()=>setScreen("pack")} onPrev={()=>{setScreen("intake");setQ(2)}}/>;
+  else view=<PackDelivery {...shared}/>;
+  const L=APP_TEXT[lang];
+  return (<div>
+    {m?<div className="phone">{view}</div>:view}
+    <div className="bar">
+      <button data-on={screen==="intake"?"":undefined} onClick={()=>{setScreen("intake");setQ(0)}}>{lang==="en"?"Intake":"填写"}</button>
+      <button data-on={screen==="upload"?"":undefined} onClick={()=>setScreen("upload")}>{lang==="en"?"Uploads":"上传"}</button>
+      <button data-on={screen==="pack"?"":undefined} onClick={()=>setScreen("pack")}>{lang==="en"?"Pack":"材料包"}</button>
+      <span className="sep"></span>
+      <button data-on={!m?"":undefined} onClick={()=>setM(false)}>1280</button>
+      <button data-on={m?"":undefined} onClick={()=>setM(true)}>375</button>
+      <span className="sep"></span>
+      <button data-on={lang==="zh-CN"?"":undefined} onClick={()=>setLang("zh-CN")}>简体中文</button>
+      <button data-on={lang==="en"?"":undefined} onClick={()=>setLang("en")}>English</button>
+    </div>
+  </div>);
+}
+ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
+</script></body></html>

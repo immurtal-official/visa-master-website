@@ -1,0 +1,35 @@
+<!-- @dsCard group="Components" viewport="700x460" name="Pack — tree, consistency, uploads, citations" subtitle="The components no library ships" -->
+<!DOCTYPE html><html lang="zh-CN"><head><meta charset="utf-8"><link rel="stylesheet" href="../../styles.css">
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="../../_ds_bundle.js"></script>
+<style>body{background:var(--surface-page);padding:20px}.two{display:grid;grid-template-columns:1fr 1fr;gap:20px;align-items:start}.panel{background:var(--white);border:1px solid var(--border-subtle);border-radius:var(--radius-card);padding:12px}</style>
+</head><body><div id="root"></div>
+<script type="text/babel">
+const { PackFileTree, ConsistencyReport, UploadChecklist, CitationPanel, ResumableUploader, TrustRow } = window.VisaMasterDesignSystem_744fbe;
+const tree=[
+ {id:"s1",name:"从这里开始",children:[{id:"f1",name:"打印与递交清单.pdf",kind:"pdf",language:"zh-CN",status:"ready"}]},
+ {id:"s2",name:"官方文件",count:4,children:[{id:"f2",name:"申根签证申请表（已填）.pdf",kind:"pdf",language:"fr",status:"ready"},{id:"f3",name:"使馆材料清单（原件）.pdf",kind:"pdf",language:"fr",status:"official"}]},
+ {id:"s3",name:"可编辑模板",children:[{id:"f4",name:"在职证明（模板）.docx",kind:"doc",language:{code:"zh-CN",name:"中文 / English"},status:"review"}]},
+ {id:"s4",name:"本人材料",children:[{id:"f5",name:"银行流水.pdf",kind:"pdf",language:"zh-CN",status:"waiting"}]},
+ {id:"s5",name:"来源与提醒",children:[{id:"f6",name:"来源清单",kind:"link",language:"zh-CN",status:"ready"}]}];
+function Demo(){return (<div>
+ <TrustRow items={["官方来源核对","材料自动生成","一致性校验","人工复核后交付"]} style={{marginBottom:16}}/>
+ <div className="two">
+  <div style={{display:"grid",gap:16}}>
+   <div className="panel"><PackFileTree tree={tree} selectedId="f4"/></div>
+   <CitationPanel checkedAt="2026-08-01" sources={[{title:"法国驻华使馆 · 短期签证材料清单",publisher:"France-Visas",url:"france-visas.gouv.fr",quote:"银行对账单需覆盖最近三个月。"}]} caveats={["最终是否受理与批准由使领馆决定。"]}/>
+  </div>
+  <div style={{display:"grid",gap:16}}>
+   <ConsistencyReport summary="共检查 42 项，2 项需要你确认。" onResolve={()=>{}} items={[
+    {id:"c1",field:"在职起始日期",severity:"conflict",readings:[{source:"在职证明",value:"2021-03-01"},{source:"社保记录",value:"2021-05-01"}],action:"两处日期不一致。请以社保记录为准，或让公司出具更正说明。"},
+    {id:"c2",field:"出行城市",severity:"pass",readings:[{source:"机票预订",value:"巴黎 CDG"},{source:"住宿预订",value:"巴黎"}]}]}/>
+   <UploadChecklist onAction={()=>{}} items={[
+    {id:"u1",title:"护照资料页",rationale:"用来核对姓名拼写与有效期，姓名会自动填进申请表。",state:"done",files:["passport.jpg"]},
+    {id:"u2",title:"近三个月银行流水",rationale:"使馆用它判断你能负担这次行程的费用。",state:"redo",detail:"上一份缺少第 3 页，请重新上传完整版。"}]}/>
+   <ResumableUploader files={[{name:"bank-statement.pdf",size:"18.4MB",progress:62,state:"failed"}]}/>
+  </div>
+ </div></div>);}
+ReactDOM.createRoot(document.getElementById("root")).render(<Demo/>);
+</script></body></html>

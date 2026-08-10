@@ -1,0 +1,15 @@
+*,*::before,*::after{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;font-family:var(--font-sans);font-size:var(--type-body-size);line-height:var(--type-body-lh);letter-spacing:var(--ls-cjk-body);color:var(--text-body);background:var(--surface-page);-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
+h1,h2,h3,h4{color:var(--text-heading);font-weight:var(--fw-semibold);letter-spacing:var(--ls-cjk-display);margin:0}
+p{margin:0;text-wrap:pretty}
+a{color:var(--text-link);text-decoration:underline;text-underline-offset:3px;text-decoration-thickness:1px;transition:var(--transition-control)}
+a:hover{color:var(--text-link-hover);text-decoration-thickness:2px}
+a:active{color:var(--blue-900)}
+:focus-visible{outline:3px solid var(--focus-ring);outline-offset:2px;border-radius:var(--radius-xs)}
+button,input,select,textarea{font:inherit;letter-spacing:inherit}
+img{max-width:100%;display:block}
+::selection{background:var(--blue-100);color:var(--ink-900)}
+@keyframes vm-spin{to{transform:rotate(360deg)}}
+@keyframes vm-rise{from{transform:translateY(16px)}}
+@keyframes vm-fade{from{opacity:0}}

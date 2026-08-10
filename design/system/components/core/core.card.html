@@ -1,0 +1,53 @@
+<!-- @dsCard group="Components" viewport="700x400" name="Core — buttons, badges, callouts" subtitle="Actions, status labels and callouts, shown in both scripts" -->
+<!DOCTYPE html><html lang="zh-CN"><head><meta charset="utf-8"><link rel="stylesheet" href="../../styles.css">
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="../../_ds_bundle.js"></script>
+<style>body{background:var(--surface-page);padding:20px}.row{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-bottom:12px}.rule{margin:14px 0 12px;border:0;border-top:1px dashed var(--border-default)}.lbl{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--text-faint);margin-bottom:8px}</style>
+</head><body><div id="root"></div>
+<script type="text/babel">
+const { Button, IconButton, Badge, Callout, Card } = window.VisaMasterDesignSystem_744fbe;
+function Demo(){return (<div>
+<div className="row">
+<Button variant="primary">开始准备材料</Button>
+<Button variant="secondary" iconAfter="arrow-right">查看支持路线</Button>
+<Button variant="ghost" icon="save">保存并退出</Button>
+<Button variant="quiet" size="sm">跳过</Button>
+<Button variant="primary" disabled>继续</Button>
+<IconButton icon="download" label="下载" variant="solid"/>
+</div>
+<div className="row">
+<Badge tone="success" icon="check">已生成</Badge>
+<Badge tone="info">人工复核中</Badge>
+<Badge tone="warning">待你补充</Badge>
+<Badge tone="error">需要确认</Badge>
+<Badge tone="neutral" size="sm">官方原件</Badge>
+</div>
+<div className="row" style={{alignItems:"stretch"}}>
+<Callout tone="info" style={{flex:1,minInlineSize:280}}>银行流水只用于核对余额与日期，不会外传。</Callout>
+<Callout tone="warning" title="这一页需要重新拍" style={{flex:1,minInlineSize:280}}>照片有一角被裁掉了，请重新拍一张完整的。</Callout>
+</div>
+<hr className="rule"/>
+<div lang="en" data-lang="en">
+<div className="lbl">Same components, English strings — 40–60% longer, nothing fixed-width</div>
+<div className="row">
+<Button variant="primary">Start preparing documents</Button>
+<Button variant="secondary" iconAfter="arrow-right">See supported routes</Button>
+<Button variant="ghost" icon="save">Save and exit</Button>
+<Button variant="quiet" size="sm">Skip</Button>
+<IconButton icon="download" label="Download" variant="solid"/>
+</div>
+<div className="row">
+<Badge tone="success" icon="check">Generated</Badge>
+<Badge tone="info">In human review</Badge>
+<Badge tone="warning">Waiting on you</Badge>
+<Badge tone="error">Needs confirming</Badge>
+</div>
+<div className="row" style={{alignItems:"stretch"}}>
+<Callout tone="info" style={{flex:1,minInlineSize:280}}>Your bank statement is used only to check the balance and the dates. It is never shared.</Callout>
+</div>
+</div>
+</div>);}
+ReactDOM.createRoot(document.getElementById("root")).render(<Demo/>);
+</script></body></html>

@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<!-- @template name="Intake step" description="One question per page: progress, question with inline hint, sticky action bar" -->
+<helmet><script src="./ds-base.js"></script></helmet>
+<div style="min-height:100dvh;display:flex;flex-direction:column;background:var(--surface-page);font-family:var(--font-sans)">
+<x-import component-from-global-scope="VisaMasterDesignSystem_744fbe.SiteHeader" nav="{{ nav }}" language="{{ langSwitch }}" action="{{ saveExit }}" hint-size="100%,64px"></x-import>
+<div style="padding:16px var(--gutter-desktop);background:#fff;border-block-end:1px solid var(--border-subtle)">
+<div style="max-inline-size:var(--container-narrow);margin-inline:auto">
+<x-import component-from-global-scope="VisaMasterDesignSystem_744fbe.StepProgress" section="{{ section }}" step="{{ step }}" total="{{ total }}" sections="{{ sections }}" hint-size="100%,56px"></x-import>
+</div>
+</div>
+<main style="flex:1;padding:40px var(--gutter-desktop) 120px">
+<div style="max-inline-size:var(--container-narrow);margin-inline:auto">
+<x-import component-from-global-scope="VisaMasterDesignSystem_744fbe.BackLink" hint-size="120px,44px"></x-import>
+<div style="margin-block-start:24px">
+<x-import component-from-global-scope="VisaMasterDesignSystem_744fbe.Question" as="h1" question="{{ question }}" hint="{{ hint }}" hint-size="100%,300px">
+<x-import component-from-global-scope="VisaMasterDesignSystem_744fbe.DateInput" value="{{ date }}" onChange="{{ setDate }}" hint="{{ dateHint }}" hint-size="100%,120px"></x-import>
+</x-import>
+</div>
+<div style="margin-block-start:28px;max-inline-size:var(--measure-question)">
+<x-import component-from-global-scope="VisaMasterDesignSystem_744fbe.Callout" tone="quiet" icon="info" hint-size="100%,60px">
+<sc-if value="{{ isZh }}" hint-placeholder-val="{{ true }}">这一步只影响材料清单，不会提交给使领馆。</sc-if>
+<sc-if value="{{ isEn }}" hint-placeholder-val="{{ false }}">This answer only affects your document list. It is not sent to the consulate.</sc-if>
+</x-import>
+</div>
+</div>
+</main>
+<x-import component-from-global-scope="VisaMasterDesignSystem_744fbe.StickyActionBar" note="{{ autosaved }}" secondary="{{ secondary }}" hint-size="100%,72px">
+<x-import component-from-global-scope="VisaMasterDesignSystem_744fbe.Button" variant="primary" size="lg" hint-size="140px,52px">
+<sc-if value="{{ isZh }}" hint-placeholder-val="{{ true }}">继续</sc-if>
+<sc-if value="{{ isEn }}" hint-placeholder-val="{{ false }}">Continue</sc-if>
+</x-import>
+</x-import>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+const COPY = {
+  "zh-CN": {
+    nav: [{ label: "帮助" }],
+    section: "行程与费用",
+    question: "你打算什么时候出发？",
+    hint: "填你计划的入境日期。之后还能改，我们会据此计算材料需要覆盖的时间范围。",
+    dateHint: "例如 2026 年 09 月 01 日",
+    autosaved: "已自动保存，可随时关闭页面",
+    saveExit: "保存并退出",
+    skip: "跳过这一题",
+    sections: [
+      { name: "基本信息", state: "done" }, { name: "证件", state: "done" },
+      { name: "行程与费用", state: "current" }, { name: "在职与收入", state: "todo" },
+      { name: "上传材料", state: "todo" }],
+  },
+  en: {
+    nav: [{ label: "Help" }],
+    section: "Itinerary and costs",
+    question: "When do you plan to travel?",
+    hint: "Fill in the date you plan to enter. You can change it later — we use it to work out the period your documents need to cover.",
+    dateHint: "For example 2026 / 09 / 01",
+    autosaved: "Saved automatically — you can close this page at any time",
+    saveExit: "Save and exit",
+    skip: "Skip this question",
+    sections: [
+      { name: "About you", state: "done" }, { name: "Identity documents", state: "done" },
+      { name: "Itinerary and costs", state: "current" }, { name: "Employment and income", state: "todo" },
+      { name: "Uploads", state: "todo" }],
+  },
+};
+
+class Component extends DCLogic {
+  state = { lang: "zh-CN", date: { year: "2026", month: "09", day: "" }, ready: false };
+  componentDidMount() {
+    this._t = setInterval(() => {
+      if (window.VisaMasterDesignSystem_744fbe) { clearInterval(this._t); this.apply(this.state.lang); this.setState({ ready: true }); }
+    }, 40);
+  }
+  componentWillUnmount() { clearInterval(this._t); }
+  ds() { return window.VisaMasterDesignSystem_744fbe || {}; }
+  apply(lang) { const { Locale } = this.ds(); if (Locale) Locale.set(lang); }
+  renderVals() {
+    const { LanguageSwitcher, Button } = this.ds();
+    const lang = this.state.lang;
+    const c = COPY[lang];
+    return {
+      step: 12, total: 34,
+      isZh: lang === "zh-CN",
+      isEn: lang === "en",
+      nav: c.nav,
+      section: c.section,
+      question: c.question,
+      hint: c.hint,
+      dateHint: c.dateHint,
+      autosaved: c.autosaved,
+      sections: c.sections,
+      date: this.state.date,
+      setDate: (date) => this.setState({ date }),
+      langSwitch: LanguageSwitcher ? React.createElement(LanguageSwitcher, {
+        value: lang, onChange: (l) => { this.apply(l); this.setState({ lang: l }); },
+      }) : null,
+      saveExit: Button ? React.createElement(Button, { variant: "ghost", size: "sm", icon: "save" }, c.saveExit) : null,
+      secondary: Button ? React.createElement(Button, { variant: "ghost" }, c.skip) : null,
+    };
+  }
+}
+</script>
+</body>
+</html>
