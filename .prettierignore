@@ -1,0 +1,10 @@
+pnpm-lock.yaml
+.next/
+.turbo/
+dist/
+coverage/
+design/prototypes/
+design/system/
+doc/*.html
+apps/web/src/styles/tokens/
+apps/web/public/

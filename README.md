@@ -47,6 +47,34 @@ Suggested entry point into the architecture: [`doc/architecture-v0.4-en.md`](doc
 Part I only — about ten minutes, and it ends with a table of every decision
 pointing at its detail section.
 
+## Development
+
+Requires Node 22.12+, pnpm 10, Docker (for the local Supabase stack), and the
+Supabase CLI. The build plan for the current milestone — file tree, config
+layout, migrations, commit sequence, and the test layer — is
+[`EXECUTION-PLAN-week1-2.md`](EXECUTION-PLAN-week1-2.md).
+
+```bash
+pnpm install                # install the workspace
+pnpm dev                    # run apps/web (works with no Supabase config; see stub mode)
+pnpm lint typecheck test    # the checks every commit must pass
+pnpm --filter web build     # build; also runs the i18n catalogue gate
+```
+
+The database and the auth stack run locally:
+
+```bash
+pnpm db:start               # boots Postgres, Auth, Studio, and Mailpit in Docker
+pnpm db:reset               # re-applies every migration from scratch
+pnpm db:test                # pgTAP tests: row-level security behaves as specified
+```
+
+`pnpm db:start` prints the local API URL and keys; put them in
+`apps/web/.env.local` (never committed — see `apps/web/.env.example` for the key
+names). Sign-in emails are captured by Mailpit at <http://127.0.0.1:54324>, so
+local logins need no mail provider. End-to-end tests run against that stack with
+`pnpm --filter web e2e`.
+
 ## Conventions
 
 - **Code lands on `main`** (via feature branches). The `design` branch carried

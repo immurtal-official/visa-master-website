@@ -33,3 +33,13 @@ coverage/
 
 # Deploy
 .vercel
+
+# Next.js
+next-env.d.ts
+.next/types/
+
+# Test artifacts
+test-results/
+playwright-report/
+blob-report/
+.playwright/
