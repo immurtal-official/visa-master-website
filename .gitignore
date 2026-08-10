@@ -31,6 +31,10 @@ coverage/
 .vscode/*
 !.vscode/extensions.json
 
+# Supabase local stack
+packages/db/supabase/.branches
+packages/db/supabase/.temp
+
 # Deploy
 .vercel
 

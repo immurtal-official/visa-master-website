@@ -1,0 +1,14 @@
+{
+  "name": "@visa-master/db",
+  "version": "0.0.0",
+  "private": true,
+  "scripts": {
+    "db:start": "supabase start",
+    "db:stop": "supabase stop",
+    "db:status": "supabase status",
+    "db:reset": "supabase db reset",
+    "db:test": "supabase test db",
+    "lint": "echo \"no lint config for @visa-master/db yet\"",
+    "typecheck": "echo \"no TypeScript in @visa-master/db yet\""
+  }
+}
