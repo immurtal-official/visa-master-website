@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { z } from "zod";
-import { i18nIssue, toIssues } from "./issue.js";
-import { MESSAGE_KEYS, isMessageKey, requiredParamsFor } from "../i18n/message-keys.js";
-import { emailSchema, otpCodeSchema } from "../schemas/auth.js";
+import { i18nIssue, toIssues } from "./issue";
+import { MESSAGE_KEYS, isMessageKey, requiredParamsFor } from "../i18n/message-keys";
+import { emailSchema, otpCodeSchema } from "../schemas/auth";
 
 /** Every schema this package exports, with inputs that exercise their rules. */
 const SCHEMA_PROBES: { schema: z.ZodType; inputs: unknown[] }[] = [

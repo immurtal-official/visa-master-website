@@ -7,7 +7,7 @@ export {
   resolveLocale,
   localeSelfName,
   type Locale,
-} from "./i18n/locales.js";
+} from "./i18n/locales";
 
 export {
   MESSAGE_KEYS,
@@ -15,7 +15,7 @@ export {
   isMessageKey,
   requiredParamsFor,
   type MessageKey,
-} from "./i18n/message-keys.js";
+} from "./i18n/message-keys";
 
 export {
   i18nIssue,
@@ -24,7 +24,7 @@ export {
   type IssueParams,
   type ValidationIssue,
   type ValidationResult,
-} from "./validation/issue.js";
+} from "./validation/issue";
 
 export {
   emailSchema,
@@ -33,4 +33,4 @@ export {
   parseOtpCode,
   type EmailInput,
   type OtpCodeInput,
-} from "./schemas/auth.js";
+} from "./schemas/auth";

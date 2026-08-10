@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { i18nIssue, toResult, type ValidationResult } from "../validation/issue.js";
+import { i18nIssue, toResult, type ValidationResult } from "../validation/issue";
 
 /**
  * Sign-in identity. Trimmed before checking, because a pasted address routinely

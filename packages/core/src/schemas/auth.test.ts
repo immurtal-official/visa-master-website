@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { parseEmail, parseOtpCode } from "./auth.js";
-import type { ValidationIssue } from "../validation/issue.js";
+import { parseEmail, parseOtpCode } from "./auth";
+import type { ValidationIssue } from "../validation/issue";
 
 function issues(result: ReturnType<typeof parseEmail> | ReturnType<typeof parseOtpCode>) {
   if (result.ok) throw new Error("expected the input to be rejected");

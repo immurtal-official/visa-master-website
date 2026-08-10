@@ -1,5 +1,5 @@
 import type { $ZodIssue } from "zod/v4/core";
-import { type MessageKey, isMessageKey } from "../i18n/message-keys.js";
+import { type MessageKey, isMessageKey } from "../i18n/message-keys";
 
 export type IssueParams = Record<string, string | number>;
 
