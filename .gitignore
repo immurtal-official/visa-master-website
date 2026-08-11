@@ -41,6 +41,7 @@ packages/db/supabase/.temp
 
 # Next.js
 next-env.d.ts
+*.tsbuildinfo
 .next/types/
 
 # Test artifacts
