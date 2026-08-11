@@ -16,6 +16,73 @@
     "intro": "Prepare clearer, more consistent visa documents.",
     "cta": "Sign in or create an account"
   },
+  "route": {
+    "title": "Let us check whether we can help yet",
+    "intro": "Four questions first. A combination we do not serve never creates an application, and never charges you.",
+    "areaLabel": "Which province or municipality do you live in?",
+    "areaHint": "A visa is handled by the consulate covering where you live, so this decides where the application is submitted.",
+    "destinationLabel": "Which country are you going to?",
+    "purposeLabel": "What is the main purpose of this trip?",
+    "employmentLabel": "What is the applicant’s current work situation?",
+    "submit": "Check this route",
+    "area": {
+      "sichuan": "Sichuan",
+      "chongqing": "Chongqing",
+      "yunnan": "Yunnan",
+      "guizhou": "Guizhou",
+      "xizang": "Xizang",
+      "other": "Somewhere else"
+    },
+    "destinationOther": "Another country",
+    "purpose": {
+      "tourism": "Personal tourism",
+      "family": "Visiting family or friends",
+      "business": "Business",
+      "conference": "A conference"
+    },
+    "employment": {
+      "employed": "Employed",
+      "student": "A student",
+      "retired": "Retired",
+      "self_employed": "Self-employed"
+    },
+    "supported": {
+      "title": "We can prepare this route now",
+      "body": "A resident of the Chengdu consular district, going to Spain on a personal tourism visa, in employment. Next you fill in the application. You can leave at any point and your answers are kept.",
+      "cta": "Create the application"
+    },
+    "unsupported": {
+      "title": "We cannot prepare this route yet",
+      "intro": "For now we serve residents of the Chengdu consular district applying for a Spanish personal tourism visa, where the applicant is employed. In your case:",
+      "reason": {
+        "area": "You do not live in the area the Chengdu consulate covers.",
+        "destination": "The destination is not Spain.",
+        "purpose": "The purpose is not personal tourism.",
+        "employment": "The applicant is not in employment."
+      },
+      "waitlistTitle": "Tell us you needed this one",
+      "waitlistBody": "Demand decides which route opens next. The record holds only the place you live and the destination you chose.",
+      "waitlistCta": "Record what I need",
+      "waitlistDone": "Recorded. We will email you if this route opens.",
+      "backCta": "Try a different combination"
+    }
+  },
+  "application": {
+    "newCta": "New application",
+    "status": {
+      "draft": "Being filled in",
+      "submitted": "Submitted",
+      "cancelled": "Cancelled"
+    },
+    "nextStep": {
+      "draft": "Continue filling it in",
+      "submitted": "Waiting for the document pack",
+      "cancelled": "Nothing to do"
+    },
+    "createdAt": "Created {date}",
+    "route": "{destination} · {purpose}",
+    "openCta": "Open"
+  },
   "auth": {
     "login": {
       "title": "Sign in or create an account",

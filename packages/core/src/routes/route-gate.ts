@@ -67,10 +67,10 @@ export function parseRouteCheck(input: unknown): ValidationResult<RouteCheck> {
  * thing that makes someone assume the product is broken rather than early.
  */
 export const UNSUPPORTED_REASONS = [
-  "route.unsupported.area",
-  "route.unsupported.destination",
-  "route.unsupported.purpose",
-  "route.unsupported.employment",
+  "route.unsupported.reason.area",
+  "route.unsupported.reason.destination",
+  "route.unsupported.reason.purpose",
+  "route.unsupported.reason.employment",
 ] as const;
 export type UnsupportedReason = (typeof UNSUPPORTED_REASONS)[number];
 
@@ -93,16 +93,16 @@ export function checkRoute(answers: RouteCheck): RouteVerdict {
   const reasons: UnsupportedReason[] = [];
 
   if (!(CHENGDU_DISTRICT_AREAS as readonly string[]).includes(answers.residenceArea)) {
-    reasons.push("route.unsupported.area");
+    reasons.push("route.unsupported.reason.area");
   }
   if (answers.destination !== SUPPORTED_ROUTE.destination) {
-    reasons.push("route.unsupported.destination");
+    reasons.push("route.unsupported.reason.destination");
   }
   if (answers.purpose !== SUPPORTED_ROUTE.purpose) {
-    reasons.push("route.unsupported.purpose");
+    reasons.push("route.unsupported.reason.purpose");
   }
   if (answers.employment !== SUPPORTED_ROUTE.employment) {
-    reasons.push("route.unsupported.employment");
+    reasons.push("route.unsupported.reason.employment");
   }
 
   return reasons.length === 0 ? { supported: true } : { supported: false, reasons };

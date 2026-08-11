@@ -16,6 +16,73 @@
     "intro": "把签证材料准备得更清楚、更一致。",
     "cta": "登录或创建账号"
   },
+  "route": {
+    "title": "看看我们现在能不能帮到你",
+    "intro": "先回答四个问题。不支持的组合不会创建申请，也不会收费。",
+    "areaLabel": "你目前长期居住在哪个省或直辖市？",
+    "areaHint": "签证由你居住地对应的领区受理，所以这一项决定去哪里递交。",
+    "destinationLabel": "你要去哪个国家？",
+    "purposeLabel": "这次出行的主要目的是什么？",
+    "employmentLabel": "申请人目前的工作状态是？",
+    "submit": "查看是否支持",
+    "area": {
+      "sichuan": "四川",
+      "chongqing": "重庆",
+      "yunnan": "云南",
+      "guizhou": "贵州",
+      "xizang": "西藏",
+      "other": "其他省份或直辖市"
+    },
+    "destinationOther": "其他国家",
+    "purpose": {
+      "tourism": "个人旅游",
+      "family": "探亲访友",
+      "business": "商务",
+      "conference": "会议"
+    },
+    "employment": {
+      "employed": "在职",
+      "student": "学生",
+      "retired": "退休",
+      "self_employed": "自由职业或个体经营"
+    },
+    "supported": {
+      "title": "这条路线我们现在就能做",
+      "body": "成都领区居民、前往西班牙的个人旅游签、在职申请人。下一步是填写申请信息，中途可以随时离开，进度会保存。",
+      "cta": "创建申请"
+    },
+    "unsupported": {
+      "title": "这条路线我们还做不了",
+      "intro": "现在只支持成都领区居民申请西班牙个人旅游签，且申请人为在职。你这次的情况有：",
+      "reason": {
+        "area": "你的居住地不属于成都领区。",
+        "destination": "目的地不是西班牙。",
+        "purpose": "出行目的不是个人旅游。",
+        "employment": "申请人不是在职状态。"
+      },
+      "waitlistTitle": "留下这条线索",
+      "waitlistBody": "我们按需求决定下一个开通的路线。记录只包含你填的居住地和目的地。",
+      "waitlistCta": "记录我的需求",
+      "waitlistDone": "已记录。开通后我们会通过邮件告诉你。",
+      "backCta": "换一组条件再看看"
+    }
+  },
+  "application": {
+    "newCta": "新建申请",
+    "status": {
+      "draft": "填写中",
+      "submitted": "已提交",
+      "cancelled": "已取消"
+    },
+    "nextStep": {
+      "draft": "继续填写申请信息",
+      "submitted": "等待生成材料包",
+      "cancelled": "无需操作"
+    },
+    "createdAt": "创建于 {date}",
+    "route": "{destination} · {purpose}",
+    "openCta": "打开"
+  },
   "auth": {
     "login": {
       "title": "登录或创建账号",

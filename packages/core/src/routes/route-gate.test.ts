@@ -22,14 +22,14 @@ describe("the route gate", () => {
   it("turns away another consular district", () => {
     expect(checkRoute({ ...SERVED, residenceArea: "other" })).toEqual({
       supported: false,
-      reasons: ["route.unsupported.area"],
+      reasons: ["route.unsupported.reason.area"],
     });
   });
 
   it("turns away another destination", () => {
     expect(checkRoute({ ...SERVED, destination: "FR" })).toEqual({
       supported: false,
-      reasons: ["route.unsupported.destination"],
+      reasons: ["route.unsupported.reason.destination"],
     });
   });
 
@@ -37,7 +37,7 @@ describe("the route gate", () => {
     for (const purpose of ["family", "business", "conference"] as const) {
       expect(checkRoute({ ...SERVED, purpose })).toEqual({
         supported: false,
-        reasons: ["route.unsupported.purpose"],
+        reasons: ["route.unsupported.reason.purpose"],
       });
     }
   });
@@ -46,7 +46,7 @@ describe("the route gate", () => {
     for (const employment of ["student", "retired", "self_employed"] as const) {
       expect(checkRoute({ ...SERVED, employment })).toEqual({
         supported: false,
-        reasons: ["route.unsupported.employment"],
+        reasons: ["route.unsupported.reason.employment"],
       });
     }
   });
@@ -62,10 +62,10 @@ describe("the route gate", () => {
     expect(verdict).toEqual({
       supported: false,
       reasons: [
-        "route.unsupported.area",
-        "route.unsupported.destination",
-        "route.unsupported.purpose",
-        "route.unsupported.employment",
+        "route.unsupported.reason.area",
+        "route.unsupported.reason.destination",
+        "route.unsupported.reason.purpose",
+        "route.unsupported.reason.employment",
       ],
     });
   });
