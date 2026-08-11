@@ -122,9 +122,14 @@ export default async function ApplicationPage({
               {t("application.reviewCta")}
             </LinkButton>
           ) : (
-            <LinkButton href={`/applications/${id}/intake`} iconAfter="arrow-right">
-              {t("application.continueCta")}
-            </LinkButton>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: "var(--space-3)" }}>
+              <LinkButton href={`/applications/${id}/intake`} iconAfter="arrow-right">
+                {t("application.continueCta")}
+              </LinkButton>
+              <LinkButton href={`/applications/${id}/documents`} variant="secondary">
+                {t("documents.title")}
+              </LinkButton>
+            </div>
           )}
         </div>
       </Card>

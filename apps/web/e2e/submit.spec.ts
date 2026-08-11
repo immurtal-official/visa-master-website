@@ -26,6 +26,38 @@ function query(sql: string): string {
   ]).toString();
 }
 
+/**
+ * Mark every mandatory document as received.
+ *
+ * Written as the server writes it — the status column means the bytes were
+ * seen, and only the server can set it, so a test that needs the precondition
+ * sets it the same way rather than pretending through the browser.
+ */
+function storeRequiredDocuments(email: string): void {
+  const documents = [
+    "passportBio",
+    "photo",
+    "hukou",
+    "employmentLetter",
+    "bankStatement",
+    "insurance",
+    "flightBooking",
+    "hotelBooking",
+  ];
+
+  for (const document of documents) {
+    query(
+      `insert into public.uploads
+         (application_id, user_id, document, storage_path, content_type, status)
+       select a.id, a.user_id, '${document}',
+              a.user_id || '/' || a.id || '/${document}.jpg', 'image/jpeg', 'stored'
+       from public.applications a
+       join auth.users u on u.id = a.user_id
+       where u.email = '${email}'`,
+    );
+  }
+}
+
 function isoIn(months: number): { year: string; month: string; day: string } {
   const date = new Date();
   date.setMonth(date.getMonth() + months);
@@ -112,6 +144,11 @@ test("a complete application is sent and leaves a queued job", async ({ page }) 
 
   await answerChoice(page, q.history.schengenBefore, en.intake.option.yesNoUnsure.no);
   await answerChoice(page, q.history.refused, en.intake.option.yesNoUnsure.no);
+
+  // The documents are a precondition here rather than the subject: the upload
+  // path itself is covered by documents.spec, and repeating it eight times
+  // would test the same thing eight times.
+  storeRequiredDocuments(email);
 
   // The last answer returns to the section list, now complete.
   await expect(page).toHaveURL(/\/intake$/);

@@ -302,7 +302,59 @@
       "incompleteTitle": "There is still something to fill in",
       "incompleteBody": "These need attention before the application can be sent.",
       "submitFailed": "That was not sent. Try again.",
-      "alreadySubmitted": "This application has already been sent."
+      "alreadySubmitted": "This application has already been sent.",
+      "documentsMissing": "Some required documents have not been uploaded. Add them before sending."
+    }
+  },
+  "documents": {
+    "title": "Upload your documents",
+    "intro": "Photograph them or pick a file — either is fine. Each one says what it is for: these are checked against what you told us.",
+    "progress": "{stored} of {required} required documents received",
+    "necessity": {
+      "required": "Required",
+      "recommended": "Worth adding",
+      "conditional": "Needed in your case"
+    },
+    "state": {
+      "todo": "Not sent yet",
+      "uploading": "Sending",
+      "pending": "Waiting for confirmation",
+      "stored": "Received"
+    },
+    "addCta": "Choose a file or take a photo",
+    "addPageCta": "Add another page",
+    "replaceCta": "Send a different one",
+    "removeCta": "Remove",
+    "pageLabel": "Page {page}",
+    "uploadFailed": "That file was not sent. Try again.",
+    "confirmFailed": "The file went up, but we have not confirmed it. Refresh the page to check.",
+    "tooLarge": "That file is over 20 MB. Compress it, or photograph it a page at a time.",
+    "wrongType": "We accept JPG, PNG, HEIC and PDF.",
+    "statusNote": "We check only that a file opens and is legible. Whether it satisfies the consulate is decided by the person who reviews it.",
+    "doneCta": "Everything is here — send the application",
+    "item": {
+      "passportBio": "Passport data page",
+      "passportBioWhy": "The visa goes into this passport, and this page decides every identity field on the form. Photograph it so the number and the two machine-readable lines are sharp.",
+      "photo": "Recent passport photo",
+      "photoWhy": "Schengen sets the size and background colour, and rejects photos that miss them. Use one taken by a photo shop rather than a cropped snapshot.",
+      "hukou": "Household register",
+      "hukouWhy": "It evidences residence and family relationships. The head-of-household page and the applicant's own page at a minimum.",
+      "employmentLetter": "Employment letter",
+      "employmentLetterWhy": "It shows there is a job to come back to. The employer name and job title on it have to match what you entered.",
+      "bankStatement": "Bank statements",
+      "bankStatementWhy": "They show the trip can be paid for. Usually six months, stamped by the bank, with salary arriving in amounts that match what you entered.",
+      "socialInsurance": "Social-insurance record",
+      "socialInsuranceWhy": "Not required, but it evidences how long the job has lasted independently of the employment letter, and the two support each other.",
+      "insurance": "Schengen travel insurance",
+      "insuranceWhy": "Schengen asks for at least €30,000 of cover, across every date of the trip.",
+      "flightBooking": "Flight booking",
+      "flightBookingWhy": "It evidences a real itinerary. A booking is enough — do not buy the ticket first.",
+      "hotelBooking": "Accommodation bookings",
+      "hotelBookingWhy": "They have to cover every night inside the Schengen area, with no gaps.",
+      "sponsorProof": "Proof of funds from whoever is paying",
+      "sponsorProofWhy": "When somebody else pays, the money has to be evidenced too — usually their bank statements and a short letter.",
+      "previousVisas": "Earlier Schengen visas and entry stamps",
+      "previousVisasWhy": "A good travel record helps an application. Photograph the old visa pages and the stamps that go with them."
     }
   }
 }

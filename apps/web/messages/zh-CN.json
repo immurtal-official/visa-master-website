@@ -302,7 +302,59 @@
       "incompleteTitle": "还有内容需要补充",
       "incompleteBody": "下面这些地方需要先处理，然后才能提交。",
       "submitFailed": "提交没有成功。请再试一次。",
-      "alreadySubmitted": "这份申请已经提交过了。"
+      "alreadySubmitted": "这份申请已经提交过了。",
+      "documentsMissing": "还有必需的材料没有上传，先把材料补齐再提交。"
+    }
+  },
+  "documents": {
+    "title": "上传材料",
+    "intro": "拍照或选文件都可以。每一项下面写了它的用途——这些材料会和你填的内容互相核对。",
+    "progress": "已确认 {stored} / {required} 项必需材料",
+    "necessity": {
+      "required": "必需",
+      "recommended": "建议提供",
+      "conditional": "你的情况需要"
+    },
+    "state": {
+      "todo": "待上传",
+      "uploading": "上传中",
+      "pending": "等待确认",
+      "stored": "已收到"
+    },
+    "addCta": "选择文件或拍照",
+    "addPageCta": "再加一页",
+    "replaceCta": "重新上传",
+    "removeCta": "删除",
+    "pageLabel": "第 {page} 页",
+    "uploadFailed": "这份文件没有上传成功。请再试一次。",
+    "confirmFailed": "文件传上去了，但我们还没确认到。请刷新页面看看。",
+    "tooLarge": "文件超过 20 MB。请压缩后再传，或分页拍摄。",
+    "wrongType": "只接受 JPG、PNG、HEIC 和 PDF。",
+    "statusNote": "我们只检查文件能不能打开、清不清楚。是否符合使领馆要求，由人工复核判断。",
+    "doneCta": "材料齐了，去提交",
+    "item": {
+      "passportBio": "护照资料页",
+      "passportBioWhy": "签证贴在护照上，资料页决定了申请表里所有的身份信息。拍清楚号码和机读码那两行。",
+      "photo": "近期证件照",
+      "photoWhy": "申根对照片尺寸和底色有硬性要求。用照相馆拍的电子版，不要用生活照裁剪。",
+      "hukou": "户口本",
+      "hukouWhy": "用来证明户籍和家庭关系。至少要户主页和本人页。",
+      "employmentLetter": "在职证明",
+      "employmentLetterWhy": "证明你有稳定工作、会按时回国。上面的单位名称和职位要和你填的一致。",
+      "bankStatement": "银行流水",
+      "bankStatementWhy": "证明你负担得起这次行程。通常要最近 6 个月、有银行盖章，工资入账要和你填的月薪对得上。",
+      "socialInsurance": "社保记录",
+      "socialInsuranceWhy": "不是必需，但它能独立佐证在职时长，和在职证明相互印证。",
+      "insurance": "申根旅游保险",
+      "insuranceWhy": "申根要求保额不低于 3 万欧元、覆盖全部行程日期。",
+      "flightBooking": "机票预订单",
+      "flightBookingWhy": "用来证明行程真实。预订单即可，不必先出票。",
+      "hotelBooking": "住宿预订单",
+      "hotelBookingWhy": "要覆盖全部在申根区的日期，每一晚都要有着落。",
+      "sponsorProof": "费用承担方的资金证明",
+      "sponsorProofWhy": "由别人承担费用时，需要证明这笔钱确实存在。通常是承担方的银行流水加一份说明。",
+      "previousVisas": "以往申根签证与出入境记录",
+      "previousVisasWhy": "良好的出行记录对申请有帮助。拍旧签证页和对应的出入境章。"
     }
   }
 }

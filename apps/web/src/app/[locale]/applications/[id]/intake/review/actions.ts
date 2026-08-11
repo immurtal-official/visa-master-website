@@ -2,7 +2,7 @@
 
 import type { Locale } from "next-intl";
 import { redirect } from "next/navigation";
-import { parseIntake, type ValidationIssue } from "@visa-master/core";
+import { documentCompleteness, parseIntake, type ValidationIssue } from "@visa-master/core";
 import { getPathname } from "@/i18n/navigation";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
@@ -10,7 +10,13 @@ import { readSession } from "@/lib/supabase/session";
 
 export interface SubmitState {
   issues?: ValidationIssue[];
-  error?: "intake.review.submitFailed" | "intake.review.alreadySubmitted" | "route.sessionExpired";
+  error?:
+    | "intake.review.submitFailed"
+    | "intake.review.alreadySubmitted"
+    | "intake.review.documentsMissing"
+    | "route.sessionExpired";
+  /** Documents still outstanding, as their catalogue keys. */
+  missingDocuments?: string[];
 }
 
 /**
@@ -57,6 +63,19 @@ export async function submitApplication(
 
   const parsed = parseIntake(application.answers ?? {});
   if (!parsed.ok) return { issues: parsed.issues };
+
+  // The documents are half the pack. Enqueueing without them would spend ten
+  // minutes of model time to produce something a reviewer must reject.
+  const { data: uploads } = await supabase
+    .from("uploads")
+    .select("document, status")
+    .eq("application_id", application.id)
+    .returns<{ document: string; status: string }[]>();
+
+  const documents = documentCompleteness(application.answers ?? {}, uploads ?? []);
+  if (!documents.complete) {
+    return { error: "intake.review.documentsMissing", missingDocuments: documents.missing };
+  }
 
   const admin = createAdminClient();
 

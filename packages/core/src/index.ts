@@ -89,3 +89,13 @@ export {
   type FieldBehaviour,
   type IntakeSchengenTourismV1,
 } from "./intake/schengen-tourism-v1";
+
+export {
+  SCHENGEN_SPAIN_DOCUMENTS,
+  documentCompleteness,
+  documentsFor,
+  type DocumentCompleteness,
+  type DocumentNecessity,
+  type RequiredDocument,
+  type UploadedDocument,
+} from "./rules/schengen-spain";

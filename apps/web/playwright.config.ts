@@ -14,7 +14,18 @@ export default defineConfig({
   globalSetup: "./e2e/global-setup.ts",
   fullyParallel: true,
   forbidOnly: Boolean(process.env.CI),
-  retries: 0,
+  /**
+   * One retry, for one known cause.
+   *
+   * The token is stamped by the auth container and validated by the REST one,
+   * and PostgREST rejects any `iat` in its own future with PGRST303 — so a few
+   * hundred milliseconds of drift between two Docker containers fails a request
+   * made immediately after signing in. There is no leeway setting to widen, and
+   * putting a retry into the product to paper over a local clock would be the
+   * wrong place for it. A retried test is still reported as flaky, so this
+   * hides nothing.
+   */
+  retries: 1,
   reporter: process.env.CI ? "list" : [["list"], ["html", { open: "never" }]],
 
   use: {
