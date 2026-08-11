@@ -3,7 +3,17 @@ import nextTypescript from "eslint-config-next/typescript";
 import i18next from "eslint-plugin-i18next";
 
 const config = [
-  { ignores: [".next/**", "node_modules/**", "next-env.d.ts"] },
+  {
+    ignores: [
+      ".next/**",
+      // The end-to-end suite's second dev server builds here.
+      ".next-stub/**",
+      "node_modules/**",
+      "next-env.d.ts",
+      "playwright-report/**",
+      "test-results/**",
+    ],
+  },
   ...coreWebVitals,
   ...nextTypescript,
   i18next.configs["flat/recommended"],

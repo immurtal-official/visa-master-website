@@ -18,8 +18,13 @@ values
   ('11111111-1111-1111-1111-111111111111', 'a@example.test', '00000000-0000-0000-0000-000000000000'),
   ('22222222-2222-2222-2222-222222222222', 'b@example.test', '00000000-0000-0000-0000-000000000000');
 
+-- Scoped to the users this test created: the database it runs against may
+-- already hold others, and a test that assumes an empty one fails for reasons
+-- that have nothing to do with what it is checking.
 select is(
-  (select count(*) from public.profiles),
+  (select count(*) from public.profiles
+    where user_id in ('11111111-1111-1111-1111-111111111111',
+                      '22222222-2222-2222-2222-222222222222')),
   2::bigint,
   'the signup trigger creates a profile for every auth user'
 );
