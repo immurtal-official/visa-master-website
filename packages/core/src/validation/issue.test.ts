@@ -57,6 +57,20 @@ describe("toIssues", () => {
     ]);
   });
 
+  it("reports an unanswered multiple choice as unanswered, not as invalid", () => {
+    const schema = z.object({ pick: z.enum(["x", "y"]) });
+
+    const missing = schema.safeParse({});
+    const wrong = schema.safeParse({ pick: "z" });
+    if (missing.success || wrong.success) throw new Error("expected both to fail");
+
+    // Zod reports both the same way, so the input is what tells them apart.
+    expect(toIssues(missing.error, {})).toEqual([{ path: "pick", key: "validation.required" }]);
+    expect(toIssues(wrong.error, { pick: "z" })).toEqual([
+      { path: "pick", key: "validation.invalid" },
+    ]);
+  });
+
   it("tells a missing field apart from a wrongly typed one", () => {
     const schema = z.object({ email: z.string() });
 

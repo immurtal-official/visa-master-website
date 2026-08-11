@@ -34,3 +34,23 @@ export {
   type EmailInput,
   type OtpCodeInput,
 } from "./schemas/auth";
+
+export {
+  CHENGDU_DISTRICT_AREAS,
+  DESTINATIONS,
+  EMPLOYMENT_STATUSES,
+  PURPOSES,
+  RESIDENCE_AREAS,
+  SUPPORTED_ROUTE,
+  UNSUPPORTED_REASONS,
+  checkRoute,
+  parseRouteCheck,
+  routeCheckSchema,
+  type Destination,
+  type EmploymentStatus,
+  type Purpose,
+  type ResidenceArea,
+  type RouteCheck,
+  type RouteVerdict,
+  type UnsupportedReason,
+} from "./routes/route-gate";

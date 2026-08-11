@@ -91,6 +91,17 @@ function keyFor(
     return params ? { key, params } : { key };
   }
 
+  // An answer that is simply absent is reported as absent, whichever rule
+  // happened to trip on it. Zod reports an unanswered multiple choice the same
+  // way it reports a wrong one, and "fill this in" is the useful instruction
+  // where "check this entry" is not.
+  if (hasInput) {
+    const value = valueAt(input, issue.path);
+    if (value === undefined || value === null || value === "") {
+      return { key: "validation.required" };
+    }
+  }
+
   switch (issue.code) {
     case "invalid_type": {
       // Without the input to consult, assume the field was absent: these
