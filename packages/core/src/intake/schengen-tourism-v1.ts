@@ -14,14 +14,18 @@ import { i18nIssue, toResult, type ValidationResult } from "../validation/issue"
  * Each rule emits a message key plus parameters, never a sentence.
  */
 
+export const TRAVELLING_WITH = ["alone", "family", "friends", "colleagues"] as const;
+export const WHO_PAYS = ["self", "family", "employer"] as const;
+export const YES_NO_UNSURE = ["yes", "no", "unsure"] as const;
+
 /** How keyboards should behave for a field, derived from what it holds. */
 export interface FieldBehaviour {
   inputMode?: "text" | "numeric" | "tel" | "email" | "decimal";
   autoComplete?: string;
   autoCapitalize?: "off" | "characters";
   autoCorrect?: "off";
-  /** Rendered as three numeric fields rather than a picker. */
-  kind?: "date";
+  /** How the answer is given: free text unless stated. */
+  kind?: "date" | "choice";
   /** Uppercase as it is typed, for fields that are uppercase on the document. */
   uppercase?: boolean;
   maxLength?: number;
@@ -48,6 +52,28 @@ export const FIELD_BEHAVIOUR: Record<string, FieldBehaviour> = {
   },
   "passport.issuedAt": { kind: "date" },
   "passport.expiresAt": { kind: "date" },
+  "residence.city": { inputMode: "text", autoComplete: "address-level2" },
+  "residence.address": { inputMode: "text", autoComplete: "street-address" },
+  "employment.employer": { inputMode: "text", autoComplete: "organization" },
+  "employment.position": { inputMode: "text", autoComplete: "organization-title" },
+  "employment.startDate": { kind: "date" },
+  // Money on a phone needs the decimal keypad, not the alphabetic one.
+  "employment.monthlyIncome": { inputMode: "decimal", autoComplete: "off", maxLength: 12 },
+  "travel.departureDate": { kind: "date" },
+  "travel.returnDate": { kind: "date" },
+  "travel.cities": { inputMode: "text", autoComplete: "off" },
+  "companions.travellingWith": { kind: "choice" },
+  "companions.whoPays": { kind: "choice" },
+  "history.schengenBefore": { kind: "choice" },
+  "history.refused": { kind: "choice" },
+};
+
+/** The options a choice question offers, in the order they are shown. */
+export const QUESTION_OPTIONS: Record<string, readonly string[]> = {
+  "companions.travellingWith": TRAVELLING_WITH,
+  "companions.whoPays": WHO_PAYS,
+  "history.schengenBefore": YES_NO_UNSURE,
+  "history.refused": YES_NO_UNSURE,
 };
 
 /** A date as three numbers, which is how it is entered and stored. */
@@ -157,11 +183,93 @@ export const passportSchema = passportFieldsSchema.superRefine((value, ctx) => {
   }
 });
 
-/** The whole intake. Partial while it is being filled in. */
-export const intakeSchengenTourismV1 = z.object({
-  applicant: applicantSchema,
-  passport: passportSchema,
+export const residenceSchema = z.object({
+  city: z.string().trim().min(1).max(40),
+  address: z.string().trim().min(4).max(200),
 });
+
+export const employmentSchema = z.object({
+  employer: z.string().trim().min(1).max(120),
+  position: z.string().trim().min(1).max(80),
+  startDate: dateString.superRefine((value, ctx) => {
+    const date = parseDate(value);
+    if (!date) {
+      ctx.addIssue(i18nIssue("validation.date.invalid"));
+      return;
+    }
+    if (date.getTime() > Date.now()) ctx.addIssue(i18nIssue("validation.date.future"));
+  }),
+  monthlyIncome: z
+    .string()
+    .trim()
+    .transform((value) => value.replace(/[,\s¥]/g, ""))
+    .superRefine((value, ctx) => {
+      if (!/^\d{1,9}(\.\d{1,2})?$/.test(value))
+        ctx.addIssue(i18nIssue("validation.amount.invalid"));
+    }),
+});
+
+export const travelSchema = z
+  .object({
+    departureDate: dateString,
+    returnDate: dateString,
+    cities: z.string().trim().min(2).max(200),
+  })
+  .superRefine((value, ctx) => {
+    const departure = parseDate(value.departureDate);
+    const back = parseDate(value.returnDate);
+    if (!departure)
+      ctx.addIssue(i18nIssue("validation.date.invalid", undefined, ["departureDate"]));
+    if (!back) ctx.addIssue(i18nIssue("validation.date.invalid", undefined, ["returnDate"]));
+    if (!departure || !back) return;
+
+    if (departure.getTime() < Date.now() - 86_400_000) {
+      ctx.addIssue(i18nIssue("validation.date.past", undefined, ["departureDate"]));
+    }
+    if (back.getTime() < departure.getTime()) {
+      ctx.addIssue(i18nIssue("validation.travel.returnBeforeDeparture", undefined, ["returnDate"]));
+    }
+  });
+
+export const companionsSchema = z.object({
+  travellingWith: z.enum(TRAVELLING_WITH),
+  whoPays: z.enum(WHO_PAYS),
+});
+
+export const historySchema = z.object({
+  schengenBefore: z.enum(YES_NO_UNSURE),
+  refused: z.enum(YES_NO_UNSURE),
+});
+
+/** The whole intake. Partial while it is being filled in. */
+export const intakeSchengenTourismV1 = z
+  .object({
+    applicant: applicantSchema,
+    passport: passportSchema,
+    residence: residenceSchema,
+    employment: employmentSchema,
+    travel: travelSchema,
+    companions: companionsSchema,
+    history: historySchema,
+  })
+  .superRefine((value, ctx) => {
+    // The real validity rule, now that the trip is known: three months beyond
+    // the departure from the Schengen area. Until the return date existed this
+    // was checked against today, which is the floor rather than the answer.
+    const expires = parseDate(value.passport.expiresAt);
+    const back = parseDate(value.travel.returnDate);
+    if (!expires || !back) return;
+
+    if (monthsBetween(back, expires) < PASSPORT_VALIDITY_MONTHS) {
+      ctx.addIssue(
+        i18nIssue(
+          "validation.passport.expiry.tooSoonForTrip",
+          { monthsRequired: PASSPORT_VALIDITY_MONTHS },
+          ["passport", "expiresAt"],
+        ),
+      );
+    }
+  });
 
 export type IntakeSchengenTourismV1 = z.infer<typeof intakeSchengenTourismV1>;
 
@@ -176,6 +284,19 @@ const QUESTION_SCHEMAS: Record<string, z.ZodType> = {
   "applicant.pinyin": applicantSchema.shape.pinyin,
   "applicant.birthDate": applicantSchema.shape.birthDate,
   "applicant.phone": applicantSchema.shape.phone,
+  "residence.city": residenceSchema.shape.city,
+  "residence.address": residenceSchema.shape.address,
+  "employment.employer": employmentSchema.shape.employer,
+  "employment.position": employmentSchema.shape.position,
+  "employment.startDate": employmentSchema.shape.startDate,
+  "employment.monthlyIncome": employmentSchema.shape.monthlyIncome,
+  "travel.cities": z.string().trim().min(2).max(200),
+  "travel.departureDate": dateString,
+  "travel.returnDate": dateString,
+  "companions.travellingWith": companionsSchema.shape.travellingWith,
+  "companions.whoPays": companionsSchema.shape.whoPays,
+  "history.schengenBefore": historySchema.shape.schengenBefore,
+  "history.refused": historySchema.shape.refused,
 };
 
 /**
@@ -228,4 +349,15 @@ export function parseApplicant(input: unknown) {
 
 export function parsePassport(input: unknown) {
   return toResult(passportSchema.safeParse(input), input);
+}
+
+/**
+ * The whole form, checked at once.
+ *
+ * This runs before anything is enqueued, and the same schema runs again in the
+ * conductor: the rules have one home, and a job is never created from answers
+ * that would not pass them.
+ */
+export function parseIntake(input: unknown) {
+  return toResult(intakeSchengenTourismV1.safeParse(input), input);
 }

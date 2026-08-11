@@ -47,12 +47,52 @@ export const INTAKE_SECTIONS: IntakeSection[] = [
       { id: "expiresAt", path: "passport.expiresAt" },
     ],
   },
-  { id: "residence", available: false, questions: [] },
-  { id: "employment", available: false, questions: [] },
-  { id: "travel", available: false, questions: [] },
-  { id: "companions", available: false, questions: [] },
-  { id: "history", available: false, questions: [] },
-  { id: "review", available: false, questions: [] },
+  {
+    id: "residence",
+    available: true,
+    questions: [
+      { id: "city", path: "residence.city" },
+      { id: "address", path: "residence.address" },
+    ],
+  },
+  {
+    id: "employment",
+    available: true,
+    questions: [
+      { id: "employer", path: "employment.employer" },
+      { id: "position", path: "employment.position" },
+      { id: "startDate", path: "employment.startDate" },
+      { id: "monthlyIncome", path: "employment.monthlyIncome" },
+    ],
+  },
+  {
+    id: "travel",
+    available: true,
+    questions: [
+      { id: "departureDate", path: "travel.departureDate" },
+      { id: "returnDate", path: "travel.returnDate" },
+      { id: "cities", path: "travel.cities" },
+    ],
+  },
+  {
+    id: "companions",
+    available: true,
+    questions: [
+      { id: "travellingWith", path: "companions.travellingWith" },
+      { id: "whoPays", path: "companions.whoPays" },
+    ],
+  },
+  {
+    id: "history",
+    available: true,
+    questions: [
+      { id: "schengenBefore", path: "history.schengenBefore" },
+      { id: "refused", path: "history.refused" },
+    ],
+  },
+  // The last section is not questions but a reading of everything answered,
+  // and the one place the whole form is checked at once.
+  { id: "review", available: true, questions: [] },
 ];
 
 export type SectionState = "done" | "inProgress" | "todo" | "unavailable";
@@ -71,6 +111,12 @@ function isAnswered(answers: unknown, question: IntakeQuestion): boolean {
 
 export function sectionState(section: IntakeSection, answers: unknown): SectionState {
   if (!section.available) return "unavailable";
+  // The review section has nothing of its own to answer; it is ready exactly
+  // when everything before it is.
+  if (section.questions.length === 0) {
+    const rest = intakeProgress(answers);
+    return rest.answered === rest.total ? "done" : "todo";
+  }
 
   const answered = section.questions.filter((question) => isAnswered(answers, question)).length;
   if (answered === 0) return "todo";

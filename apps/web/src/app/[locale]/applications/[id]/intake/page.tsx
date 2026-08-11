@@ -132,9 +132,13 @@ export default async function IntakeHubPage({
 
           return (
             <li key={section.id}>
-              {open && first ? (
+              {open ? (
                 <Link
-                  href={`/applications/${id}/intake/${section.id}/${first.id}`}
+                  href={
+                    first
+                      ? `/applications/${id}/intake/${section.id}/${first.id}`
+                      : `/applications/${id}/intake/${section.id}`
+                  }
                   style={{ textDecoration: "none", display: "block" }}
                 >
                   {body}
@@ -164,14 +168,9 @@ export default async function IntakeHubPage({
             {progress.answered === 0 ? t("startCta") : t("resumeCta")}
           </LinkButton>
         ) : (
-          <Card tone="accent" elevation={0}>
-            <strong style={{ color: "var(--text-heading)", fontWeight: "var(--fw-semibold)" }}>
-              {t("finishedTitle")}
-            </strong>
-            <p style={{ marginBlock: "var(--space-2) 0", color: "var(--text-body)" }}>
-              {t("finishedBody")}
-            </p>
-          </Card>
+          <LinkButton href={`/applications/${id}/intake/review`} size="lg" iconAfter="arrow-right">
+            {t("review.title")}
+          </LinkButton>
         )}
       </div>
     </main>

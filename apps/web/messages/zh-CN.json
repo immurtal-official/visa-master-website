@@ -148,7 +148,8 @@
     "tooLong": "最多 {max} 个字符。",
     "date": {
       "invalid": "请填写一个有效的日期。",
-      "future": "这个日期不能晚于今天。"
+      "future": "这个日期不能晚于今天。",
+      "past": "这个日期不能早于今天。"
     },
     "phone": {
       "invalid": "请填写 11 位手机号码。"
@@ -162,8 +163,15 @@
       },
       "expiry": {
         "beforeIssue": "有效期不能早于签发日期，请检查这两个日期。",
-        "tooSoon": "护照剩余有效期不足 {monthsRequired} 个月。请先换发新护照，再来准备材料。"
+        "tooSoon": "护照剩余有效期不足 {monthsRequired} 个月。请先换发新护照，再来准备材料。",
+        "tooSoonForTrip": "按回国日期算，护照剩余有效期不足 {monthsRequired} 个月。请先换发新护照。"
       }
+    },
+    "amount": {
+      "invalid": "请只填数字金额，例如 12000。"
+    },
+    "travel": {
+      "returnBeforeDeparture": "回国日期不能早于出发日期，请检查这两个日期。"
     }
   },
   "intake": {
@@ -176,15 +184,13 @@
     "saved": "已保存。你可以随时关闭页面，之后继续填写。",
     "saveFailed": "这一题没有保存成功。请再试一次。",
     "next": "保存并继续",
-    "finishedTitle": "这两节都填完了",
-    "finishedBody": "剩下的几节还在建设中。已经填的内容都保存好了。",
     "state": {
       "done": "已完成",
       "inProgress": "填写中",
       "todo": "待填写",
       "unavailable": "还没开放"
     },
-    "unavailableHint": "这一节还在建设中，先把前面的填完。",
+    "unavailableHint": "这一节我们还没做好。已经填的内容都保存着。",
     "section": {
       "applicant": "关于申请人",
       "passport": "护照信息",
@@ -212,12 +218,73 @@
         "issuedAt": "护照的签发日期是？",
         "expiresAt": "护照的有效期到哪天？",
         "expiresAtHint": "申根要求护照在离开申根区之后至少还有 3 个月有效期。"
+      },
+      "residence": {
+        "city": "申请人现在住在哪个城市？",
+        "cityHint": "以实际居住地为准，材料里会用这个城市判断领区。",
+        "address": "详细住址是什么？",
+        "addressHint": "写到门牌号。申请表上要求填写完整住址。"
+      },
+      "employment": {
+        "employer": "申请人所在单位的全称是什么？",
+        "employerHint": "和营业执照、社保记录上的名称一致。在职证明会用这个名称。",
+        "position": "职位是什么？",
+        "startDate": "什么时候入职的？",
+        "startDateHint": "在职时长会写进在职证明。",
+        "monthlyIncome": "税前月薪是多少？",
+        "monthlyIncomeHint": "填人民币金额，只填数字。这个数字要和银行流水对得上。"
+      },
+      "travel": {
+        "departureDate": "计划哪天出发？",
+        "departureDateHint": "还没定死也没关系，填一个预计日期，后面可以改。",
+        "returnDate": "计划哪天回国？",
+        "cities": "打算去哪些城市？",
+        "citiesHint": "按行程顺序写，用顿号隔开，例如：马德里、塞维利亚、巴塞罗那。行程单会按这个顺序生成。"
+      },
+      "companions": {
+        "travellingWith": "这次和谁一起去？",
+        "whoPays": "这次出行的费用由谁承担？",
+        "whoPaysHint": "由别人承担时，需要额外提供承担方的资金证明。"
+      },
+      "history": {
+        "schengenBefore": "以前去过申根国家吗？",
+        "schengenBeforeHint": "去过的话，旧签证记录会作为出行记录的一部分。",
+        "refused": "以前有没有被拒签过？",
+        "refusedHint": "如实回答。拒签史需要在申请表里说明，隐瞒比拒签本身影响更大。"
       }
     },
     "date": {
       "year": "年",
       "month": "月",
       "day": "日"
+    },
+    "option": {
+      "travellingWith": {
+        "alone": "我一个人",
+        "family": "和家人",
+        "friends": "和朋友",
+        "colleagues": "和同事"
+      },
+      "whoPays": {
+        "self": "自己承担",
+        "family": "家人承担",
+        "employer": "单位承担"
+      },
+      "yesNoUnsure": {
+        "yes": "有",
+        "no": "没有",
+        "unsure": "我不确定"
+      }
+    },
+    "review": {
+      "title": "确认并提交",
+      "intro": "提交后我们开始核对官方要求并生成材料。生成大约需要 10 分钟，你可以关掉页面。",
+      "editCta": "修改",
+      "submit": "提交并开始生成",
+      "incompleteTitle": "还有内容需要补充",
+      "incompleteBody": "下面这些地方需要先处理，然后才能提交。",
+      "submitFailed": "提交没有成功。请再试一次。",
+      "alreadySubmitted": "这份申请已经提交过了。"
     }
   }
 }

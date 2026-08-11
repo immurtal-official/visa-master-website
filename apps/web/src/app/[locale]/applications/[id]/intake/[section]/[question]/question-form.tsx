@@ -3,12 +3,13 @@
 import { useActionState } from "react";
 import { useFormStatus } from "react-dom";
 import { useTranslations, type Locale } from "next-intl";
-import { FIELD_BEHAVIOUR, type ValidationIssue } from "@visa-master/core";
+import { FIELD_BEHAVIOUR, QUESTION_OPTIONS, type ValidationIssue } from "@visa-master/core";
 import { Button } from "@/components/ui/button";
 import { Callout } from "@/components/ui/callout";
 import { DateInput } from "@/components/ui/date-input";
 import { ErrorSummary } from "@/components/ui/error-summary";
 import { Input } from "@/components/ui/input";
+import { RadioGroup } from "@/components/ui/radio-group";
 import { Link } from "@/i18n/navigation";
 import { saveAnswer, type AnswerState } from "../../actions";
 
@@ -107,7 +108,22 @@ export function QuestionForm({
       <input type="hidden" name="questionId" value={questionId} />
 
       <div style={{ marginBlockStart: "var(--space-6)" }}>
-        {behaviour.kind === "date" ? (
+        {behaviour.kind === "choice" ? (
+          <RadioGroup
+            name="value"
+            legend={
+              <span className="vm-visually-hidden">
+                {t(questionKey as "intake.question.applicant.name")}
+              </span>
+            }
+            error={message}
+            defaultValue={value}
+            options={(QUESTION_OPTIONS[path] ?? []).map((option) => ({
+              value: option,
+              title: optionLabel(t, path, option),
+            }))}
+          />
+        ) : behaviour.kind === "date" ? (
           <>
             {message ? (
               <p
@@ -195,6 +211,24 @@ function SaveButton({ label }: { label: string }) {
       {label}
     </Button>
   );
+}
+
+/**
+ * The label for one option.
+ *
+ * Yes/no/not-sure answers share a set, because the same three words should read
+ * the same wherever they are offered — writing them per question is how two
+ * questions end up disagreeing about what "not sure" is called.
+ */
+function optionLabel(t: ReturnType<typeof useTranslations>, path: string, option: string): string {
+  const group = path.endsWith("travellingWith")
+    ? "travellingWith"
+    : path.endsWith("whoPays")
+      ? "whoPays"
+      : "yesNoUnsure";
+  // @ts-expect-error — the option sets are declared in packages/core and their
+  // labels are checked against the catalogue by the build.
+  return t(`intake.option.${group}.${option}`);
 }
 
 function messageFor(t: ReturnType<typeof useTranslations>, issue: ValidationIssue): string {

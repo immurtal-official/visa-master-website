@@ -32,12 +32,13 @@ test("an application opens into its sections, and the first question", async ({ 
   await expect(page).toHaveURL(/\/intake$/);
   await expect(page.getByRole("heading", { level: 1 })).toHaveText(en.intake.hubTitle);
 
-  // Every section is listed, including the ones not built yet — and those say
-  // why they cannot be opened.
+  // Every section is listed, and every one of them can be opened. The hub
+  // keeps the machinery for staging a section that is not built — it says why
+  // rather than greying out silently — but nothing uses it now.
   for (const name of Object.values(en.intake.section)) {
     await expect(page.getByText(name, { exact: true })).toBeVisible();
   }
-  await expect(page.getByText(en.intake.unavailableHint).first()).toBeVisible();
+  await expect(page.getByText(en.intake.unavailableHint)).toHaveCount(0);
 
   await page.getByRole("link", { name: en.intake.startCta, exact: true }).click();
   await expect(page.getByRole("heading", { level: 1 })).toHaveText(

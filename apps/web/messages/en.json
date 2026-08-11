@@ -148,7 +148,8 @@
     "tooLong": "{max, plural, one {Enter no more than # character.} other {Enter no more than # characters.}}",
     "date": {
       "invalid": "Enter a real date.",
-      "future": "This date cannot be later than today."
+      "future": "This date cannot be later than today.",
+      "past": "This date cannot be earlier than today."
     },
     "phone": {
       "invalid": "Enter an 11-digit mobile number."
@@ -162,8 +163,15 @@
       },
       "expiry": {
         "beforeIssue": "The expiry date cannot be earlier than the issue date. Check both dates.",
-        "tooSoon": "This passport has less than {monthsRequired} months left. Renew it first, then come back and prepare the documents."
+        "tooSoon": "This passport has less than {monthsRequired} months left. Renew it first, then come back and prepare the documents.",
+        "tooSoonForTrip": "Counting from the return date, this passport has less than {monthsRequired} months left. Renew it first."
       }
+    },
+    "amount": {
+      "invalid": "Enter the amount as digits, for example 12000."
+    },
+    "travel": {
+      "returnBeforeDeparture": "The return date cannot be earlier than the departure date. Check both dates."
     }
   },
   "intake": {
@@ -176,15 +184,13 @@
     "saved": "Saved. You can close this page at any time and carry on later.",
     "saveFailed": "That answer was not saved. Try again.",
     "next": "Save and continue",
-    "finishedTitle": "Both of these sections are done",
-    "finishedBody": "The remaining sections are still being built. Everything you have answered is saved.",
     "state": {
       "done": "Done",
       "inProgress": "Started",
       "todo": "To do",
       "unavailable": "Not open yet"
     },
-    "unavailableHint": "This section is still being built. Fill in the earlier ones first.",
+    "unavailableHint": "We have not built this section yet. Everything you have answered is saved.",
     "section": {
       "applicant": "About the applicant",
       "passport": "Passport",
@@ -212,12 +218,73 @@
         "issuedAt": "When was the passport issued?",
         "expiresAt": "When does the passport expire?",
         "expiresAtHint": "Schengen rules ask for at least 3 months of validity after you leave the Schengen area."
+      },
+      "residence": {
+        "city": "Which city does the applicant live in?",
+        "cityHint": "Where they actually live: this is what decides which consulate handles the application.",
+        "address": "What is the full address?",
+        "addressHint": "Down to the building and unit number. The application form asks for the full address."
+      },
+      "employment": {
+        "employer": "What is the full name of the applicant’s employer?",
+        "employerHint": "As it appears on the business licence and social-insurance records. The employment letter uses this name.",
+        "position": "What is their job title?",
+        "startDate": "When did they start this job?",
+        "startDateHint": "How long they have worked there goes into the employment letter.",
+        "monthlyIncome": "What is their monthly salary before tax?",
+        "monthlyIncomeHint": "In yuan, digits only. This figure has to match the bank statements."
+      },
+      "travel": {
+        "departureDate": "When do they plan to leave?",
+        "departureDateHint": "An estimate is fine if nothing is booked yet. You can change it later.",
+        "returnDate": "When do they plan to come back?",
+        "cities": "Which cities are they going to?",
+        "citiesHint": "In the order they will visit them, separated by commas — for example: Madrid, Seville, Barcelona. The itinerary follows this order."
+      },
+      "companions": {
+        "travellingWith": "Who is travelling with them?",
+        "whoPays": "Who is paying for this trip?",
+        "whoPaysHint": "If somebody else is paying, that person’s proof of funds is needed as well."
+      },
+      "history": {
+        "schengenBefore": "Have they been to a Schengen country before?",
+        "schengenBeforeHint": "If they have, the earlier visas count as travel history.",
+        "refused": "Has a visa application of theirs ever been refused?",
+        "refusedHint": "Answer honestly. A refusal has to be declared on the form, and hiding one counts against the application more than the refusal itself."
       }
     },
     "date": {
       "year": "Year",
       "month": "Month",
       "day": "Day"
+    },
+    "option": {
+      "travellingWith": {
+        "alone": "On their own",
+        "family": "With family",
+        "friends": "With friends",
+        "colleagues": "With colleagues"
+      },
+      "whoPays": {
+        "self": "The applicant",
+        "family": "A family member",
+        "employer": "Their employer"
+      },
+      "yesNoUnsure": {
+        "yes": "Yes",
+        "no": "No",
+        "unsure": "I am not sure"
+      }
+    },
+    "review": {
+      "title": "Check and send",
+      "intro": "Once you send this we start checking the official requirements and preparing the documents. It takes about 10 minutes and you can close the page.",
+      "editCta": "Change",
+      "submit": "Send and start preparing",
+      "incompleteTitle": "There is still something to fill in",
+      "incompleteBody": "These need attention before the application can be sent.",
+      "submitFailed": "That was not sent. Try again.",
+      "alreadySubmitted": "This application has already been sent."
     }
   }
 }
