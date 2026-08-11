@@ -1,11 +1,12 @@
 import { expect, test } from "@playwright/test";
 import zh from "../messages/zh-CN.json" with { type: "json" };
 import en from "../messages/en.json" with { type: "json" };
-import { readSignInCode, uniqueEmail } from "./support/mailpit";
+import { clearInbox, readSignInCode, uniqueEmail } from "./support/mailpit";
 
 /** Sign in, so the application can be created against a real account. */
 async function signIn(page: import("@playwright/test").Page, prefix: string, messages: typeof en) {
   const email = uniqueEmail("route");
+  await clearInbox(email);
   await page.goto(`${prefix}/login`);
   await page.getByLabel(messages.auth.login.emailLabel).fill(email);
   await page.getByRole("button", { name: messages.auth.login.submit }).click();

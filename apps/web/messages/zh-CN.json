@@ -145,6 +145,79 @@
       "invalidFormat": "验证码是 6 位数字，请检查后重新输入。"
     },
     "tooShort": "至少需要 {min} 个字符。",
-    "tooLong": "最多 {max} 个字符。"
+    "tooLong": "最多 {max} 个字符。",
+    "date": {
+      "invalid": "请填写一个有效的日期。",
+      "future": "这个日期不能晚于今天。"
+    },
+    "phone": {
+      "invalid": "请填写 11 位手机号码。"
+    },
+    "pinyin": {
+      "invalid": "这一栏只填拼音字母，和护照上一致。"
+    },
+    "passport": {
+      "number": {
+        "invalid": "护照号码是 {length} 位，请照护照上重新填写。"
+      },
+      "expiry": {
+        "beforeIssue": "有效期不能早于签发日期，请检查这两个日期。",
+        "tooSoon": "护照剩余有效期不足 {monthsRequired} 个月。请先换发新护照，再来准备材料。"
+      }
+    }
+  },
+  "intake": {
+    "hubTitle": "填写申请信息",
+    "hubIntro": "分成几节，随时可以停。每答完一题就会保存，下次登录回到你停下的地方。",
+    "progress": "已回答 {answered} / {total} 题",
+    "resumeCta": "继续填写",
+    "startCta": "开始填写",
+    "backToHub": "返回任务清单",
+    "saved": "已保存。你可以随时关闭页面，之后继续填写。",
+    "saveFailed": "这一题没有保存成功。请再试一次。",
+    "next": "保存并继续",
+    "finishedTitle": "这两节都填完了",
+    "finishedBody": "剩下的几节还在建设中。已经填的内容都保存好了。",
+    "state": {
+      "done": "已完成",
+      "inProgress": "填写中",
+      "todo": "待填写",
+      "unavailable": "还没开放"
+    },
+    "unavailableHint": "这一节还在建设中，先把前面的填完。",
+    "section": {
+      "applicant": "关于申请人",
+      "passport": "护照信息",
+      "residence": "居住地与领区",
+      "employment": "工作与收入",
+      "travel": "行程安排",
+      "companions": "同行人与费用承担",
+      "history": "签证与出入境历史",
+      "review": "确认并提交"
+    },
+    "question": {
+      "applicant": {
+        "name": "申请人的中文姓名是什么？",
+        "nameHint": "和身份证上的写法一致。",
+        "pinyin": "护照上的拼音姓名怎么写？",
+        "pinyinHint": "照抄护照资料页上的拼写，包括空格。材料里会一直用这个写法。",
+        "birthDate": "申请人的出生日期是？",
+        "birthDateHint": "和护照上的一致。",
+        "phone": "常用手机号是多少？",
+        "phoneHint": "材料准备好或需要补充时，我们用它联系你。"
+      },
+      "passport": {
+        "number": "护照号码是多少？",
+        "numberHint": "在护照资料页右上角，9 位。",
+        "issuedAt": "护照的签发日期是？",
+        "expiresAt": "护照的有效期到哪天？",
+        "expiresAtHint": "申根要求护照在离开申根区之后至少还有 3 个月有效期。"
+      }
+    },
+    "date": {
+      "year": "年",
+      "month": "月",
+      "day": "日"
+    }
   }
 }

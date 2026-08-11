@@ -145,6 +145,79 @@
       "invalidFormat": "Your code is 6 digits. Check it and enter it again."
     },
     "tooShort": "{min, plural, one {Enter at least # character.} other {Enter at least # characters.}}",
-    "tooLong": "{max, plural, one {Enter no more than # character.} other {Enter no more than # characters.}}"
+    "tooLong": "{max, plural, one {Enter no more than # character.} other {Enter no more than # characters.}}",
+    "date": {
+      "invalid": "Enter a real date.",
+      "future": "This date cannot be later than today."
+    },
+    "phone": {
+      "invalid": "Enter an 11-digit mobile number."
+    },
+    "pinyin": {
+      "invalid": "Use the Latin spelling from the passport in this field."
+    },
+    "passport": {
+      "number": {
+        "invalid": "A passport number is {length} characters. Copy it from the passport and enter it again."
+      },
+      "expiry": {
+        "beforeIssue": "The expiry date cannot be earlier than the issue date. Check both dates.",
+        "tooSoon": "This passport has less than {monthsRequired} months left. Renew it first, then come back and prepare the documents."
+      }
+    }
+  },
+  "intake": {
+    "hubTitle": "Fill in your application",
+    "hubIntro": "It comes in sections and you can stop at any point. Each answer is saved as you give it, and signing in again brings you back to where you stopped.",
+    "progress": "{answered} of {total} questions answered",
+    "resumeCta": "Continue",
+    "startCta": "Start filling it in",
+    "backToHub": "Back to the section list",
+    "saved": "Saved. You can close this page at any time and carry on later.",
+    "saveFailed": "That answer was not saved. Try again.",
+    "next": "Save and continue",
+    "finishedTitle": "Both of these sections are done",
+    "finishedBody": "The remaining sections are still being built. Everything you have answered is saved.",
+    "state": {
+      "done": "Done",
+      "inProgress": "Started",
+      "todo": "To do",
+      "unavailable": "Not open yet"
+    },
+    "unavailableHint": "This section is still being built. Fill in the earlier ones first.",
+    "section": {
+      "applicant": "About the applicant",
+      "passport": "Passport",
+      "residence": "Where you live",
+      "employment": "Work and income",
+      "travel": "Travel plans",
+      "companions": "Who you travel with, and who pays",
+      "history": "Visa and travel history",
+      "review": "Check and send"
+    },
+    "question": {
+      "applicant": {
+        "name": "What is the applicant’s name in Chinese?",
+        "nameHint": "Write it as it appears on their identity card.",
+        "pinyin": "How is the name written on the passport?",
+        "pinyinHint": "Copy the spelling from the passport’s data page, spaces and all. Every document uses this spelling.",
+        "birthDate": "What is the applicant’s date of birth?",
+        "birthDateHint": "As printed on the passport.",
+        "phone": "Which mobile number should we use?",
+        "phoneHint": "We use it when the documents are ready, or if something is missing."
+      },
+      "passport": {
+        "number": "What is the passport number?",
+        "numberHint": "Top right of the passport’s data page. It is 9 characters.",
+        "issuedAt": "When was the passport issued?",
+        "expiresAt": "When does the passport expire?",
+        "expiresAtHint": "Schengen rules ask for at least 3 months of validity after you leave the Schengen area."
+      }
+    },
+    "date": {
+      "year": "Year",
+      "month": "Month",
+      "day": "Day"
+    }
   }
 }

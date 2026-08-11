@@ -1,7 +1,7 @@
 import type { Locale } from "next-intl";
 import { getFormatter, getTranslations, setRequestLocale } from "next-intl/server";
 import { redirect } from "next/navigation";
-import { Button } from "@/components/ui/button";
+import { LinkButton } from "@/components/ui/link-button";
 import { Card } from "@/components/ui/card";
 import { Link, getPathname } from "@/i18n/navigation";
 import { Callout } from "@/components/ui/callout";
@@ -127,64 +127,73 @@ export default async function DashboardPage({ params }: { params: Promise<{ loca
         >
           {rows.map((application) => (
             <li key={application.id}>
-              <Card>
-                <div
-                  style={{
-                    display: "flex",
-                    flexWrap: "wrap",
-                    alignItems: "baseline",
-                    justifyContent: "space-between",
-                    gap: "var(--space-3)",
-                  }}
-                >
-                  <h2
+              {/* The whole card is the way in: "continue filling it in" is the
+                  next action, so it has to be the thing you can press. */}
+              <Link
+                href={`/applications/${application.id}/intake`}
+                style={{ textDecoration: "none", display: "block" }}
+              >
+                <Card>
+                  <div
                     style={{
-                      margin: 0,
-                      fontSize: "var(--type-h3-size)",
-                      lineHeight: "var(--type-h3-lh)",
-                      fontWeight: "var(--fw-semibold)",
-                      color: "var(--text-heading)",
+                      display: "flex",
+                      flexWrap: "wrap",
+                      alignItems: "baseline",
+                      justifyContent: "space-between",
+                      gap: "var(--space-3)",
                     }}
                   >
-                    {t("application.route", {
-                      destination: countryName(locale, application.destination),
-                      purpose: t(`route.purpose.${application.purpose}` as "route.purpose.tourism"),
+                    <h2
+                      style={{
+                        margin: 0,
+                        fontSize: "var(--type-h3-size)",
+                        lineHeight: "var(--type-h3-lh)",
+                        fontWeight: "var(--fw-semibold)",
+                        color: "var(--text-heading)",
+                      }}
+                    >
+                      {t("application.route", {
+                        destination: countryName(locale, application.destination),
+                        purpose: t(
+                          `route.purpose.${application.purpose}` as "route.purpose.tourism",
+                        ),
+                      })}
+                    </h2>
+                    <span style={{ color: "var(--text-muted)", fontSize: "var(--fs-14)" }}>
+                      {t(`application.status.${application.status}` as "application.status.draft")}
+                    </span>
+                  </div>
+
+                  <p style={{ marginBlock: "var(--space-3) 0", color: "var(--text-body)" }}>
+                    {t(
+                      `application.nextStep.${application.status}` as "application.nextStep.draft",
+                    )}
+                  </p>
+
+                  <p
+                    style={{
+                      marginBlock: "var(--space-2) 0",
+                      color: "var(--text-faint)",
+                      fontSize: "var(--fs-14)",
+                    }}
+                  >
+                    {t("application.createdAt", {
+                      date: format.dateTime(new Date(application.created_at), {
+                        dateStyle: "long",
+                      }),
                     })}
-                  </h2>
-                  <span style={{ color: "var(--text-muted)", fontSize: "var(--fs-14)" }}>
-                    {t(`application.status.${application.status}` as "application.status.draft")}
-                  </span>
-                </div>
-
-                <p style={{ marginBlock: "var(--space-3) 0", color: "var(--text-body)" }}>
-                  {t(`application.nextStep.${application.status}` as "application.nextStep.draft")}
-                </p>
-
-                <p
-                  style={{
-                    marginBlock: "var(--space-2) 0",
-                    color: "var(--text-faint)",
-                    fontSize: "var(--fs-14)",
-                  }}
-                >
-                  {t("application.createdAt", {
-                    date: format.dateTime(new Date(application.created_at), {
-                      dateStyle: "long",
-                    }),
-                  })}
-                </p>
-              </Card>
+                  </p>
+                </Card>
+              </Link>
             </li>
           ))}
         </ul>
       )}
 
       <div style={{ marginBlockStart: "var(--space-8)" }}>
-        <Link href="/start" style={{ textDecoration: "none" }}>
-          <Button size="lg" iconAfter="arrow-right">
-            {t("application.newCta")}
-          </Button>
-        </Link>
+        <LinkButton href="/start" size="lg" iconAfter="arrow-right">
+          {t("application.newCta")}
+        </LinkButton>
       </div>
     </main>
   );

@@ -24,6 +24,11 @@ export interface InputProps extends Omit<
    * length. It is a max, so the control still shrinks on a narrow screen.
    */
   width?: keyof typeof WIDTHS;
+  /**
+   * Show the answer in capitals, for fields that are capitals on the document
+   * they are copied from. The value is uppercased by the rule, not here.
+   */
+  uppercase?: boolean;
 }
 
 /**
@@ -32,7 +37,7 @@ export interface InputProps extends Omit<
  * Never below 16px: iOS Safari zooms the page when a smaller input takes focus,
  * and the resulting scroll jump loses people mid-form.
  */
-export function Input({ label, hint, error, width = "full", id, ...rest }: InputProps) {
+export function Input({ label, hint, error, width = "full", uppercase, id, ...rest }: InputProps) {
   const generatedId = useId();
   const inputId = id ?? generatedId;
   const hintId = `${inputId}-hint`;
@@ -113,6 +118,7 @@ export function Input({ label, hint, error, width = "full", id, ...rest }: Input
           outline: focused ? "3px solid var(--focus-ring)" : "none",
           outlineOffset: 2,
           transition: "var(--transition-control)",
+          textTransform: uppercase ? "uppercase" : undefined,
         }}
         {...rest}
       />

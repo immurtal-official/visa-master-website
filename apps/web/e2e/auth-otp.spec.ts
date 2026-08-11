@@ -1,7 +1,7 @@
 import { expect, test } from "@playwright/test";
 import zh from "../messages/zh-CN.json" with { type: "json" };
 import en from "../messages/en.json" with { type: "json" };
-import { expectCodeNotLink, readSignInCode, uniqueEmail } from "./support/mailpit";
+import { clearInbox, expectCodeNotLink, readSignInCode, uniqueEmail } from "./support/mailpit";
 
 const LOCALES = [
   { prefix: "/zh", messages: zh },
@@ -60,6 +60,7 @@ test("a signed-out visitor cannot reach the dashboard", async ({ page }) => {
 test("a wrong code is refused, and the address is not lost", async ({ page }) => {
   const email = uniqueEmail();
 
+  await clearInbox(email);
   await page.goto("/en/login");
   await page.getByLabel(en.auth.login.emailLabel).fill(email);
   await page.getByRole("button", { name: en.auth.login.submit }).click();
@@ -77,6 +78,7 @@ test("a wrong code is refused, and the address is not lost", async ({ page }) =>
 test("a malformed code is caught by the shared rule, not by the service", async ({ page }) => {
   const email = uniqueEmail();
 
+  await clearInbox(email);
   await page.goto("/en/login");
   await page.getByLabel(en.auth.login.emailLabel).fill(email);
   await page.getByRole("button", { name: en.auth.login.submit }).click();

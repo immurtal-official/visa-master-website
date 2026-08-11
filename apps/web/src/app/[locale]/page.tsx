@@ -1,7 +1,6 @@
 import type { Locale } from "next-intl";
 import { getTranslations, setRequestLocale } from "next-intl/server";
-import { Button } from "@/components/ui/button";
-import { Link } from "@/i18n/navigation";
+import { LinkButton } from "@/components/ui/link-button";
 
 /**
  * The landing page, deliberately minimal.
@@ -31,11 +30,9 @@ export default async function LandingPage({ params }: { params: Promise<{ locale
       </h1>
 
       <div style={{ marginBlockStart: "var(--space-8)" }}>
-        <Link href="/login" style={{ textDecoration: "none" }}>
-          <Button size="lg" iconAfter="arrow-right">
-            {t("cta")}
-          </Button>
-        </Link>
+        <LinkButton href="/login" size="lg" iconAfter="arrow-right">
+          {t("cta")}
+        </LinkButton>
       </div>
     </main>
   );

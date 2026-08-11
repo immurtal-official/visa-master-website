@@ -16,6 +16,13 @@ export const MESSAGE_KEYS = {
   "validation.otp.invalidFormat": [],
   "validation.tooShort": ["min"],
   "validation.tooLong": ["max"],
+  "validation.date.invalid": [],
+  "validation.date.future": [],
+  "validation.phone.invalid": [],
+  "validation.pinyin.invalid": [],
+  "validation.passport.number.invalid": ["length"],
+  "validation.passport.expiry.beforeIssue": [],
+  "validation.passport.expiry.tooSoon": ["monthsRequired"],
 } as const satisfies Record<string, readonly string[]>;
 
 export type MessageKey = keyof typeof MESSAGE_KEYS;

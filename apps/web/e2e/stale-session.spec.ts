@@ -1,7 +1,7 @@
 import { execFileSync } from "node:child_process";
 import { expect, test } from "@playwright/test";
 import en from "../messages/en.json" with { type: "json" };
-import { readSignInCode, uniqueEmail } from "./support/mailpit";
+import { clearInbox, readSignInCode, uniqueEmail } from "./support/mailpit";
 
 /**
  * A session whose account no longer exists.
@@ -33,6 +33,7 @@ function deleteUser(email: string): void {
 test("a session outliving its account is treated as signed out", async ({ page }) => {
   const email = uniqueEmail("stale");
 
+  await clearInbox(email);
   await page.goto("/en/login");
   await page.getByLabel(en.auth.login.emailLabel).fill(email);
   await page.getByRole("button", { name: en.auth.login.submit }).click();
@@ -51,6 +52,7 @@ test("a session outliving its account is treated as signed out", async ({ page }
 test("a failed creation says so instead of showing an empty dashboard", async ({ page }) => {
   const email = uniqueEmail("stale-create");
 
+  await clearInbox(email);
   await page.goto("/en/login");
   await page.getByLabel(en.auth.login.emailLabel).fill(email);
   await page.getByRole("button", { name: en.auth.login.submit }).click();

@@ -54,3 +54,28 @@ export {
   type RouteVerdict,
   type UnsupportedReason,
 } from "./routes/route-gate";
+
+export {
+  INTAKE_SECTIONS,
+  intakeProgress,
+  nextQuestion,
+  readAnswer,
+  resumePoint,
+  sectionState,
+  type IntakeQuestion,
+  type IntakeSection,
+  type SectionState,
+} from "./intake/sections";
+
+export {
+  FIELD_BEHAVIOUR,
+  PASSPORT_VALIDITY_MONTHS,
+  applicantSchema,
+  intakeSchengenTourismV1,
+  parseApplicant,
+  parsePassport,
+  parseQuestion,
+  passportSchema,
+  type FieldBehaviour,
+  type IntakeSchengenTourismV1,
+} from "./intake/schengen-tourism-v1";
