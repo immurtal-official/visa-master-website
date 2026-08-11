@@ -127,10 +127,11 @@ export default async function DashboardPage({ params }: { params: Promise<{ loca
         >
           {rows.map((application) => (
             <li key={application.id}>
-              {/* The whole card is the way in: "continue filling it in" is the
-                  next action, so it has to be the thing you can press. */}
+              {/* The card opens the application, not the form: a sent
+                  application is something to check on, and leading back into
+                  the intake would offer to re-edit what was already sent. */}
               <Link
-                href={`/applications/${application.id}/intake`}
+                href={`/applications/${application.id}`}
                 style={{ textDecoration: "none", display: "block" }}
               >
                 <Card>

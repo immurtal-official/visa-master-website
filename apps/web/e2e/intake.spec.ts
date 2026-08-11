@@ -29,6 +29,8 @@ test("an application opens into its sections, and the first question", async ({ 
 
   // The card's next action is the way in.
   await page.getByRole("heading", { name: /Spain/ }).click();
+  // The card opens the application; the form is one step further in.
+  await page.getByRole("link", { name: en.application.continueCta, exact: true }).click();
   await expect(page).toHaveURL(/\/intake$/);
   await expect(page.getByRole("heading", { level: 1 })).toHaveText(en.intake.hubTitle);
 
@@ -114,6 +116,8 @@ test("leaving mid-form and signing in again returns to the same question", async
   await signIn(page, email);
 
   await page.getByRole("heading", { name: /Spain/ }).click();
+  // The card opens the application; the form is one step further in.
+  await page.getByRole("link", { name: en.application.continueCta, exact: true }).click();
   await expect(page).toHaveURL(/\/intake$/);
   // Exact, because the dashboard card is a link whose name contains this word
   // too — "Continue filling it in".
@@ -133,6 +137,8 @@ test("leaving mid-form and signing in again returns to the same question", async
 async function intakeUrl(page: Page, suffix: string): Promise<string> {
   await page.goto("/en/dashboard");
   await page.getByRole("heading", { name: /Spain/ }).click();
+  // The card opens the application; the form is one step further in.
+  await page.getByRole("link", { name: en.application.continueCta, exact: true }).click();
   await expect(page).toHaveURL(/\/intake$/);
   return `${new URL(page.url()).pathname}/${suffix}`;
 }

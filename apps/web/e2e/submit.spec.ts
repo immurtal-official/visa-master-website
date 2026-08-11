@@ -80,6 +80,8 @@ test("a complete application is sent and leaves a queued job", async ({ page }) 
   await page.getByRole("button", { name: en.route.supported.cta }).click();
 
   await page.getByRole("heading", { name: /Spain/ }).click();
+  // The card opens the application; the form is one step further in.
+  await page.getByRole("link", { name: en.application.continueCta, exact: true }).click();
   await expect(page).toHaveURL(/\/intake$/);
   await page.getByRole("link", { name: en.intake.startCta, exact: true }).click();
 
@@ -126,6 +128,14 @@ test("a complete application is sent and leaves a queued job", async ({ page }) 
 
   await expect(page).toHaveURL(/\/en\/dashboard/);
   await expect(page.getByText(en.application.nextStep.submitted)).toBeVisible();
+
+  // A sent application opens its own page, not the form it came from.
+  await page.getByRole("heading", { name: /Spain/ }).click();
+  await expect(page).toHaveURL(/\/applications\/[0-9a-f-]+$/);
+  await expect(page.getByRole("heading", { level: 2 }).first()).toHaveText(
+    en.application.jobStatus.queued,
+  );
+  await expect(page.getByRole("link", { name: en.application.continueCta })).toHaveCount(0);
 
   // What the agent plane will read.
   const jobs = query(

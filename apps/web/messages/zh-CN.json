@@ -84,7 +84,25 @@
     },
     "createdAt": "创建于 {date}",
     "route": "{destination} · {purpose}",
-    "openCta": "打开"
+    "openCta": "打开",
+    "overviewTitle": "申请概览",
+    "backToList": "返回我的申请",
+    "continueCta": "继续填写",
+    "reviewCta": "查看已填内容",
+    "jobStatus": {
+      "queued": "已提交，排队等待生成",
+      "leased": "已提交，排队等待生成",
+      "running": "官方来源核对中",
+      "validating": "一致性检查中",
+      "awaiting_input": "需要你补充信息",
+      "succeeded": "人工复核中",
+      "failed": "已失败",
+      "timed_out": "已失败",
+      "cancelled": "已取消"
+    },
+    "asyncNote": "生成大约需要 10 分钟。你可以关掉这个页面，状态变化我们会通知你。",
+    "notStartedNote": "目前还没有生成节点在处理队列，所以这份申请会停在排队状态。这是本地开发环境的预期情况。",
+    "answersTitle": "你填写的内容"
   },
   "auth": {
     "login": {

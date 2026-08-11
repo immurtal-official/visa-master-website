@@ -84,7 +84,25 @@
     },
     "createdAt": "Created {date}",
     "route": "{destination} · {purpose}",
-    "openCta": "Open"
+    "openCta": "Open",
+    "overviewTitle": "Application",
+    "backToList": "Back to my applications",
+    "continueCta": "Continue filling it in",
+    "reviewCta": "See what you answered",
+    "jobStatus": {
+      "queued": "Sent, waiting in the queue",
+      "leased": "Sent, waiting in the queue",
+      "running": "Checking the official sources",
+      "validating": "Checking the documents against each other",
+      "awaiting_input": "We need something more from you",
+      "succeeded": "Being reviewed by a person",
+      "failed": "Did not complete",
+      "timed_out": "Did not complete",
+      "cancelled": "Cancelled"
+    },
+    "asyncNote": "Preparing the documents takes about 10 minutes. You can close this page — we will tell you when the state changes.",
+    "notStartedNote": "No machine is consuming the queue yet, so this application stays in the queue. That is expected while running locally.",
+    "answersTitle": "What you answered"
   },
   "auth": {
     "login": {
