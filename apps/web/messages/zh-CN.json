@@ -65,7 +65,10 @@
       "waitlistCta": "记录我的需求",
       "waitlistDone": "已记录。开通后我们会通过邮件告诉你。",
       "backCta": "换一组条件再看看"
-    }
+    },
+    "createFailed": "申请没有创建成功。请再试一次。",
+    "sessionExpired": "你的登录状态已经失效。重新登录后，刚才填的选项还在。",
+    "waitlistFailed": "没有记录成功。请再试一次。"
   },
   "application": {
     "newCta": "新建申请",
@@ -99,10 +102,12 @@
       "changeEmail": "换一个邮箱地址",
       "failed": "验证码不正确或已过期。重新输入，或点击重新发送。",
       "rateLimited": "验证码刚刚发送过。稍等一会再试。",
-      "sendFailed": "验证码发送失败。请再试一次。"
+      "sendFailed": "验证码发送失败。请再试一次。",
+      "checkFailed": "现在没法验证这个验证码。请稍后再试。"
     },
     "notConfigured": "登录暂不可用：认证服务还没有配置。",
-    "signOut": "退出登录"
+    "signOut": "退出登录",
+    "signOutFailed": "退出登录没有完成。请关闭浏览器，或稍后再试。"
   },
   "dashboard": {
     "title": "我的申请",
@@ -110,6 +115,10 @@
     "empty": {
       "title": "你还没有申请",
       "body": "你创建的申请会显示在这里。"
+    },
+    "loadFailed": {
+      "title": "暂时读不到你的申请",
+      "body": "这不代表申请没了。刷新页面再试一次；一直这样就联系我们。"
     }
   },
   "errorSummary": {
@@ -123,7 +132,8 @@
     "unexpected": {
       "title": "出了点问题",
       "body": "刚才的操作没有完成。请刷新页面再试一次。"
-    }
+    },
+    "retry": "重试"
   },
   "validation": {
     "required": "请填写这一项。",

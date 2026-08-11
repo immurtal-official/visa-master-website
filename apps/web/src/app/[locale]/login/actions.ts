@@ -18,7 +18,12 @@ import { isSupabaseConfigured } from "@/lib/supabase/config";
  * language for developers.
  */
 export type AuthErrorKey =
-  "auth.notConfigured" | "auth.otp.failed" | "auth.otp.rateLimited" | "auth.otp.sendFailed";
+  | "auth.notConfigured"
+  | "auth.otp.checkFailed"
+  | "auth.otp.failed"
+  | "auth.otp.rateLimited"
+  | "auth.otp.sendFailed"
+  | "auth.signOutFailed";
 
 export interface AuthState {
   step: "email" | "code";
@@ -79,9 +84,19 @@ export async function verifyOtp(_previous: AuthState, formData: FormData): Promi
     type: "email",
   });
 
-  // A wrong code and an expired one get the same message on purpose: telling
-  // someone which of the two it was tells an attacker the same thing.
-  if (error) return { step: "code", email, authError: "auth.otp.failed" };
+  if (error) {
+    // A wrong code and an expired one get the same message on purpose: telling
+    // someone which of the two it was tells an attacker the same thing. Being
+    // unable to check at all is a different situation, and saying "that code
+    // is wrong" would send someone hunting for a mistake they did not make.
+    const status = error.status ?? 0;
+    if (status === 429) return { step: "code", email, authError: "auth.otp.rateLimited" };
+    if (status >= 500 || status === 0) {
+      console.error("verifyOtp: could not reach the auth service", { status, name: error.name });
+      return { step: "code", email, authError: "auth.otp.checkFailed" };
+    }
+    return { step: "code", email, authError: "auth.otp.failed" };
+  }
 
   // next/navigation's redirect throws, so this is the end of the action.
   // The path is built by the routing config rather than assembled by hand.
@@ -110,10 +125,26 @@ export async function submitLogin(previous: AuthState, formData: FormData): Prom
   return requestOtp(previous, formData);
 }
 
-export async function signOut(formData: FormData): Promise<void> {
-  if (isSupabaseConfigured()) {
-    const supabase = await createClient();
-    await supabase.auth.signOut();
+/**
+ * End the session.
+ *
+ * Only navigate if it actually ended. The sign-in screen is the universal
+ * signal for "you are signed out", and showing it while the session is still
+ * live is the one lie that matters here — someone on a shared computer walks
+ * away believing it.
+ */
+export async function signOut(prev: AuthState, formData: FormData): Promise<AuthState> {
+  if (!isSupabaseConfigured()) {
+    redirect(getPathname({ href: "/login", locale: localeOf(formData) }));
   }
+
+  const supabase = await createClient();
+  const { error } = await supabase.auth.signOut();
+
+  if (error) {
+    console.error("signOut: failed", { status: error.status, message: error.message });
+    return { ...prev, step: "email", authError: "auth.signOutFailed" };
+  }
+
   redirect(getPathname({ href: "/login", locale: localeOf(formData) }));
 }

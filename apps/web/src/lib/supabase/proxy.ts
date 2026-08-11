@@ -1,12 +1,13 @@
 import { createServerClient } from "@supabase/ssr";
 import type { NextRequest, NextResponse } from "next/server";
 import { SUPABASE_PUBLISHABLE_KEY, SUPABASE_URL, isSupabaseConfigured } from "./config";
+import { readSession, type SessionState } from "./session";
 
 /** Paths that require a session, matched after the locale prefix is stripped. */
 const PROTECTED = ["/dashboard"];
 
 /**
- * Refresh the session, and say whether the request may proceed.
+ * Refresh the session, and report who is signed in.
  *
  * This deviates from the documented single-middleware pattern in one way, and
  * deliberately: that pattern builds and returns its own response, but locale
@@ -19,8 +20,8 @@ const PROTECTED = ["/dashboard"];
 export async function updateSession(
   request: NextRequest,
   response: NextResponse,
-): Promise<{ authenticated: boolean }> {
-  if (!isSupabaseConfigured()) return { authenticated: false };
+): Promise<SessionState> {
+  if (!isSupabaseConfigured()) return { status: "signed-out" };
 
   const supabase = createServerClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
     cookies: {
@@ -43,11 +44,7 @@ export async function updateSession(
     },
   });
 
-  // getClaims verifies the token's signature rather than trusting whatever the
-  // cookie says, which is why it is safe to gate a route on. getSession is not:
-  // it reports what the cookie claims, unverified.
-  const { data } = await supabase.auth.getClaims();
-  return { authenticated: Boolean(data?.claims) };
+  return readSession(supabase);
 }
 
 /** Whether this path needs a session, given the locale prefix in front of it. */

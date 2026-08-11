@@ -38,9 +38,12 @@ export async function proxy(request: NextRequest) {
   // would only have to be redone at the destination.
   if (response.headers.has("location")) return response;
 
-  const { authenticated } = await updateSession(request, response);
+  const session = await updateSession(request, response);
 
-  if (!authenticated && isProtectedPath(request.nextUrl.pathname)) {
+  // An auth service that cannot be reached is not the same as a visitor who is
+  // not signed in: letting the request through means the page decides, rather
+  // than signing everyone out at once because of a transient failure.
+  if (session.status === "signed-out" && isProtectedPath(request.nextUrl.pathname)) {
     const prefix = localePrefixOf(request.nextUrl.pathname);
     const url = request.nextUrl.clone();
     url.pathname = `${prefix}/login`;

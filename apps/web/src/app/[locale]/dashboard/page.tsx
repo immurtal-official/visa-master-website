@@ -4,9 +4,11 @@ import { redirect } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Link, getPathname } from "@/i18n/navigation";
+import { Callout } from "@/components/ui/callout";
 import { isSupabaseConfigured } from "@/lib/supabase/config";
 import { createClient } from "@/lib/supabase/server";
-import { signOut } from "../login/actions";
+import { readSession } from "@/lib/supabase/session";
+import { SignOutButton } from "@/components/chrome/sign-out-button";
 
 interface ApplicationRow {
   id: string;
@@ -33,15 +35,27 @@ export default async function DashboardPage({ params }: { params: Promise<{ loca
   if (!isSupabaseConfigured()) redirect(getPathname({ href: "/login", locale }));
 
   const supabase = await createClient();
-  const { data } = await supabase.auth.getClaims();
-  const claims = data?.claims;
-  if (!claims) redirect(getPathname({ href: "/login", locale }));
 
-  const { data: applications } = await supabase
+  // The account has to still exist, not merely have signed a valid token: a
+  // deleted or suspended user keeps a cryptographically valid one until it
+  // expires, and gating on the signature alone shows them a working product
+  // where every write fails.
+  const session = await readSession(supabase);
+  if (session.status !== "signed-in") redirect(getPathname({ href: "/login", locale }));
+
+  const { data: applications, error } = await supabase
     .from("applications")
     .select("id, destination, purpose, status, created_at")
     .order("updated_at", { ascending: false })
     .returns<ApplicationRow[]>();
+
+  if (error) {
+    console.error("dashboard: could not load applications", {
+      code: error.code,
+      message: error.message,
+      userId: session.userId,
+    });
+  }
 
   const rows = applications ?? [];
 
@@ -69,19 +83,22 @@ export default async function DashboardPage({ params }: { params: Promise<{ loca
           {t("dashboard.title")}
         </h1>
 
-        <form action={signOut}>
-          <input type="hidden" name="locale" value={locale} />
-          <Button type="submit" variant="quiet" size="sm">
-            {t("auth.signOut")}
-          </Button>
-        </form>
+        <SignOutButton locale={locale} />
       </div>
 
-      <p style={{ marginBlockEnd: "var(--space-6)", color: "var(--text-muted)" }}>
-        {t("dashboard.signedInAs", { email: String(claims.email ?? "") })}
-      </p>
+      {session.email ? (
+        <p style={{ marginBlockEnd: "var(--space-6)", color: "var(--text-muted)" }}>
+          {t("dashboard.signedInAs", { email: session.email })}
+        </p>
+      ) : null}
 
-      {rows.length === 0 ? (
+      {/* A list that could not be loaded must never look like an account with
+          nothing in it: one is a problem to retry, the other is a fact. */}
+      {error ? (
+        <Callout tone="error" title={t("dashboard.loadFailed.title")}>
+          {t("dashboard.loadFailed.body")}
+        </Callout>
+      ) : rows.length === 0 ? (
         <Card>
           <h2
             style={{

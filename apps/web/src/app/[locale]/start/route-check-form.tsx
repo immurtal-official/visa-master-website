@@ -29,9 +29,19 @@ const ANSWER_FIELDS = ["residenceArea", "destination", "purpose", "employment"] 
  * answer is no — a form that only accepts one combination, or a rejection
  * after payment, are both worse.
  */
-export function RouteCheckForm({ locale }: { locale: Locale }) {
+export function RouteCheckForm({
+  locale,
+  initialState = {},
+}: {
+  locale: Locale;
+  /** A route check parked while its owner signed in, restored on their return. */
+  initialState?: RouteCheckState;
+}) {
   const t = useTranslations();
-  const [state, formAction] = useActionState<RouteCheckState, FormData>(checkRouteAction, {});
+  const [state, formAction] = useActionState<RouteCheckState, FormData>(
+    checkRouteAction,
+    initialState,
+  );
 
   if (state.verdict?.supported) {
     return <SupportedRoute state={state} locale={locale} />;
@@ -131,10 +141,19 @@ export function RouteCheckForm({ locale }: { locale: Locale }) {
 }
 
 function SupportedRoute({ state, locale }: { state: RouteCheckState; locale: Locale }) {
-  const t = useTranslations("route.supported");
+  const t = useTranslations();
+  const [createState, createAction] = useActionState<RouteCheckState, FormData>(
+    createApplication,
+    state,
+  );
 
   return (
     <Card>
+      {createState.error ? (
+        <div style={{ marginBlockEnd: "var(--space-5)" }}>
+          <Callout tone="error">{t(createState.error)}</Callout>
+        </div>
+      ) : null}
       <h1
         style={{
           margin: 0,
@@ -144,7 +163,7 @@ function SupportedRoute({ state, locale }: { state: RouteCheckState; locale: Loc
           color: "var(--text-heading)",
         }}
       >
-        {t("title")}
+        {t("route.supported.title")}
       </h1>
       <p
         style={{
@@ -153,13 +172,13 @@ function SupportedRoute({ state, locale }: { state: RouteCheckState; locale: Loc
           color: "var(--text-body)",
         }}
       >
-        {t("body")}
+        {t("route.supported.body")}
       </p>
 
-      <form action={createApplication}>
+      <form action={createAction}>
         <input type="hidden" name="locale" value={locale} />
         <HiddenAnswers state={state} />
-        <SubmitButton label={t("cta")} />
+        <SubmitButton label={t("route.supported.cta")} />
       </form>
     </Card>
   );
@@ -227,6 +246,11 @@ function UnsupportedRoute({
           <Callout tone="success">{t("route.unsupported.waitlistDone")}</Callout>
         ) : (
           <Card tone="sunken" elevation={0}>
+            {waitlistState.error ? (
+              <div style={{ marginBlockEnd: "var(--space-4)" }}>
+                <Callout tone="error">{t(waitlistState.error)}</Callout>
+              </div>
+            ) : null}
             <h2
               style={{
                 margin: 0,

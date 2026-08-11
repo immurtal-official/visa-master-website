@@ -1,6 +1,7 @@
 "use server";
 
 import type { Locale } from "next-intl";
+import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import {
   checkRoute,
@@ -12,14 +13,30 @@ import {
 import { getPathname } from "@/i18n/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { isSupabaseConfigured } from "@/lib/supabase/config";
+import { readSession } from "@/lib/supabase/session";
+
+/** Failures a screen can be told about, as catalogue keys. */
+export type RouteErrorKey =
+  "route.createFailed" | "route.sessionExpired" | "route.waitlistFailed" | "auth.notConfigured";
 
 export interface RouteCheckState {
   answers?: Partial<RouteCheck>;
   issues?: ValidationIssue[];
   verdict?: { supported: true } | { supported: false; reasons: UnsupportedReason[] };
   waitlisted?: boolean;
-  failed?: boolean;
+  error?: RouteErrorKey;
 }
+
+/**
+ * Where a route check waits while somebody signs in.
+ *
+ * The route check is deliberately readable signed out, so the person most
+ * likely to answer it has no account yet. Sending them to sign in and losing
+ * four answers on the way would teach them that this product forgets what they
+ * tell it — the opposite of what it is selling.
+ */
+const PENDING_COOKIE = "vm_route_check";
+const PENDING_MAX_AGE = 60 * 60;
 
 function localeOf(formData: FormData): Locale {
   return formData.get("locale") as Locale;
@@ -32,6 +49,23 @@ function answersOf(formData: FormData): Partial<RouteCheck> {
     purpose: (formData.get("purpose") as RouteCheck["purpose"]) || undefined,
     employment: (formData.get("employment") as RouteCheck["employment"]) || undefined,
   };
+}
+
+/** Read back a route check that was parked while its owner signed in. */
+export async function readPendingRouteCheck(): Promise<RouteCheck | null> {
+  const raw = (await cookies()).get(PENDING_COOKIE)?.value;
+  if (!raw) return null;
+
+  try {
+    const parsed = parseRouteCheck(JSON.parse(raw));
+    return parsed.ok ? parsed.data : null;
+  } catch {
+    return null;
+  }
+}
+
+export async function clearPendingRouteCheck(): Promise<void> {
+  (await cookies()).delete(PENDING_COOKIE);
 }
 
 /**
@@ -53,39 +87,67 @@ export async function checkRouteAction(
   return { answers: parsed.data, verdict: checkRoute(parsed.data) };
 }
 
-/** Create the draft, and go straight to it. */
-export async function createApplication(formData: FormData): Promise<void> {
+/**
+ * Create the application.
+ *
+ * Failure and success are different destinations. They were the same one, and
+ * the result was that a foreign-key error looked exactly like a fresh account
+ * with nothing in it: the reader was told the route was supported, pressed the
+ * button, and arrived at "you do not have any applications yet".
+ */
+export async function createApplication(
+  previous: RouteCheckState,
+  formData: FormData,
+): Promise<RouteCheckState> {
   const locale = localeOf(formData);
-  const parsed = parseRouteCheck(answersOf(formData));
+  const answers = answersOf(formData);
+  const parsed = parseRouteCheck(answers);
 
   // The gate runs again here rather than trusting the form that reached it:
   // the previous answer travelled through the browser, and this is the step
   // that creates something.
-  if (!parsed.ok || !checkRoute(parsed.data).supported) {
-    redirect(getPathname({ href: "/start", locale }));
-  }
+  if (!parsed.ok) return { answers, issues: parsed.issues };
 
-  if (!isSupabaseConfigured()) redirect(getPathname({ href: "/login", locale }));
+  const verdict = checkRoute(parsed.data);
+  if (!verdict.supported) return { answers: parsed.data, verdict };
+
+  const supported = { answers: parsed.data, verdict } satisfies RouteCheckState;
+
+  if (!isSupabaseConfigured()) return { ...supported, error: "auth.notConfigured" };
 
   const supabase = await createClient();
-  const { data: claims } = await supabase.auth.getClaims();
-  const userId = claims?.claims?.sub;
-  if (!userId) redirect(getPathname({ href: "/login", locale }));
+  const session = await readSession(supabase);
 
-  const { data, error } = await supabase
-    .from("applications")
-    .insert({
-      user_id: userId,
-      residence_area: parsed.data.residenceArea,
-      destination: parsed.data.destination,
-      purpose: parsed.data.purpose,
-      employment: parsed.data.employment,
-    })
-    .select("id")
-    .single();
+  if (session.status !== "signed-in") {
+    // Park the answers before sending anyone to sign in, so they come back to
+    // the card they were on rather than to an empty form.
+    (await cookies()).set(PENDING_COOKIE, JSON.stringify(parsed.data), {
+      httpOnly: true,
+      sameSite: "lax",
+      path: "/",
+      maxAge: PENDING_MAX_AGE,
+    });
+    redirect(getPathname({ href: "/login", locale }));
+  }
 
-  if (error || !data) redirect(getPathname({ href: "/dashboard", locale }));
+  const { error } = await supabase.from("applications").insert({
+    user_id: session.userId,
+    residence_area: parsed.data.residenceArea,
+    destination: parsed.data.destination,
+    purpose: parsed.data.purpose,
+    employment: parsed.data.employment,
+  });
 
+  if (error) {
+    console.error("createApplication: insert failed", {
+      code: error.code,
+      message: error.message,
+      userId: session.userId,
+    });
+    return { ...supported, error: "route.createFailed" };
+  }
+
+  await clearPendingRouteCheck();
   redirect(getPathname({ href: "/dashboard", locale }));
 }
 
@@ -101,22 +163,28 @@ export async function joinWaitlist(
 ): Promise<RouteCheckState> {
   const answers = answersOf(formData);
   const parsed = parseRouteCheck(answers);
-  const verdict = parsed.ok ? checkRoute(parsed.data) : undefined;
-
   if (!parsed.ok) return { answers, issues: parsed.issues };
-  if (!isSupabaseConfigured()) return { answers: parsed.data, verdict, failed: true };
+
+  const verdict = checkRoute(parsed.data);
+  const base = { answers: parsed.data, verdict } satisfies RouteCheckState;
+
+  if (!isSupabaseConfigured()) return { ...base, error: "auth.notConfigured" };
 
   const supabase = await createClient();
-  const { data: claims } = await supabase.auth.getClaims();
+  const session = await readSession(supabase);
 
   const { error } = await supabase.from("waitlist_entries").insert({
-    user_id: claims?.claims?.sub ?? null,
+    user_id: session.status === "signed-in" ? session.userId : null,
     residence_area: parsed.data.residenceArea,
     destination: parsed.data.destination,
     purpose: parsed.data.purpose,
     employment: parsed.data.employment,
   });
 
-  if (error) return { answers: parsed.data, verdict, failed: true };
-  return { answers: parsed.data, verdict, waitlisted: true };
+  if (error) {
+    console.error("joinWaitlist: insert failed", { code: error.code, message: error.message });
+    return { ...base, error: "route.waitlistFailed" };
+  }
+
+  return { ...base, waitlisted: true };
 }

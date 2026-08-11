@@ -65,7 +65,10 @@
       "waitlistCta": "Record what I need",
       "waitlistDone": "Recorded. We will email you if this route opens.",
       "backCta": "Try a different combination"
-    }
+    },
+    "createFailed": "The application was not created. Try again.",
+    "sessionExpired": "Your sign-in is no longer valid. Sign in again and your answers will still be here.",
+    "waitlistFailed": "That was not recorded. Try again."
   },
   "application": {
     "newCta": "New application",
@@ -99,10 +102,12 @@
       "changeEmail": "Use a different email address",
       "failed": "That code is not correct or has expired. Enter it again, or send a new one.",
       "rateLimited": "A code was sent a moment ago. Wait a moment and try again.",
-      "sendFailed": "We could not send the code. Try again."
+      "sendFailed": "We could not send the code. Try again.",
+      "checkFailed": "We cannot check that code right now. Try again in a moment."
     },
     "notConfigured": "Sign-in is not available yet: the authentication service has not been configured.",
-    "signOut": "Sign out"
+    "signOut": "Sign out",
+    "signOutFailed": "Signing out did not complete. Close your browser, or try again in a moment."
   },
   "dashboard": {
     "title": "My applications",
@@ -110,6 +115,10 @@
     "empty": {
       "title": "You do not have any applications yet",
       "body": "Applications you create will appear here."
+    },
+    "loadFailed": {
+      "title": "We cannot load your applications right now",
+      "body": "This does not mean they are gone. Refresh the page and try again; if it keeps happening, tell us."
     }
   },
   "errorSummary": {
@@ -123,7 +132,8 @@
     "unexpected": {
       "title": "Something went wrong",
       "body": "That did not complete. Refresh the page and try again."
-    }
+    },
+    "retry": "Try again"
   },
   "validation": {
     "required": "Fill in this field.",
