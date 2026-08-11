@@ -15,6 +15,10 @@ const nextConfig: NextConfig = {
   // this is off. The repo's conventions live in its own documents, and a
   // generated file that reappears after every build is noise in review.
   agentRules: false,
+  // The end-to-end suite drives the app over 127.0.0.1 while the dev server
+  // serves localhost; without this every asset request logs a cross-origin
+  // warning and buries the test output.
+  allowedDevOrigins: ["127.0.0.1"],
   experimental: {
     // Serves app/global-not-found.tsx for URLs that match no route. Needed
     // because the root layout sits under a dynamic [locale] segment, so an
