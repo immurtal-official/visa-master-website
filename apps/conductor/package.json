@@ -4,13 +4,21 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "dev": "tsx watch src/index.ts",
     "start": "tsx src/index.ts",
     "typecheck": "tsc --noEmit",
+    "test": "vitest run",
     "lint": "echo \"no lint config for @visa-master/conductor yet\""
   },
   "devDependencies": {
     "@types/node": "^22.0.0",
+    "@types/pg": "^8.11.0",
     "tsx": "^4.19.0",
-    "typescript": "^5.9.0"
+    "typescript": "^5.9.0",
+    "vitest": "^4.1.0"
+  },
+  "dependencies": {
+    "@visa-master/executors": "workspace:*",
+    "pg": "^8.13.0"
   }
 }
