@@ -1,6 +1,7 @@
-# Platform Selection & Development Plan (v0.4 companion)
+# Platform Selection & Development Plan, v2 (v0.4 companion)
 
-**Status:** Superseded by [platform-and-dev-plan-v2-en.md](platform-and-dev-plan-v2-en.md) (2026-08-12, [ADR-004](../discussion/ADR-004-api-first-control-plane.md)); kept as the decision record it was
+**Status:** Active — supersedes [platform-and-dev-plan-en.md](platform-and-dev-plan-en.md) per [ADR-004](../discussion/ADR-004-api-first-control-plane.md) (2026-08-12)
+**What changed in v2:** the control plane adopts the API-first discipline — every core business capability behind `/api/v1/**` route handlers over a service layer, the web UI being one client of that contract; Server Actions carry no core business operations. Placement, weekly plan, and monorepo notes updated accordingly. The zh mirror has not been regenerated for v2 yet.
 **Companion to:** [architecture-v0.4](architecture-v0.4-en.md) — this document is the platform-specific half: where to run the architecture, and the concrete build plan.
 
 > 中文版：[平台选型与开发计划（中文）](platform-and-dev-plan-zh.md)
@@ -215,7 +216,7 @@ Split it along the request/response vs. long-running boundary:
 
 | Component | Placement | Why |
 |---|---|---|
-| Auth, user CRUD, pack submission (insert `jobs` row), signed download URLs, review-gate UI actions | **Next.js API routes / server actions on Vercel** | Pure request/response, fits serverless, zero extra infra |
+| Auth, user CRUD, pack submission (insert `jobs` row), signed download URLs, review-gate UI actions | **Next.js route handlers under `/api/v1/**` on Vercel, thin adapters over a service layer (`lib/services/`)** — the web UI is one client of this contract; Server Actions carry no core business operations (ADR-004) | Pure request/response, fits serverless, zero extra infra — and the same contract serves a future mobile app or WeChat Mini Program, and survives a future backend extraction as a re-homing of `lib/services/` rather than a rewrite |
 | Orchestrator ("conductor"): queue lease, executor routing (hermes / thin-agent / llm-gateway per the adapter contract), container lifecycle via Docker API, artifact-based completion detection (`qa-report.json` + delivery folder), wall-clock watchdog, retries, token-budget accounting | **Always-on Node service colocated on the agent VM** (systemd or compose service) | Needs the Docker socket, filesystem watch, and timers that outlive any serverless invocation; ADR-002's deterministic workflow engine is exactly this process |
 | Deterministic business rules ("Spain tourism requires passport + bank statement + employment letter") | **Shared TypeScript package** imported by both | Instant form validation in the UI, authoritative enforcement in the conductor — one source of truth, per ADR-002 |
 
@@ -245,7 +246,7 @@ Both researchers' top picks compose cleanly and are adopted as ranked: **Vercel 
 | Component | Runs where | Provided by | Notes |
 |---|---|---|---|
 | Frontend (Next.js App Router, zh-CN primary) | Vercel Pro | `apps/web` | Previews per PR; prod on `main` |
-| Request/response API (auth-gated CRUD, job submission, signed URLs, review actions) | Vercel serverless (route handlers / server actions) | `apps/web` | Never touches Docker or LLM keys |
+| Request/response API (auth-gated CRUD, job submission, signed URLs, review actions) | Vercel serverless — **route handlers under `/api/v1/**` over `lib/services/` (API-first, ADR-004; no Server Actions for core operations)** | `apps/web` | Never touches Docker or LLM keys; wire contract carries catalogue keys, never sentences |
 | Workflow engine / orchestrator ("conductor") | Hetzner CAX31, systemd-managed compose service | `apps/conductor` (Node 22, TS) | Queue lease, executor routing, container lifecycle, artifact watch, watchdog, token accounting |
 | Executor: **hermes** (full pack producer, works today) | Ephemeral container per job on the VM, `internal: true` network | `packages/executors/hermes` + `visa-master-hermes:latest` | Online week 3 |
 | Executor: **llm-gateway** (stateless steps: cover letter, checklist, translation) | Adapter in conductor + **version-pinned LiteLLM proxy container** (compose service `gateway`, online week 3) | `packages/executors/llm-gateway` | Step library online week 5; the gateway container is the single inference chokepoint from week 3 — Hermes's provider config points at it, so **provider keys never enter the job container** (architecture C §3.2) |
@@ -276,7 +277,7 @@ flowchart LR
   X -->|80/443 allowlist, POST-constrained, audited| I[(Internet: LLM APIs, embassy/BLS/EU sites)]
 ```
 
-Monorepo (`pnpm` + Turborepo): `apps/web`, `apps/conductor`, `packages/core`, `packages/db`, `packages/executors`, `infra/` (compose files, Squid config, systemd units, deploy scripts).
+Monorepo (`pnpm` + Turborepo): `apps/web` (UI + the `/api/v1` control-plane API + `lib/services/`), `apps/conductor`, `packages/core`, `packages/db`, `packages/executors`, `infra/` (compose files, Squid config, systemd units, deploy scripts).
 
 #### Executor adapter contract (the load-bearing interface)
 
@@ -306,6 +307,8 @@ Sequencing principle: structured intake first (no mid-run interactivity in v1 �
 - **Demo:** sign up on a phone; show the empty dashboard and the closed VM.
 
 #### Week 2 — Structured intake + uploads
+
+> **As-built note (v2):** weeks 1–2 shipped with the ADR-004 API-first shape — the endpoints named below exist as `/api/v1/**` route handlers over `lib/services/`, and the web screens consume them as API clients.
 - **Goals:** the full Schengen-tourism intake captured as validated, structured data before any agent exists.
 - **Tasks:** `packages/core`: `IntakeSchengenTourismV1` zod schema (applicant, passport, employment, trip dates/route, finances, prior visas) + `rules/schengen-spain.ts` (deterministic required-document computation — the ADR-002 code check). **Validation issues carry message keys plus parameters** (e.g. `passport.expiry.tooSoon` + `{monthsRequired: 3}`), never sentences — the front end resolves them against the active locale ([internationalization](../design/guidelines/internationalization-en.md) §3); this binds from the very first schema because it is the one i18n piece that cannot be retrofitted cheaply. Multi-step form in `apps/web` with client validation from the same schema, plus **draft persistence** (amendment 2026-08-10, from the design-phase audit — [design/product/04](../design/product/04_MVP_Scope_V1_V2.md)): a draft row (`jobs.status='draft'` or a dedicated drafts table) with per-step autosave built from the shared schema's partials, and resume-on-login at the exact last incomplete step — inside the WeChat webview, interruption is the median session, so an intake without server-side drafts loses its user ([mobile-parity](../design/guidelines/mobile-parity-en.md) §3.3). `POST /api/uploads/sign` → signed upload URLs into private `uploads/{user_id}/{upload_id}` (passport scan, bank statement, employment proof); `POST /api/jobs` validates server-side, snapshots sanitized `input` (no user_id/email inside the payload — v0.3 §11), inserts `status='queued'`, `kind='pack.schengen.v1'` (the wall-clock `deadline_at` is set at **lease time**, not enqueue — queue wait must never consume run budget); `GET /api/jobs/:id` (RLS-scoped) for polling.
 - **DoD:** invalid intakes are rejected with field-level errors from the shared schema, **rendered from message keys in both locales**; an intake abandoned mid-step is resumable after logout/login at the same step with its data intact; a completed intake produces a `queued` job row and files in Storage; nothing yet consumes the queue.
@@ -442,6 +445,7 @@ Read: infra is noise; **LLM spend is the entire variable cost line**, which is w
 | **Multi-region execution** (China-adjacent region for latency; per-job platforms give this free) | Sustained latency complaints from China users or a partner requiring regional processing |
 | **SOC2-ish hardening** (access reviews, audit trails, vendor DPAs, pen test) | First enterprise/B2B contract that asks; until then the v0.3 controls + runbook are the security story |
 | **k3s on 2–3 Hetzner nodes** | >50 packs/day sustained or a second engineer joins (Research A's K8s threshold) |
+| **Backend service extraction** (re-home `lib/services/` behind the same `/api/v1` paths as a standalone service; framework decided then — NestJS keeps `packages/core` importable, FastAPI requires porting it) | A Python-only library needed in the request path; a Python-first collaborator joins; or the first executor leaves the VM and Chapter C §1's private-network HTTP surface activates (ADR-004) |
 
 
 ---
