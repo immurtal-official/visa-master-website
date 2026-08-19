@@ -3,9 +3,8 @@ import { setRequestLocale } from "next-intl/server";
 import { notFound, redirect } from "next/navigation";
 import { INTAKE_SECTIONS, readAnswer } from "@visa-master/core";
 import { getPathname } from "@/i18n/navigation";
+import { apiGet } from "@/lib/api/server";
 import { isSupabaseConfigured } from "@/lib/supabase/config";
-import { createClient } from "@/lib/supabase/server";
-import { readSession } from "@/lib/supabase/session";
 import { QuestionForm } from "./question-form";
 
 export default async function QuestionPage({
@@ -22,24 +21,19 @@ export default async function QuestionPage({
 
   if (!isSupabaseConfigured()) redirect(getPathname({ href: "/login", locale }));
 
-  const supabase = await createClient();
-  const session = await readSession(supabase);
-  if (session.status !== "signed-in") redirect(getPathname({ href: "/login", locale }));
+  const result = await apiGet<{ application: { id: string; answers: Record<string, unknown> } }>(
+    `/api/v1/applications/${id}`,
+  );
+  if (result.status === 401) redirect(getPathname({ href: "/login", locale }));
+  if (result.status === 404 || !result.data) notFound();
 
-  const { data: application } = await supabase
-    .from("applications")
-    .select("id, answers")
-    .eq("id", id)
-    .maybeSingle<{ id: string; answers: Record<string, unknown> }>();
-
-  if (!application) notFound();
+  const application = result.data.application;
 
   const saved = readAnswer(application.answers ?? {}, question.path);
 
   return (
     <main className="vm-container" style={{ paddingBlock: "var(--space-10)" }}>
       <QuestionForm
-        locale={locale}
         applicationId={id}
         sectionId={sectionId}
         questionId={questionId}

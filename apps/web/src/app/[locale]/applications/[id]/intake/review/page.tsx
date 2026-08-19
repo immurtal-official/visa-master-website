@@ -4,9 +4,8 @@ import { notFound, redirect } from "next/navigation";
 import { INTAKE_SECTIONS, readAnswer } from "@visa-master/core";
 import { Card } from "@/components/ui/card";
 import { Link, getPathname } from "@/i18n/navigation";
+import { apiGet } from "@/lib/api/server";
 import { isSupabaseConfigured } from "@/lib/supabase/config";
-import { createClient } from "@/lib/supabase/server";
-import { readSession } from "@/lib/supabase/session";
 import { ReviewForm } from "./review-form";
 
 /**
@@ -27,18 +26,13 @@ export default async function ReviewPage({
 
   if (!isSupabaseConfigured()) redirect(getPathname({ href: "/login", locale }));
 
-  const supabase = await createClient();
-  const session = await readSession(supabase);
-  if (session.status !== "signed-in") redirect(getPathname({ href: "/login", locale }));
+  const result = await apiGet<{ application: { id: string; answers: Record<string, unknown> } }>(
+    `/api/v1/applications/${id}`,
+  );
+  if (result.status === 401) redirect(getPathname({ href: "/login", locale }));
+  if (result.status === 404 || !result.data) notFound();
 
-  const { data: application } = await supabase
-    .from("applications")
-    .select("id, answers")
-    .eq("id", id)
-    .maybeSingle<{ id: string; answers: Record<string, unknown> }>();
-
-  if (!application) notFound();
-  const answers = application.answers ?? {};
+  const answers = result.data.application.answers ?? {};
 
   return (
     <main className="vm-container" style={{ paddingBlock: "var(--space-10)" }}>
@@ -123,7 +117,7 @@ export default async function ReviewPage({
       </div>
 
       <div style={{ marginBlockStart: "var(--space-8)" }}>
-        <ReviewForm locale={locale} applicationId={id} />
+        <ReviewForm applicationId={id} />
       </div>
     </main>
   );

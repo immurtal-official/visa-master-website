@@ -1,8 +1,7 @@
 "use client";
 
-import { useActionState } from "react";
-import { useFormStatus } from "react-dom";
-import { useTranslations, type Locale } from "next-intl";
+import { useState, type FormEvent } from "react";
+import { useTranslations } from "next-intl";
 import { FIELD_BEHAVIOUR, QUESTION_OPTIONS, type ValidationIssue } from "@visa-master/core";
 import { Button } from "@/components/ui/button";
 import { Callout } from "@/components/ui/callout";
@@ -10,8 +9,15 @@ import { DateInput } from "@/components/ui/date-input";
 import { ErrorSummary } from "@/components/ui/error-summary";
 import { Input } from "@/components/ui/input";
 import { RadioGroup } from "@/components/ui/radio-group";
-import { Link } from "@/i18n/navigation";
-import { saveAnswer, type AnswerState } from "../../actions";
+import { api } from "@/lib/api/client";
+import { Link, useRouter } from "@/i18n/navigation";
+
+interface AnswerState {
+  value?: string;
+  issues?: ValidationIssue[];
+  error?: string;
+  pending?: boolean;
+}
 
 /**
  * One question, on its own page.
@@ -22,14 +28,12 @@ import { saveAnswer, type AnswerState } from "../../actions";
  * means nobody loses their place in a wall of fields.
  */
 export function QuestionForm({
-  locale,
   applicationId,
   sectionId,
   questionId,
   path,
   savedValue,
 }: {
-  locale: Locale;
   applicationId: string;
   sectionId: string;
   questionId: string;
@@ -37,9 +41,40 @@ export function QuestionForm({
   savedValue: string;
 }) {
   const t = useTranslations();
-  const [state, formAction] = useActionState<AnswerState, FormData>(saveAnswer, {
-    value: savedValue,
-  });
+  const router = useRouter();
+  const [state, setState] = useState<AnswerState>({ value: savedValue });
+
+  async function save(event: FormEvent<HTMLFormElement>): Promise<void> {
+    event.preventDefault();
+    const value = String(new FormData(event.currentTarget).get("value") ?? "");
+    setState({ value, pending: true });
+
+    const result = await api<{ next: { sectionId: string; questionId: string } | null }>(
+      `/api/v1/applications/${applicationId}/answers`,
+      { method: "POST", body: { sectionId, questionId, value } },
+    );
+
+    if (result.ok && result.data) {
+      const next = result.data.next;
+      router.push(
+        next
+          ? `/applications/${applicationId}/intake/${next.sectionId}/${next.questionId}`
+          : `/applications/${applicationId}/intake`,
+      );
+      router.refresh();
+      return;
+    }
+
+    if (result.status === 401) {
+      setState({ value, error: "route.sessionExpired" });
+      return;
+    }
+    setState({
+      value,
+      issues: result.issues,
+      error: result.issues ? undefined : (result.error?.key ?? "intake.saveFailed"),
+    });
+  }
 
   const behaviour = FIELD_BEHAVIOUR[path] ?? {};
   const value = state.value ?? savedValue;
@@ -53,7 +88,7 @@ export function QuestionForm({
     : undefined;
 
   return (
-    <form action={formAction}>
+    <form onSubmit={(event) => void save(event)}>
       {state.issues && state.issues.length > 0 ? (
         <ErrorSummary
           title={t("errorSummary.title")}
@@ -63,7 +98,7 @@ export function QuestionForm({
 
       {state.error ? (
         <div style={{ marginBlockEnd: "var(--space-6)" }}>
-          <Callout tone="error">{t(state.error)}</Callout>
+          <Callout tone="error">{t(state.error as "intake.saveFailed")}</Callout>
         </div>
       ) : null}
 
@@ -101,11 +136,6 @@ export function QuestionForm({
           {hint}
         </p>
       ) : null}
-
-      <input type="hidden" name="locale" value={locale} />
-      <input type="hidden" name="applicationId" value={applicationId} />
-      <input type="hidden" name="sectionId" value={sectionId} />
-      <input type="hidden" name="questionId" value={questionId} />
 
       <div style={{ marginBlockStart: "var(--space-6)" }}>
         {behaviour.kind === "choice" ? (
@@ -179,7 +209,7 @@ export function QuestionForm({
           marginBlockStart: "var(--space-8)",
         }}
       >
-        <SaveButton label={t("intake.next")} />
+        <SaveButton label={t("intake.next")} pending={state.pending} />
         <Link
           href={`/applications/${applicationId}/intake`}
           style={{ color: "var(--text-link)", fontSize: "var(--fs-16)" }}
@@ -204,8 +234,7 @@ export function QuestionForm({
   );
 }
 
-function SaveButton({ label }: { label: string }) {
-  const { pending } = useFormStatus();
+function SaveButton({ label, pending }: { label: string; pending?: boolean }) {
   return (
     <Button type="submit" size="lg" loading={pending}>
       {label}

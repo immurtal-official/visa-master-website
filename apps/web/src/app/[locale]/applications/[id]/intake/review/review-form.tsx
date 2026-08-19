@@ -1,12 +1,18 @@
 "use client";
 
-import { useActionState } from "react";
-import { useFormStatus } from "react-dom";
-import { useTranslations, type Locale } from "next-intl";
+import { useState } from "react";
+import { useTranslations } from "next-intl";
 import type { ValidationIssue } from "@visa-master/core";
+import { api } from "@/lib/api/client";
+import { useRouter } from "@/i18n/navigation";
 import { Button } from "@/components/ui/button";
 import { Callout } from "@/components/ui/callout";
-import { submitApplication, type SubmitState } from "./actions";
+
+interface SubmitState {
+  issues?: ValidationIssue[];
+  error?: string;
+  pending?: boolean;
+}
 
 /**
  * The last step: send it.
@@ -15,15 +21,35 @@ import { submitApplication, type SubmitState } from "./actions";
  * a page nobody scrolled to, and each item names the answer it is about, so it
  * is clear which of forty answers needs attention.
  */
-export function ReviewForm({ locale, applicationId }: { locale: Locale; applicationId: string }) {
+export function ReviewForm({ applicationId }: { applicationId: string }) {
   const t = useTranslations();
-  const [state, formAction] = useActionState<SubmitState, FormData>(submitApplication, {});
+  const router = useRouter();
+  const [state, setState] = useState<SubmitState>({});
+
+  async function submit(): Promise<void> {
+    setState({ pending: true });
+    const result = await api(`/api/v1/applications/${applicationId}/submit`, { method: "POST" });
+
+    if (result.ok) {
+      router.push("/dashboard");
+      router.refresh();
+      return;
+    }
+    if (result.status === 401) {
+      setState({ error: "route.sessionExpired" });
+      return;
+    }
+    setState({
+      issues: result.issues,
+      error: result.issues ? undefined : (result.error?.key ?? "intake.review.submitFailed"),
+    });
+  }
 
   return (
-    <form action={formAction}>
+    <div>
       {state.error ? (
         <div style={{ marginBlockEnd: "var(--space-6)" }}>
-          <Callout tone="error">{t(state.error)}</Callout>
+          <Callout tone="error">{t(state.error as "intake.review.submitFailed")}</Callout>
         </div>
       ) : null}
 
@@ -47,19 +73,10 @@ export function ReviewForm({ locale, applicationId }: { locale: Locale; applicat
         </div>
       ) : null}
 
-      <input type="hidden" name="locale" value={locale} />
-      <input type="hidden" name="applicationId" value={applicationId} />
-      <SubmitButton label={t("intake.review.submit")} />
-    </form>
-  );
-}
-
-function SubmitButton({ label }: { label: string }) {
-  const { pending } = useFormStatus();
-  return (
-    <Button type="submit" size="lg" loading={pending}>
-      {label}
-    </Button>
+      <Button size="lg" loading={state.pending} onClick={() => void submit()}>
+        {t("intake.review.submit")}
+      </Button>
+    </div>
   );
 }
 

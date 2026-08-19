@@ -1,13 +1,12 @@
 import type { Locale } from "next-intl";
 import { getFormatter, getTranslations, setRequestLocale } from "next-intl/server";
 import { redirect } from "next/navigation";
-import { LinkButton } from "@/components/ui/link-button";
-import { Card } from "@/components/ui/card";
-import { Link, getPathname } from "@/i18n/navigation";
+import { apiGet } from "@/lib/api/server";
 import { Callout } from "@/components/ui/callout";
+import { Card } from "@/components/ui/card";
+import { LinkButton } from "@/components/ui/link-button";
+import { Link, getPathname } from "@/i18n/navigation";
 import { isSupabaseConfigured } from "@/lib/supabase/config";
-import { createClient } from "@/lib/supabase/server";
-import { readSession } from "@/lib/supabase/session";
 import { SignOutButton } from "@/components/chrome/sign-out-button";
 
 interface ApplicationRow {
@@ -21,10 +20,9 @@ interface ApplicationRow {
 /**
  * The signed-in home: every application, and what each one is waiting on.
  *
- * Applications are read through the request-scoped client, so row-level
- * security is what limits the result to this user's own. There is deliberately
- * no ownership filter in this file — the policy is the check, and pgTAP
- * asserts it holds.
+ * This page is a client of the API like any other — it renders what
+ * /api/v1/applications says and holds no query of its own. Ownership is the
+ * API's concern (row-level security underneath it); nothing here filters.
  */
 export default async function DashboardPage({ params }: { params: Promise<{ locale: Locale }> }) {
   const { locale } = await params;
@@ -34,30 +32,16 @@ export default async function DashboardPage({ params }: { params: Promise<{ loca
 
   if (!isSupabaseConfigured()) redirect(getPathname({ href: "/login", locale }));
 
-  const supabase = await createClient();
+  const [me, list] = await Promise.all([
+    apiGet<{ userId: string; email: string | null }>("/api/v1/me"),
+    apiGet<{ applications: ApplicationRow[] }>("/api/v1/applications"),
+  ]);
 
-  // The account has to still exist, not merely have signed a valid token: a
-  // deleted or suspended user keeps a cryptographically valid one until it
-  // expires, and gating on the signature alone shows them a working product
-  // where every write fails.
-  const session = await readSession(supabase);
-  if (session.status !== "signed-in") redirect(getPathname({ href: "/login", locale }));
-
-  const { data: applications, error } = await supabase
-    .from("applications")
-    .select("id, destination, purpose, status, created_at")
-    .order("updated_at", { ascending: false })
-    .returns<ApplicationRow[]>();
-
-  if (error) {
-    console.error("dashboard: could not load applications", {
-      code: error.code,
-      message: error.message,
-      userId: session.userId,
-    });
+  if (me.status === 401 || list.status === 401) {
+    redirect(getPathname({ href: "/login", locale }));
   }
 
-  const rows = applications ?? [];
+  const rows = list.data?.applications ?? [];
 
   return (
     <main className="vm-container" style={{ paddingBlock: "var(--space-10)" }}>
@@ -83,18 +67,18 @@ export default async function DashboardPage({ params }: { params: Promise<{ loca
           {t("dashboard.title")}
         </h1>
 
-        <SignOutButton locale={locale} />
+        <SignOutButton />
       </div>
 
-      {session.email ? (
+      {me.data?.email ? (
         <p style={{ marginBlockEnd: "var(--space-6)", color: "var(--text-muted)" }}>
-          {t("dashboard.signedInAs", { email: session.email })}
+          {t("dashboard.signedInAs", { email: me.data.email })}
         </p>
       ) : null}
 
       {/* A list that could not be loaded must never look like an account with
           nothing in it: one is a problem to retry, the other is a fact. */}
-      {error ? (
+      {list.error ? (
         <Callout tone="error" title={t("dashboard.loadFailed.title")}>
           {t("dashboard.loadFailed.body")}
         </Callout>
