@@ -1,0 +1,28 @@
+# The agent plane, locally: the same topology the VM will run, minus the
+# gateway (deferred with the third executor).
+#
+# vm-egress-internal is `internal: true` — a container attached only to it has
+# literally no default route. Squid is attached to both networks, which makes
+# it the single, audited way out. This is the v0.3 egress boundary in ~15
+# lines, and it behaves identically on Docker Desktop and on the VM.
+name: visa-master-agent-plane
+
+networks:
+  egress-internal:
+    name: vm-egress-internal
+    internal: true
+  egress-external:
+    name: vm-egress-external
+
+services:
+  squid:
+    image: ubuntu/squid:latest
+    container_name: vm-squid
+    restart: unless-stopped
+    networks:
+      egress-internal:
+        aliases: [proxy]
+      egress-external: {}
+    volumes:
+      - ./squid/squid.conf:/etc/squid/squid.conf:ro
+      - ./squid/allowlist.txt:/etc/squid/allowlist.txt:ro
