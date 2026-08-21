@@ -6,9 +6,8 @@ import { Callout } from "@/components/ui/callout";
 import { Card } from "@/components/ui/card";
 import { LinkButton } from "@/components/ui/link-button";
 import { Link, getPathname } from "@/i18n/navigation";
+import { apiGet } from "@/lib/api/server";
 import { isSupabaseConfigured } from "@/lib/supabase/config";
-import { createClient } from "@/lib/supabase/server";
-import { readSession } from "@/lib/supabase/session";
 
 interface ApplicationDetail {
   id: string;
@@ -43,25 +42,14 @@ export default async function ApplicationPage({
 
   if (!isSupabaseConfigured()) redirect(getPathname({ href: "/login", locale }));
 
-  const supabase = await createClient();
-  const session = await readSession(supabase);
-  if (session.status !== "signed-in") redirect(getPathname({ href: "/login", locale }));
+  // One read, through the same contract every client uses.
+  const result = await apiGet<{ application: ApplicationDetail; job: { state: string } | null }>(
+    `/api/v1/applications/${id}`,
+  );
+  if (result.status === 401) redirect(getPathname({ href: "/login", locale }));
+  if (result.status === 404 || !result.data) notFound();
 
-  const { data: application } = await supabase
-    .from("applications")
-    .select("id, destination, purpose, status, answers, created_at, submitted_job_id")
-    .eq("id", id)
-    .maybeSingle<ApplicationDetail>();
-
-  if (!application) notFound();
-
-  // Jobs are readable by their owner, so the state comes from the row itself
-  // rather than from anything this page decides.
-  const { data: job } = await supabase
-    .from("jobs")
-    .select("state")
-    .eq("id", application.submitted_job_id ?? "")
-    .maybeSingle<{ state: string }>();
+  const { application, job } = result.data;
 
   const answers = application.answers ?? {};
   const progress = intakeProgress(answers);

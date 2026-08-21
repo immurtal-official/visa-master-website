@@ -11,7 +11,7 @@ export default async function LoginPage({ params }: { params: Promise<{ locale: 
   return (
     <main className="vm-container" style={{ paddingBlock: "var(--space-10)" }}>
       <Card>
-        <LoginForm locale={locale} configured={isSupabaseConfigured()} />
+        <LoginForm configured={isSupabaseConfigured()} />
       </Card>
     </main>
   );

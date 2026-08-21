@@ -1,28 +1,35 @@
 "use client";
 
-import { useActionState } from "react";
-import { useFormStatus } from "react-dom";
+import { useState, type FormEvent } from "react";
 import { useTranslations } from "next-intl";
-import type { Locale } from "next-intl";
 import type { ValidationIssue } from "@visa-master/core";
+import { api } from "@/lib/api/client";
+import { useRouter } from "@/i18n/navigation";
 import { Button } from "@/components/ui/button";
 import { Callout } from "@/components/ui/callout";
 import { ErrorSummary } from "@/components/ui/error-summary";
 import { Input } from "@/components/ui/input";
-import { submitLogin, type AuthState } from "./actions";
 
 /**
  * Sign in, in two steps on one route: ask for the address, then for the code.
  *
- * One question per page, as the interaction model requires — the heading is
- * the question, its explanation sits beneath it rather than in a tooltip, and
- * there is one field to answer. Every button belongs to the same form and says
- * what it intends, so the state that comes back always knows which step it is
- * on and which address it is working with.
+ * The screen is a client of /api/v1/auth like any other — it collects input,
+ * calls the contract, and renders what came back. One question per page, the
+ * heading is the question, and every failure arrives as a catalogue key this
+ * component resolves against the active locale.
  */
-export function LoginForm({ locale, configured }: { locale: Locale; configured: boolean }) {
+interface AuthState {
+  step: "email" | "code";
+  email?: string;
+  issues?: ValidationIssue[];
+  authError?: string;
+  pending?: boolean;
+}
+
+export function LoginForm({ configured }: { configured: boolean }) {
   const t = useTranslations();
-  const [state, formAction] = useActionState<AuthState, FormData>(submitLogin, { step: "email" });
+  const router = useRouter();
+  const [state, setState] = useState<AuthState>({ step: "email" });
 
   if (!configured) {
     return <Callout tone="warning">{t("auth.notConfigured")}</Callout>;
@@ -32,8 +39,70 @@ export function LoginForm({ locale, configured }: { locale: Locale; configured: 
   const fieldId = onCodeStep ? "code" : "email";
   const issue = state.issues?.find((i) => i.path === fieldId);
 
+  async function requestCode(email: string): Promise<void> {
+    setState((s) => ({ ...s, pending: true }));
+    const result = await api<{ email: string }>("/api/v1/auth/otp", {
+      method: "POST",
+      body: { email },
+    });
+
+    if (result.ok && result.data) {
+      setState({ step: "code", email: result.data.email });
+    } else {
+      setState({
+        step: "email",
+        email,
+        issues: result.issues,
+        authError: result.error?.key,
+      });
+    }
+  }
+
+  async function verifyCode(email: string, code: string): Promise<void> {
+    setState((s) => ({ ...s, pending: true }));
+    const result = await api("/api/v1/auth/verify", {
+      method: "POST",
+      body: { email, code },
+    });
+
+    if (result.ok) {
+      // The session cookie is set; land on the dashboard with fresh data.
+      router.push("/dashboard");
+      router.refresh();
+      return;
+    }
+
+    // The address travelled in state; a failed check keeps it and the step.
+    setState({
+      step: result.issues?.some((i) => i.path === "email") ? "email" : "code",
+      email,
+      issues: result.issues,
+      authError: result.error?.key,
+    });
+  }
+
+  function onSubmit(event: FormEvent<HTMLFormElement>): void {
+    event.preventDefault();
+    const form = new FormData(event.currentTarget);
+    const submitter = (event.nativeEvent as SubmitEvent).submitter as HTMLButtonElement | null;
+    const intent = submitter?.value || (onCodeStep ? "verify" : "send");
+
+    const email = String(form.get("email") ?? state.email ?? "");
+
+    if (intent === "changeEmail") {
+      setState({ step: "email", email });
+      return;
+    }
+    if (intent === "verify") {
+      void verifyCode(email, String(form.get("code") ?? ""));
+      return;
+    }
+    // "send" from the first step, "resend" from the second.
+    void requestCode(email);
+  }
+
   return (
-    <form action={formAction}>
+    <form onSubmit={onSubmit}>
       {state.issues && state.issues.length > 0 ? (
         <ErrorSummary
           title={t("errorSummary.title")}
@@ -43,7 +112,7 @@ export function LoginForm({ locale, configured }: { locale: Locale; configured: 
 
       {state.authError ? (
         <div style={{ marginBlockEnd: "var(--space-6)" }}>
-          <Callout tone="error">{t(state.authError)}</Callout>
+          <Callout tone="error">{t(state.authError as "auth.otp.failed")}</Callout>
         </div>
       ) : null}
 
@@ -68,8 +137,6 @@ export function LoginForm({ locale, configured }: { locale: Locale; configured: 
       >
         {onCodeStep ? t("auth.otp.sentTo", { email: state.email ?? "" }) : t("auth.login.intro")}
       </p>
-
-      <input type="hidden" name="locale" value={locale} />
 
       {onCodeStep ? (
         <>
@@ -107,10 +174,15 @@ export function LoginForm({ locale, configured }: { locale: Locale; configured: 
       )}
 
       <div style={{ marginBlockStart: "var(--space-6)" }}>
-        <SubmitButton
-          intent={onCodeStep ? "verify" : "send"}
-          label={onCodeStep ? t("auth.otp.submit") : t("auth.login.submit")}
-        />
+        <Button
+          type="submit"
+          name="intent"
+          value={onCodeStep ? "verify" : "send"}
+          size="lg"
+          loading={state.pending}
+        >
+          {onCodeStep ? t("auth.otp.submit") : t("auth.login.submit")}
+        </Button>
       </div>
 
       {onCodeStep ? (
@@ -144,13 +216,4 @@ function messageFor(t: ReturnType<typeof useTranslations>, issue: ValidationIssu
   // @ts-expect-error — the key space belongs to the catalogue, and the build
   // check guarantees every key a rule can emit is in it.
   return t(issue.key, issue.params);
-}
-
-function SubmitButton({ intent, label }: { intent: string; label: string }) {
-  const { pending } = useFormStatus();
-  return (
-    <Button type="submit" name="intent" value={intent} size="lg" loading={pending}>
-      {label}
-    </Button>
-  );
 }

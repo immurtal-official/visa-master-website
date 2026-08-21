@@ -1,0 +1,4 @@
+# Hosts a job container may POST to. In the full topology this reduces to the
+# LLM gateway alone (provider keys never enter the job container); the gateway
+# is deferred with the third executor, so the list ships empty on purpose —
+# an empty allowlist means no POST leaves a job at all.

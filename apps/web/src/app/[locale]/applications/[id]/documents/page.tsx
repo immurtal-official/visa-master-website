@@ -1,13 +1,12 @@
 import type { Locale } from "next-intl";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { notFound, redirect } from "next/navigation";
-import { documentCompleteness, documentsFor } from "@visa-master/core";
+
 import { Callout } from "@/components/ui/callout";
 import { LinkButton } from "@/components/ui/link-button";
 import { Link, getPathname } from "@/i18n/navigation";
+import { apiGet } from "@/lib/api/server";
 import { isSupabaseConfigured } from "@/lib/supabase/config";
-import { createClient } from "@/lib/supabase/server";
-import { readSession } from "@/lib/supabase/session";
 import { DocumentItem, type UploadRow } from "./document-item";
 
 /**
@@ -30,29 +29,20 @@ export default async function DocumentsPage({
 
   if (!isSupabaseConfigured()) redirect(getPathname({ href: "/login", locale }));
 
-  const supabase = await createClient();
-  const session = await readSession(supabase);
-  if (session.status !== "signed-in") redirect(getPathname({ href: "/login", locale }));
+  const result = await apiGet<{
+    applicationStatus: string;
+    required: {
+      id: string;
+      necessity: "required" | "recommended" | "conditional";
+      multiPage: boolean;
+    }[];
+    uploads: UploadRow[];
+    completeness: { missing: string[]; pending: string[]; complete: boolean };
+  }>(`/api/v1/applications/${id}/documents`);
+  if (result.status === 401) redirect(getPathname({ href: "/login", locale }));
+  if (result.status === 404 || !result.data) notFound();
 
-  const { data: application } = await supabase
-    .from("applications")
-    .select("id, answers, status")
-    .eq("id", id)
-    .maybeSingle<{ id: string; answers: Record<string, unknown>; status: string }>();
-
-  if (!application) notFound();
-
-  const { data: uploads } = await supabase
-    .from("uploads")
-    .select("id, document, page, original_name, status")
-    .eq("application_id", id)
-    .order("page")
-    .returns<UploadRow[]>();
-
-  const rows = uploads ?? [];
-  const answers = application.answers ?? {};
-  const required = documentsFor(answers);
-  const completeness = documentCompleteness(answers, rows);
+  const { applicationStatus, required, uploads: rows, completeness } = result.data;
 
   const mandatory = required.filter((document) => document.necessity !== "recommended");
   const storedCount = mandatory.length - completeness.missing.length;
@@ -96,9 +86,7 @@ export default async function DocumentsPage({
         {required.map((document) => (
           <DocumentItem
             key={document.id}
-            locale={locale}
             applicationId={id}
-            userId={session.userId}
             document={document}
             uploads={rows.filter((row) => row.document === document.id)}
           />
@@ -112,7 +100,7 @@ export default async function DocumentsPage({
         <Callout tone="quiet">{t("statusNote")}</Callout>
       </div>
 
-      {completeness.complete && application.status === "draft" ? (
+      {completeness.complete && applicationStatus === "draft" ? (
         <div style={{ marginBlockStart: "var(--space-8)" }}>
           <LinkButton href={`/applications/${id}/intake/review`} size="lg" iconAfter="arrow-right">
             {t("doneCta")}

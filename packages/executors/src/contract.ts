@@ -70,6 +70,8 @@ export type RunStatus = "running" | "artifact_ready" | "failed";
 export interface CollectedRun {
   artifactPrefix: string;
   qaReport: unknown;
+  /** Storage paths of the uploaded files, when a store was configured. */
+  artifacts?: string[];
 }
 
 export interface Executor {

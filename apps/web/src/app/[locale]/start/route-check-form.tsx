@@ -1,64 +1,180 @@
 "use client";
 
-import { useActionState } from "react";
-import { useFormStatus } from "react-dom";
+import { useState, type FormEvent } from "react";
 import { useTranslations, type Locale } from "next-intl";
 import {
   DESTINATIONS,
   EMPLOYMENT_STATUSES,
   PURPOSES,
   RESIDENCE_AREAS,
+  checkRoute,
+  parseRouteCheck,
+  type RouteCheck,
   type UnsupportedReason,
   type ValidationIssue,
 } from "@visa-master/core";
+import { api } from "@/lib/api/client";
+import { useRouter } from "@/i18n/navigation";
 import { Button } from "@/components/ui/button";
 import { Callout } from "@/components/ui/callout";
 import { Card } from "@/components/ui/card";
 import { ErrorSummary } from "@/components/ui/error-summary";
 import { RadioGroup } from "@/components/ui/radio-group";
-import { checkRouteAction, createApplication, joinWaitlist, type RouteCheckState } from "./actions";
-
-/** Form field names. Not copy — they are the contract with the server action. */
-const ANSWER_FIELDS = ["residenceArea", "destination", "purpose", "employment"] as const;
 
 /**
  * The route check.
  *
- * Four questions, answered before anything exists. The product serves one
- * route today, so the honest thing is to ask early and say plainly when the
- * answer is no — a form that only accepts one combination, or a rejection
- * after payment, are both worse.
+ * Four questions, answered before anything exists. The screen is a client of
+ * the API: the gate itself lives in packages/core and is applied by
+ * /api/v1/route-checks, and applied AGAIN by /api/v1/applications at the step
+ * that creates something — this component only collects answers and renders
+ * verdicts.
+ *
+ * The check is deliberately readable signed out, so the person answering it
+ * usually has no account. Pressing "create" then detours through sign-in; the
+ * answers wait in sessionStorage and are restored when they come back, because
+ * a product that forgets four answers on the way to sign-in is teaching its
+ * user that it forgets things.
  */
-export function RouteCheckForm({
-  locale,
-  initialState = {},
-}: {
-  locale: Locale;
-  /** A route check parked while its owner signed in, restored on their return. */
-  initialState?: RouteCheckState;
-}) {
+const PARKED_KEY = "vm_route_check";
+
+interface RouteCheckState {
+  answers?: Partial<RouteCheck>;
+  issues?: ValidationIssue[];
+  verdict?: { supported: true } | { supported: false; reasons: UnsupportedReason[] };
+  waitlisted?: boolean;
+  error?: string;
+  pending?: boolean;
+}
+
+function answersFrom(form: FormData): Partial<RouteCheck> {
+  return {
+    residenceArea: (form.get("residenceArea") as RouteCheck["residenceArea"]) || undefined,
+    destination: (form.get("destination") as RouteCheck["destination"]) || undefined,
+    purpose: (form.get("purpose") as RouteCheck["purpose"]) || undefined,
+    employment: (form.get("employment") as RouteCheck["employment"]) || undefined,
+  };
+}
+
+export function RouteCheckForm({ locale }: { locale: Locale }) {
   const t = useTranslations();
-  const [state, formAction] = useActionState<RouteCheckState, FormData>(
-    checkRouteAction,
-    initialState,
-  );
+  const router = useRouter();
+  // Restore a route check parked while its owner signed in — read once, as the
+  // initial state, before first paint. The verdict is recomputed from the
+  // shared rules for display; the server re-runs the gate before anything is
+  // created either way.
+  const [state, setState] = useState<RouteCheckState>(() => {
+    if (typeof window === "undefined") return {};
+    const raw = window.sessionStorage.getItem(PARKED_KEY);
+    if (!raw) return {};
+    try {
+      const parsed = parseRouteCheck(JSON.parse(raw));
+      if (parsed.ok) return { answers: parsed.data, verdict: checkRoute(parsed.data) };
+    } catch {
+      window.sessionStorage.removeItem(PARKED_KEY);
+    }
+    return {};
+  });
+
+  async function check(event: FormEvent<HTMLFormElement>): Promise<void> {
+    event.preventDefault();
+    const answers = answersFrom(new FormData(event.currentTarget));
+    setState({ answers, pending: true });
+
+    const result = await api<{ answers: RouteCheck; verdict: RouteCheckState["verdict"] }>(
+      "/api/v1/route-checks",
+      { method: "POST", body: answers },
+    );
+
+    if (result.ok && result.data) {
+      setState({ answers: result.data.answers, verdict: result.data.verdict });
+    } else {
+      setState({
+        answers,
+        issues: result.issues,
+        error: result.issues ? undefined : result.error?.key,
+      });
+    }
+  }
+
+  async function createApplication(): Promise<void> {
+    const answers = state.answers;
+    setState((s) => ({ ...s, pending: true, error: undefined }));
+
+    const result = await api<{ application: { id: string } }>("/api/v1/applications", {
+      method: "POST",
+      body: answers,
+    });
+
+    if (result.ok) {
+      window.sessionStorage.removeItem(PARKED_KEY);
+      router.push("/dashboard");
+      router.refresh();
+      return;
+    }
+
+    if (result.status === 401) {
+      // Park the answers before the detour, so they come back to this card.
+      window.sessionStorage.setItem(PARKED_KEY, JSON.stringify(answers));
+      router.push("/login");
+      return;
+    }
+
+    setState((s) => ({ ...s, pending: false, error: result.error?.key ?? "route.createFailed" }));
+  }
+
+  async function joinWaitlist(): Promise<void> {
+    setState((s) => ({ ...s, pending: true, error: undefined }));
+    const result = await api("/api/v1/waitlist", { method: "POST", body: state.answers });
+
+    if (result.ok) {
+      setState((s) => ({ ...s, pending: false, waitlisted: true }));
+    } else {
+      setState((s) => ({
+        ...s,
+        pending: false,
+        error: result.error?.key ?? "route.waitlistFailed",
+      }));
+    }
+  }
 
   if (state.verdict?.supported) {
-    return <SupportedRoute state={state} locale={locale} />;
+    return (
+      <SupportedRoute
+        pending={state.pending}
+        error={state.error}
+        onCreate={() => void createApplication()}
+      />
+    );
   }
   if (state.verdict && !state.verdict.supported) {
-    return <UnsupportedRoute state={state} locale={locale} reasons={state.verdict.reasons} />;
+    return (
+      <UnsupportedRoute
+        reasons={state.verdict.reasons}
+        waitlisted={state.waitlisted}
+        pending={state.pending}
+        error={state.error}
+        locale={locale}
+        onJoin={() => void joinWaitlist()}
+      />
+    );
   }
 
   const issueFor = (path: string) => state.issues?.find((i) => i.path === path);
 
   return (
-    <form action={formAction}>
+    <form onSubmit={(event) => void check(event)}>
       {state.issues && state.issues.length > 0 ? (
         <ErrorSummary
           title={t("errorSummary.title")}
           errors={state.issues.map((i) => ({ field: i.path, message: messageFor(t, i) }))}
         />
+      ) : null}
+
+      {state.error ? (
+        <div style={{ marginBlockEnd: "var(--space-6)" }}>
+          <Callout tone="error">{t(state.error as "errors.request")}</Callout>
+        </div>
       ) : null}
 
       <h1
@@ -81,8 +197,6 @@ export function RouteCheckForm({
       >
         {t("route.intro")}
       </p>
-
-      <input type="hidden" name="locale" value={locale} />
 
       <div style={{ display: "grid", gap: "var(--space-8)" }}>
         <RadioGroup
@@ -134,26 +248,33 @@ export function RouteCheckForm({
       </div>
 
       <div style={{ marginBlockStart: "var(--space-8)" }}>
-        <SubmitButton label={t("route.submit")} />
+        <Button type="submit" size="lg" loading={state.pending}>
+          {t("route.submit")}
+        </Button>
       </div>
     </form>
   );
 }
 
-function SupportedRoute({ state, locale }: { state: RouteCheckState; locale: Locale }) {
+function SupportedRoute({
+  pending,
+  error,
+  onCreate,
+}: {
+  pending?: boolean;
+  error?: string;
+  onCreate: () => void;
+}) {
   const t = useTranslations();
-  const [createState, createAction] = useActionState<RouteCheckState, FormData>(
-    createApplication,
-    state,
-  );
 
   return (
     <Card>
-      {createState.error ? (
+      {error ? (
         <div style={{ marginBlockEnd: "var(--space-5)" }}>
-          <Callout tone="error">{t(createState.error)}</Callout>
+          <Callout tone="error">{t(error as "route.createFailed")}</Callout>
         </div>
       ) : null}
+
       <h1
         style={{
           margin: 0,
@@ -175,29 +296,29 @@ function SupportedRoute({ state, locale }: { state: RouteCheckState; locale: Loc
         {t("route.supported.body")}
       </p>
 
-      <form action={createAction}>
-        <input type="hidden" name="locale" value={locale} />
-        <HiddenAnswers state={state} />
-        <SubmitButton label={t("route.supported.cta")} />
-      </form>
+      <Button size="lg" loading={pending} onClick={onCreate}>
+        {t("route.supported.cta")}
+      </Button>
     </Card>
   );
 }
 
 function UnsupportedRoute({
-  state,
-  locale,
   reasons,
+  waitlisted,
+  pending,
+  error,
+  locale,
+  onJoin,
 }: {
-  state: RouteCheckState;
-  locale: Locale;
   reasons: UnsupportedReason[];
+  waitlisted?: boolean;
+  pending?: boolean;
+  error?: string;
+  locale: Locale;
+  onJoin: () => void;
 }) {
   const t = useTranslations();
-  const [waitlistState, waitlistAction] = useActionState<RouteCheckState, FormData>(
-    joinWaitlist,
-    state,
-  );
 
   return (
     <>
@@ -242,13 +363,13 @@ function UnsupportedRoute({
       </Card>
 
       <div style={{ marginBlockStart: "var(--space-6)" }}>
-        {waitlistState.waitlisted ? (
+        {waitlisted ? (
           <Callout tone="success">{t("route.unsupported.waitlistDone")}</Callout>
         ) : (
           <Card tone="sunken" elevation={0}>
-            {waitlistState.error ? (
+            {error ? (
               <div style={{ marginBlockEnd: "var(--space-4)" }}>
-                <Callout tone="error">{t(waitlistState.error)}</Callout>
+                <Callout tone="error">{t(error as "route.waitlistFailed")}</Callout>
               </div>
             ) : null}
             <h2
@@ -272,11 +393,9 @@ function UnsupportedRoute({
               {t("route.unsupported.waitlistBody")}
             </p>
 
-            <form action={waitlistAction}>
-              <input type="hidden" name="locale" value={locale} />
-              <HiddenAnswers state={state} />
-              <SubmitButton label={t("route.unsupported.waitlistCta")} variant="secondary" />
-            </form>
+            <Button variant="secondary" size="lg" loading={pending} onClick={onJoin}>
+              {t("route.unsupported.waitlistCta")}
+            </Button>
           </Card>
         )}
       </div>
@@ -287,31 +406,6 @@ function UnsupportedRoute({
         </a>
       </p>
     </>
-  );
-}
-
-function HiddenAnswers({ state }: { state: RouteCheckState }) {
-  return (
-    <>
-      {ANSWER_FIELDS.map((field) => (
-        <input key={field} type="hidden" name={field} value={state.answers?.[field] ?? ""} />
-      ))}
-    </>
-  );
-}
-
-function SubmitButton({
-  label,
-  variant = "primary",
-}: {
-  label: string;
-  variant?: "primary" | "secondary";
-}) {
-  const { pending } = useFormStatus();
-  return (
-    <Button type="submit" size="lg" variant={variant} loading={pending}>
-      {label}
-    </Button>
   );
 }
 

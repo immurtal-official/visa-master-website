@@ -1,19 +1,15 @@
 "use client";
 
 import { useRef, useState, useTransition } from "react";
-import { useTranslations, type Locale } from "next-intl";
+import { useTranslations } from "next-intl";
 import type { RequiredDocument } from "@visa-master/core";
 import { Button } from "@/components/ui/button";
 import { Callout } from "@/components/ui/callout";
 import { Card } from "@/components/ui/card";
+import { api } from "@/lib/api/client";
+import { useRouter } from "@/i18n/navigation";
 import { createClient } from "@/lib/supabase/client";
-import {
-  ACCEPTED_TYPES,
-  MAX_UPLOAD_BYTES,
-  objectPath,
-  uploadResumable,
-} from "@/lib/uploads/resumable";
-import { confirmUpload, removeUpload } from "./actions";
+import { ACCEPTED_TYPES, MAX_UPLOAD_BYTES, uploadResumable } from "@/lib/uploads/resumable";
 
 export interface UploadRow {
   id: string;
@@ -34,19 +30,16 @@ type ItemState = "todo" | "uploading" | "pending" | "stored";
  * document that arrives right and one that arrives twice.
  */
 export function DocumentItem({
-  locale,
   applicationId,
-  userId,
   document,
   uploads,
 }: {
-  locale: Locale;
   applicationId: string;
-  userId: string;
   document: RequiredDocument;
   uploads: UploadRow[];
 }) {
   const t = useTranslations("documents");
+  const router = useRouter();
   const input = useRef<HTMLInputElement>(null);
   const [pending, startTransition] = useTransition();
   const [progress, setProgress] = useState<number | null>(null);
@@ -74,32 +67,32 @@ export function DocumentItem({
       return;
     }
 
+    // Announce first: the API writes the row and decides where the bytes go,
+    // so an interrupted transfer leaves something to find and resume.
+    const announced = await api<{ uploadId: string; storagePath: string }>(
+      `/api/v1/applications/${applicationId}/uploads`,
+      {
+        method: "POST",
+        body: {
+          document: document.id,
+          fileName: file.name,
+          contentType: file.type,
+          page: uploads.length + 1,
+        },
+      },
+    );
+
+    if (!announced.ok || !announced.data) {
+      setError(t(announced.error?.key === "documents.wrongType" ? "wrongType" : "uploadFailed"));
+      return;
+    }
+
+    // The bytes go straight to storage under the caller's own token — the
+    // settled signed-path pattern; the API never relays file content.
     const supabase = createClient();
     const { data } = await supabase.auth.getSession();
     const accessToken = data.session?.access_token;
     if (!accessToken) {
-      setError(t("uploadFailed"));
-      return;
-    }
-
-    const uploadId = crypto.randomUUID();
-    const path = objectPath({ userId, applicationId, uploadId, fileName: file.name });
-    const page = uploads.length + 1;
-
-    // The row is written before the bytes move, so an interrupted upload leaves
-    // something to find and resume rather than an orphaned object.
-    const { error: rowError } = await supabase.from("uploads").insert({
-      id: uploadId,
-      application_id: applicationId,
-      user_id: userId,
-      document: document.id,
-      page,
-      storage_path: path,
-      content_type: file.type,
-      original_name: file.name,
-    });
-
-    if (rowError) {
       setError(t("uploadFailed"));
       return;
     }
@@ -109,7 +102,7 @@ export function DocumentItem({
     try {
       await uploadResumable({
         file,
-        path,
+        path: announced.data.storagePath,
         accessToken,
         onProgress: ({ bytesSent, bytesTotal }) =>
           setProgress(bytesTotal > 0 ? Math.round((bytesSent / bytesTotal) * 100) : 0),
@@ -123,8 +116,15 @@ export function DocumentItem({
     setProgress(null);
 
     startTransition(async () => {
-      const result = await confirmUpload(applicationId, uploadId, locale);
-      if (!result.ok) setError(t("confirmFailed"));
+      const confirmed = await api(
+        `/api/v1/applications/${applicationId}/uploads/${announced.data!.uploadId}/confirm`,
+        { method: "POST" },
+      );
+      if (!confirmed.ok) {
+        setError(t("confirmFailed"));
+        return;
+      }
+      router.refresh();
     });
   }
 
@@ -231,7 +231,15 @@ export function DocumentItem({
                 disabled={pending}
                 onClick={() =>
                   startTransition(async () => {
-                    await removeUpload(applicationId, upload.id, locale);
+                    const removed = await api(
+                      `/api/v1/applications/${applicationId}/uploads/${upload.id}`,
+                      { method: "DELETE" },
+                    );
+                    if (!removed.ok) {
+                      setError(t("confirmFailed"));
+                      return;
+                    }
+                    router.refresh();
                   })
                 }
               >
