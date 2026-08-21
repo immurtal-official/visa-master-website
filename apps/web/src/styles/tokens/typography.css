@@ -1,0 +1,124 @@
+:root{
+/* Two scripts, one stack. "Public Sans VM" is a Latin-only subset that sits AHEAD of the
+   CJK faces, so Latin letters and digits pick it up while every Han glyph falls through
+   to the system stack. PingFang SC leads; HarmonyOS Sans / MiSans / Noto Sans CJK follow
+   for Android and mainland OEMs. No Chinese webfont is ever loaded. */
+--font-sans:"Public Sans VM","PingFang SC","HarmonyOS Sans SC","MiSans","Noto Sans CJK SC","Source Han Sans SC","Microsoft YaHei","Heiti SC",system-ui,sans-serif;
+/* Latin-only contexts (English UI, URLs, codes): the subset face with a system fallback
+   chain, so the page is fully legible before or without the webfont. */
+--font-latin:"Public Sans VM",system-ui,-apple-system,"Segoe UI",Helvetica,Arial,sans-serif;
+/* Han-first contexts. The CJK families are named EXPLICITLY and in this order on purpose:
+   Android's default Han fallback varies by vendor and can land on a serif or a poor face,
+   which reads as broken on a trust-oriented product. Naming a family in a font-family stack
+   never implies shipping it — that is what a system font stack is. None of these has an
+   @font-face rule and none ever will. The Latin subset still leads, so digits and Latin
+   words inside a Chinese sentence match the rest of the UI. */
+--font-cjk:"Public Sans VM","PingFang SC","HarmonyOS Sans SC","MiSans","Noto Sans CJK SC","Source Han Sans SC","Microsoft YaHei","Heiti SC",system-ui,sans-serif;
+--font-mono:ui-monospace,"SF Mono","Menlo",monospace;
+--font-num:"Public Sans VM",ui-monospace,sans-serif;
+
+/* Sizes reviewed in PingFang SC. Nominal size is shared across scripts; LINE HEIGHT IS NOT.
+   A Han glyph fills its em box and has no ascender/descender relief, so it needs more
+   leading than Latin at the same nominal size — and Latin set at CJK leading looks loose
+   and unfocused. Never use one line-height for both. */
+--fs-12:12px;--fs-14:14px;--fs-15:15px;--fs-16:16px;--fs-18:18px;--fs-20:20px;--fs-24:24px;--fs-30:30px;--fs-36:36px;--fs-44:44px;--fs-56:56px;
+
+/* per-script line heights — CJK 1.7–1.8 body, Latin 1.5 body */
+--lh-cjk-display:1.3; /* @kind other */
+--lh-cjk-heading:1.45; /* @kind other */
+--lh-cjk-body:1.75; /* @kind other */
+--lh-cjk-loose:1.85; /* @kind other */
+--lh-latin-display:1.15; /* @kind other */
+--lh-latin-heading:1.3; /* @kind other */
+--lh-latin-body:1.5; /* @kind other */
+--lh-latin-loose:1.6; /* @kind other */
+
+/* legacy aliases, CJK-valued (the default UI language) */
+--lh-tight:var(--lh-latin-display); /* @kind other */
+--lh-snug:var(--lh-cjk-display); /* @kind other */
+--lh-body:var(--lh-cjk-body); /* @kind other */
+--lh-loose:var(--lh-cjk-loose); /* @kind other */
+
+--fw-regular:400; /* @kind other */
+--fw-medium:500; /* @kind other */
+--fw-semibold:600; /* @kind other */
+--fw-bold:700; /* @kind other */
+
+/* CJK tracking: negative never; small text gets air. Latin gets none of this. */
+--ls-cjk-sm:0.02em; /* @kind other */
+--ls-cjk-body:0.01em; /* @kind other */
+--ls-cjk-display:0; /* @kind other */
+--ls-latin-caps:0.06em; /* @kind other */
+
+/* ---- semantic roles (values below are the Simplified Chinese defaults) ---- */
+--type-display-size:var(--fs-44);
+--type-display-lh:var(--lh-cjk-display); /* @kind other */
+--type-display-weight:var(--fw-semibold); /* @kind other */
+--type-h1-size:var(--fs-36);
+--type-h1-lh:1.35; /* @kind other */
+--type-h2-size:var(--fs-24);
+--type-h2-lh:1.4; /* @kind other */
+--type-h3-size:var(--fs-20);
+--type-h3-lh:var(--lh-cjk-heading); /* @kind other */
+--type-question-size:var(--fs-24); /* the one-question-per-page headline */
+--type-question-lh:var(--lh-cjk-heading); /* @kind other */
+--type-body-size:var(--fs-16);
+--type-body-lh:var(--lh-cjk-body); /* @kind other */
+--type-body-lg-size:var(--fs-18);
+--type-body-lg-lh:var(--lh-cjk-body); /* @kind other */
+--type-hint-size:var(--fs-14);
+--type-hint-lh:1.6; /* @kind other */
+--type-label-size:var(--fs-16);
+--type-label-lh:1.5; /* @kind other */
+--type-caption-size:var(--fs-12);
+--type-caption-lh:1.6; /* @kind other */
+--type-input-size:16px; /* never below 16px — iOS Safari zooms on focus otherwise */
+}
+/* Latin UI. `<html lang="en">` is markup we have to get right anyway — for assistive tech
+   and for indexing — so :lang() is the primary hook and needs no second attribute. The same
+   semantic roles re-resolve to Latin leading and neutral tracking; components need no change.
+   Sizes are shared across scripts; only leading and tracking move. */
+/* Latin UI. Driven by the `lang` attribute itself — `<html lang="en">` (or lang="en-US")
+   is markup we have to get right anyway, for assistive tech and for indexing, so no second
+   attribute is required and there is nothing to forget. Custom properties inherit, so the
+   whole document under that element re-resolves. The same semantic roles pick up Latin
+   leading and neutral tracking; components need no change. Sizes are shared across scripts;
+   only leading and tracking move. */
+[lang^="en"]{
+--ls-cjk-sm:0; /* @kind other */
+--ls-cjk-body:0; /* @kind other */
+--ls-cjk-display:-0.01em; /* @kind other */
+--lh-body:var(--lh-latin-body); /* @kind other */
+--lh-loose:var(--lh-latin-loose); /* @kind other */
+--lh-snug:var(--lh-latin-heading); /* @kind other */
+--type-display-lh:var(--lh-latin-display); /* @kind other */
+--type-h1-lh:1.2; /* @kind other */
+--type-h2-lh:1.25; /* @kind other */
+--type-h3-lh:var(--lh-latin-heading); /* @kind other */
+--type-question-lh:1.3; /* @kind other */
+--type-body-lh:var(--lh-latin-body); /* @kind other */
+--type-body-lg-lh:var(--lh-latin-body); /* @kind other */
+--type-hint-lh:1.5; /* @kind other */
+--type-label-lh:1.4; /* @kind other */
+--type-caption-lh:1.45; /* @kind other */
+}
+/* Optional escape hatch: same overrides on a fragment that cannot carry `lang`
+   (or a Latin-only island inside a Chinese page). Never required. */
+[data-lang="en"]{
+--ls-cjk-sm:0; /* @kind other */
+--ls-cjk-body:0; /* @kind other */
+--ls-cjk-display:-0.01em; /* @kind other */
+--lh-body:var(--lh-latin-body);
+--lh-loose:var(--lh-latin-loose);
+--lh-snug:var(--lh-latin-heading);
+--type-display-lh:var(--lh-latin-display);
+--type-h1-lh:1.2;
+--type-h2-lh:1.25;
+--type-h3-lh:var(--lh-latin-heading);
+--type-question-lh:1.3;
+--type-body-lh:var(--lh-latin-body);
+--type-body-lg-lh:var(--lh-latin-body);
+--type-hint-lh:1.5;
+--type-label-lh:1.4;
+--type-caption-lh:1.45;
+}

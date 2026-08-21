@@ -1,0 +1,35 @@
+{
+  "name": "visa-master",
+  "private": true,
+  "packageManager": "pnpm@10.34.5",
+  "engines": {
+    "node": ">=22.12"
+  },
+  "scripts": {
+    "build": "turbo run build",
+    "dev": "turbo run dev",
+    "lint": "turbo run lint",
+    "typecheck": "turbo run typecheck",
+    "test": "turbo run test",
+    "check:i18n": "turbo run check:i18n",
+    "db:start": "pnpm --filter @visa-master/db db:start",
+    "db:stop": "pnpm --filter @visa-master/db db:stop",
+    "db:status": "pnpm --filter @visa-master/db db:status",
+    "db:reset": "pnpm --filter @visa-master/db db:reset",
+    "db:test": "pnpm --filter @visa-master/db db:test",
+    "format": "prettier --write ."
+  },
+  "devDependencies": {
+    "@formatjs/icu-messageformat-parser": "^3.5.0",
+    "prettier": "^3.9.0",
+    "tsx": "^4.19.0",
+    "turbo": "^2.10.9"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "esbuild",
+      "@tailwindcss/oxide",
+      "sharp"
+    ]
+  }
+}

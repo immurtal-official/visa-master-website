@@ -1,0 +1,360 @@
+{
+  "meta": {
+    "title": "签证大师",
+    "description": "把签证材料准备得更清楚、更一致。"
+  },
+  "chrome": {
+    "footer": {
+      "disclaimer": "本服务不代办签证，也不影响使领馆的审批结果。"
+    }
+  },
+  "languageSwitcher": {
+    "groupLabel": "界面语言",
+    "note": "仅切换界面语言。材料包的语言由目的国的要求决定。"
+  },
+  "landing": {
+    "intro": "把签证材料准备得更清楚、更一致。",
+    "cta": "登录或创建账号"
+  },
+  "route": {
+    "title": "看看我们现在能不能帮到你",
+    "intro": "先回答四个问题。不支持的组合不会创建申请，也不会收费。",
+    "areaLabel": "你目前长期居住在哪个省或直辖市？",
+    "areaHint": "签证由你居住地对应的领区受理，所以这一项决定去哪里递交。",
+    "destinationLabel": "你要去哪个国家？",
+    "purposeLabel": "这次出行的主要目的是什么？",
+    "employmentLabel": "申请人目前的工作状态是？",
+    "submit": "查看是否支持",
+    "area": {
+      "sichuan": "四川",
+      "chongqing": "重庆",
+      "yunnan": "云南",
+      "guizhou": "贵州",
+      "xizang": "西藏",
+      "other": "其他省份或直辖市"
+    },
+    "destinationOther": "其他国家",
+    "purpose": {
+      "tourism": "个人旅游",
+      "family": "探亲访友",
+      "business": "商务",
+      "conference": "会议"
+    },
+    "employment": {
+      "employed": "在职",
+      "student": "学生",
+      "retired": "退休",
+      "self_employed": "自由职业或个体经营"
+    },
+    "supported": {
+      "title": "这条路线我们现在就能做",
+      "body": "成都领区居民、前往西班牙的个人旅游签、在职申请人。下一步是填写申请信息，中途可以随时离开，进度会保存。",
+      "cta": "创建申请"
+    },
+    "unsupported": {
+      "title": "这条路线我们还做不了",
+      "intro": "现在只支持成都领区居民申请西班牙个人旅游签，且申请人为在职。你这次的情况有：",
+      "reason": {
+        "area": "你的居住地不属于成都领区。",
+        "destination": "目的地不是西班牙。",
+        "purpose": "出行目的不是个人旅游。",
+        "employment": "申请人不是在职状态。"
+      },
+      "waitlistTitle": "留下这条线索",
+      "waitlistBody": "我们按需求决定下一个开通的路线。记录只包含你填的居住地和目的地。",
+      "waitlistCta": "记录我的需求",
+      "waitlistDone": "已记录。开通后我们会通过邮件告诉你。",
+      "backCta": "换一组条件再看看"
+    },
+    "createFailed": "申请没有创建成功。请再试一次。",
+    "sessionExpired": "你的登录状态已经失效。重新登录后，刚才填的选项还在。",
+    "waitlistFailed": "没有记录成功。请再试一次。"
+  },
+  "application": {
+    "newCta": "新建申请",
+    "status": {
+      "draft": "填写中",
+      "submitted": "已提交",
+      "cancelled": "已取消"
+    },
+    "nextStep": {
+      "draft": "继续填写申请信息",
+      "submitted": "等待生成材料包",
+      "cancelled": "无需操作"
+    },
+    "createdAt": "创建于 {date}",
+    "route": "{destination} · {purpose}",
+    "openCta": "打开",
+    "overviewTitle": "申请概览",
+    "backToList": "返回我的申请",
+    "continueCta": "继续填写",
+    "reviewCta": "查看已填内容",
+    "jobStatus": {
+      "queued": "已提交，排队等待生成",
+      "leased": "已提交，排队等待生成",
+      "running": "官方来源核对中",
+      "validating": "一致性检查中",
+      "awaiting_input": "需要你补充信息",
+      "succeeded": "人工复核中",
+      "failed": "已失败",
+      "timed_out": "已失败",
+      "cancelled": "已取消"
+    },
+    "asyncNote": "生成大约需要 10 分钟。你可以关掉这个页面，状态变化我们会通知你。",
+    "notStartedNote": "目前还没有生成节点在处理队列，所以这份申请会停在排队状态。这是本地开发环境的预期情况。",
+    "answersTitle": "你填写的内容"
+  },
+  "auth": {
+    "login": {
+      "title": "登录或创建账号",
+      "intro": "输入邮箱地址，我们会发送一个 6 位验证码。",
+      "emailLabel": "邮箱地址",
+      "submit": "发送验证码"
+    },
+    "otp": {
+      "title": "输入验证码",
+      "sentTo": "验证码已发送到 {email}。",
+      "codeLabel": "6 位验证码",
+      "submit": "验证并登录",
+      "resend": "重新发送验证码",
+      "changeEmail": "换一个邮箱地址",
+      "failed": "验证码不正确或已过期。重新输入，或点击重新发送。",
+      "rateLimited": "验证码刚刚发送过。稍等一会再试。",
+      "sendFailed": "验证码发送失败。请再试一次。",
+      "checkFailed": "现在没法验证这个验证码。请稍后再试。"
+    },
+    "notConfigured": "登录暂不可用：认证服务还没有配置。",
+    "signOut": "退出登录",
+    "signOutFailed": "退出登录没有完成。请关闭浏览器，或稍后再试。"
+  },
+  "dashboard": {
+    "title": "我的申请",
+    "signedInAs": "已登录：{email}",
+    "empty": {
+      "title": "你还没有申请",
+      "body": "你创建的申请会显示在这里。"
+    },
+    "loadFailed": {
+      "title": "暂时读不到你的申请",
+      "body": "这不代表申请没了。刷新页面再试一次；一直这样就联系我们。"
+    }
+  },
+  "errorSummary": {
+    "title": "请先补充以下内容"
+  },
+  "errors": {
+    "notFound": {
+      "title": "找不到这个页面",
+      "body": "这个地址不存在，或者已经移动。"
+    },
+    "unexpected": {
+      "title": "出了点问题",
+      "body": "刚才的操作没有完成。请刷新页面再试一次。"
+    },
+    "retry": "重试"
+  },
+  "validation": {
+    "required": "请填写这一项。",
+    "invalid": "请检查这一项，然后重新填写。",
+    "email": {
+      "invalid": "请输入有效的邮箱地址。"
+    },
+    "otp": {
+      "invalidFormat": "验证码是 6 位数字，请检查后重新输入。"
+    },
+    "tooShort": "至少需要 {min} 个字符。",
+    "tooLong": "最多 {max} 个字符。",
+    "date": {
+      "invalid": "请填写一个有效的日期。",
+      "future": "这个日期不能晚于今天。",
+      "past": "这个日期不能早于今天。"
+    },
+    "phone": {
+      "invalid": "请填写 11 位手机号码。"
+    },
+    "pinyin": {
+      "invalid": "这一栏只填拼音字母，和护照上一致。"
+    },
+    "passport": {
+      "number": {
+        "invalid": "护照号码是 {length} 位，请照护照上重新填写。"
+      },
+      "expiry": {
+        "beforeIssue": "有效期不能早于签发日期，请检查这两个日期。",
+        "tooSoon": "护照剩余有效期不足 {monthsRequired} 个月。请先换发新护照，再来准备材料。",
+        "tooSoonForTrip": "按回国日期算，护照剩余有效期不足 {monthsRequired} 个月。请先换发新护照。"
+      }
+    },
+    "amount": {
+      "invalid": "请只填数字金额，例如 12000。"
+    },
+    "travel": {
+      "returnBeforeDeparture": "回国日期不能早于出发日期，请检查这两个日期。"
+    }
+  },
+  "intake": {
+    "hubTitle": "填写申请信息",
+    "hubIntro": "分成几节，随时可以停。每答完一题就会保存，下次登录回到你停下的地方。",
+    "progress": "已回答 {answered} / {total} 题",
+    "resumeCta": "继续填写",
+    "startCta": "开始填写",
+    "backToHub": "返回任务清单",
+    "saved": "已保存。你可以随时关闭页面，之后继续填写。",
+    "saveFailed": "这一题没有保存成功。请再试一次。",
+    "next": "保存并继续",
+    "state": {
+      "done": "已完成",
+      "inProgress": "填写中",
+      "todo": "待填写",
+      "unavailable": "还没开放"
+    },
+    "unavailableHint": "这一节我们还没做好。已经填的内容都保存着。",
+    "section": {
+      "applicant": "关于申请人",
+      "passport": "护照信息",
+      "residence": "居住地与领区",
+      "employment": "工作与收入",
+      "travel": "行程安排",
+      "companions": "同行人与费用承担",
+      "history": "签证与出入境历史",
+      "review": "确认并提交"
+    },
+    "question": {
+      "applicant": {
+        "name": "申请人的中文姓名是什么？",
+        "nameHint": "和身份证上的写法一致。",
+        "pinyin": "护照上的拼音姓名怎么写？",
+        "pinyinHint": "照抄护照资料页上的拼写，包括空格。材料里会一直用这个写法。",
+        "birthDate": "申请人的出生日期是？",
+        "birthDateHint": "和护照上的一致。",
+        "phone": "常用手机号是多少？",
+        "phoneHint": "材料准备好或需要补充时，我们用它联系你。"
+      },
+      "passport": {
+        "number": "护照号码是多少？",
+        "numberHint": "在护照资料页右上角，9 位。",
+        "issuedAt": "护照的签发日期是？",
+        "expiresAt": "护照的有效期到哪天？",
+        "expiresAtHint": "申根要求护照在离开申根区之后至少还有 3 个月有效期。"
+      },
+      "residence": {
+        "city": "申请人现在住在哪个城市？",
+        "cityHint": "以实际居住地为准，材料里会用这个城市判断领区。",
+        "address": "详细住址是什么？",
+        "addressHint": "写到门牌号。申请表上要求填写完整住址。"
+      },
+      "employment": {
+        "employer": "申请人所在单位的全称是什么？",
+        "employerHint": "和营业执照、社保记录上的名称一致。在职证明会用这个名称。",
+        "position": "职位是什么？",
+        "startDate": "什么时候入职的？",
+        "startDateHint": "在职时长会写进在职证明。",
+        "monthlyIncome": "税前月薪是多少？",
+        "monthlyIncomeHint": "填人民币金额，只填数字。这个数字要和银行流水对得上。"
+      },
+      "travel": {
+        "departureDate": "计划哪天出发？",
+        "departureDateHint": "还没定死也没关系，填一个预计日期，后面可以改。",
+        "returnDate": "计划哪天回国？",
+        "cities": "打算去哪些城市？",
+        "citiesHint": "按行程顺序写，用顿号隔开，例如：马德里、塞维利亚、巴塞罗那。行程单会按这个顺序生成。"
+      },
+      "companions": {
+        "travellingWith": "这次和谁一起去？",
+        "whoPays": "这次出行的费用由谁承担？",
+        "whoPaysHint": "由别人承担时，需要额外提供承担方的资金证明。"
+      },
+      "history": {
+        "schengenBefore": "以前去过申根国家吗？",
+        "schengenBeforeHint": "去过的话，旧签证记录会作为出行记录的一部分。",
+        "refused": "以前有没有被拒签过？",
+        "refusedHint": "如实回答。拒签史需要在申请表里说明，隐瞒比拒签本身影响更大。"
+      }
+    },
+    "date": {
+      "year": "年",
+      "month": "月",
+      "day": "日"
+    },
+    "option": {
+      "travellingWith": {
+        "alone": "我一个人",
+        "family": "和家人",
+        "friends": "和朋友",
+        "colleagues": "和同事"
+      },
+      "whoPays": {
+        "self": "自己承担",
+        "family": "家人承担",
+        "employer": "单位承担"
+      },
+      "yesNoUnsure": {
+        "yes": "有",
+        "no": "没有",
+        "unsure": "我不确定"
+      }
+    },
+    "review": {
+      "title": "确认并提交",
+      "intro": "提交后我们开始核对官方要求并生成材料。生成大约需要 10 分钟，你可以关掉页面。",
+      "editCta": "修改",
+      "submit": "提交并开始生成",
+      "incompleteTitle": "还有内容需要补充",
+      "incompleteBody": "下面这些地方需要先处理，然后才能提交。",
+      "submitFailed": "提交没有成功。请再试一次。",
+      "alreadySubmitted": "这份申请已经提交过了。",
+      "documentsMissing": "还有必需的材料没有上传，先把材料补齐再提交。"
+    }
+  },
+  "documents": {
+    "title": "上传材料",
+    "intro": "拍照或选文件都可以。每一项下面写了它的用途——这些材料会和你填的内容互相核对。",
+    "progress": "已确认 {stored} / {required} 项必需材料",
+    "necessity": {
+      "required": "必需",
+      "recommended": "建议提供",
+      "conditional": "你的情况需要"
+    },
+    "state": {
+      "todo": "待上传",
+      "uploading": "上传中",
+      "pending": "等待确认",
+      "stored": "已收到"
+    },
+    "addCta": "选择文件或拍照",
+    "addPageCta": "再加一页",
+    "replaceCta": "重新上传",
+    "removeCta": "删除",
+    "pageLabel": "第 {page} 页",
+    "uploadFailed": "这份文件没有上传成功。请再试一次。",
+    "confirmFailed": "文件传上去了，但我们还没确认到。请刷新页面看看。",
+    "tooLarge": "文件超过 20 MB。请压缩后再传，或分页拍摄。",
+    "wrongType": "只接受 JPG、PNG、HEIC 和 PDF。",
+    "statusNote": "我们只检查文件能不能打开、清不清楚。是否符合使领馆要求，由人工复核判断。",
+    "doneCta": "材料齐了，去提交",
+    "item": {
+      "passportBio": "护照资料页",
+      "passportBioWhy": "签证贴在护照上，资料页决定了申请表里所有的身份信息。拍清楚号码和机读码那两行。",
+      "photo": "近期证件照",
+      "photoWhy": "申根对照片尺寸和底色有硬性要求。用照相馆拍的电子版，不要用生活照裁剪。",
+      "hukou": "户口本",
+      "hukouWhy": "用来证明户籍和家庭关系。至少要户主页和本人页。",
+      "employmentLetter": "在职证明",
+      "employmentLetterWhy": "证明你有稳定工作、会按时回国。上面的单位名称和职位要和你填的一致。",
+      "bankStatement": "银行流水",
+      "bankStatementWhy": "证明你负担得起这次行程。通常要最近 6 个月、有银行盖章，工资入账要和你填的月薪对得上。",
+      "socialInsurance": "社保记录",
+      "socialInsuranceWhy": "不是必需，但它能独立佐证在职时长，和在职证明相互印证。",
+      "insurance": "申根旅游保险",
+      "insuranceWhy": "申根要求保额不低于 3 万欧元、覆盖全部行程日期。",
+      "flightBooking": "机票预订单",
+      "flightBookingWhy": "用来证明行程真实。预订单即可，不必先出票。",
+      "hotelBooking": "住宿预订单",
+      "hotelBookingWhy": "要覆盖全部在申根区的日期，每一晚都要有着落。",
+      "sponsorProof": "费用承担方的资金证明",
+      "sponsorProofWhy": "由别人承担费用时，需要证明这笔钱确实存在。通常是承担方的银行流水加一份说明。",
+      "previousVisas": "以往申根签证与出入境记录",
+      "previousVisasWhy": "良好的出行记录对申请有帮助。拍旧签证页和对应的出入境章。"
+    }
+  }
+}

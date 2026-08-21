@@ -1,0 +1,360 @@
+{
+  "meta": {
+    "title": "Visa Master",
+    "description": "Prepare clearer, more consistent visa documents."
+  },
+  "chrome": {
+    "footer": {
+      "disclaimer": "We do not apply on your behalf, and we do not influence the consulate’s decision."
+    }
+  },
+  "languageSwitcher": {
+    "groupLabel": "Interface language",
+    "note": "Switches the interface language only. The language of your document pack is set by the destination country’s requirements."
+  },
+  "landing": {
+    "intro": "Prepare clearer, more consistent visa documents.",
+    "cta": "Sign in or create an account"
+  },
+  "route": {
+    "title": "Let us check whether we can help yet",
+    "intro": "Four questions first. A combination we do not serve never creates an application, and never charges you.",
+    "areaLabel": "Which province or municipality do you live in?",
+    "areaHint": "A visa is handled by the consulate covering where you live, so this decides where the application is submitted.",
+    "destinationLabel": "Which country are you going to?",
+    "purposeLabel": "What is the main purpose of this trip?",
+    "employmentLabel": "What is the applicant’s current work situation?",
+    "submit": "Check this route",
+    "area": {
+      "sichuan": "Sichuan",
+      "chongqing": "Chongqing",
+      "yunnan": "Yunnan",
+      "guizhou": "Guizhou",
+      "xizang": "Xizang",
+      "other": "Somewhere else"
+    },
+    "destinationOther": "Another country",
+    "purpose": {
+      "tourism": "Personal tourism",
+      "family": "Visiting family or friends",
+      "business": "Business",
+      "conference": "A conference"
+    },
+    "employment": {
+      "employed": "Employed",
+      "student": "A student",
+      "retired": "Retired",
+      "self_employed": "Self-employed"
+    },
+    "supported": {
+      "title": "We can prepare this route now",
+      "body": "A resident of the Chengdu consular district, going to Spain on a personal tourism visa, in employment. Next you fill in the application. You can leave at any point and your answers are kept.",
+      "cta": "Create the application"
+    },
+    "unsupported": {
+      "title": "We cannot prepare this route yet",
+      "intro": "For now we serve residents of the Chengdu consular district applying for a Spanish personal tourism visa, where the applicant is employed. In your case:",
+      "reason": {
+        "area": "You do not live in the area the Chengdu consulate covers.",
+        "destination": "The destination is not Spain.",
+        "purpose": "The purpose is not personal tourism.",
+        "employment": "The applicant is not in employment."
+      },
+      "waitlistTitle": "Tell us you needed this one",
+      "waitlistBody": "Demand decides which route opens next. The record holds only the place you live and the destination you chose.",
+      "waitlistCta": "Record what I need",
+      "waitlistDone": "Recorded. We will email you if this route opens.",
+      "backCta": "Try a different combination"
+    },
+    "createFailed": "The application was not created. Try again.",
+    "sessionExpired": "Your sign-in is no longer valid. Sign in again and your answers will still be here.",
+    "waitlistFailed": "That was not recorded. Try again."
+  },
+  "application": {
+    "newCta": "New application",
+    "status": {
+      "draft": "Being filled in",
+      "submitted": "Submitted",
+      "cancelled": "Cancelled"
+    },
+    "nextStep": {
+      "draft": "Continue filling it in",
+      "submitted": "Waiting for the document pack",
+      "cancelled": "Nothing to do"
+    },
+    "createdAt": "Created {date}",
+    "route": "{destination} · {purpose}",
+    "openCta": "Open",
+    "overviewTitle": "Application",
+    "backToList": "Back to my applications",
+    "continueCta": "Continue filling it in",
+    "reviewCta": "See what you answered",
+    "jobStatus": {
+      "queued": "Sent, waiting in the queue",
+      "leased": "Sent, waiting in the queue",
+      "running": "Checking the official sources",
+      "validating": "Checking the documents against each other",
+      "awaiting_input": "We need something more from you",
+      "succeeded": "Being reviewed by a person",
+      "failed": "Did not complete",
+      "timed_out": "Did not complete",
+      "cancelled": "Cancelled"
+    },
+    "asyncNote": "Preparing the documents takes about 10 minutes. You can close this page — we will tell you when the state changes.",
+    "notStartedNote": "No machine is consuming the queue yet, so this application stays in the queue. That is expected while running locally.",
+    "answersTitle": "What you answered"
+  },
+  "auth": {
+    "login": {
+      "title": "Sign in or create an account",
+      "intro": "Enter your email address and we’ll send you a 6-digit code.",
+      "emailLabel": "Email address",
+      "submit": "Send the code"
+    },
+    "otp": {
+      "title": "Enter your code",
+      "sentTo": "We sent a code to {email}.",
+      "codeLabel": "6-digit code",
+      "submit": "Verify and sign in",
+      "resend": "Send a new code",
+      "changeEmail": "Use a different email address",
+      "failed": "That code is not correct or has expired. Enter it again, or send a new one.",
+      "rateLimited": "A code was sent a moment ago. Wait a moment and try again.",
+      "sendFailed": "We could not send the code. Try again.",
+      "checkFailed": "We cannot check that code right now. Try again in a moment."
+    },
+    "notConfigured": "Sign-in is not available yet: the authentication service has not been configured.",
+    "signOut": "Sign out",
+    "signOutFailed": "Signing out did not complete. Close your browser, or try again in a moment."
+  },
+  "dashboard": {
+    "title": "My applications",
+    "signedInAs": "Signed in as {email}",
+    "empty": {
+      "title": "You do not have any applications yet",
+      "body": "Applications you create will appear here."
+    },
+    "loadFailed": {
+      "title": "We cannot load your applications right now",
+      "body": "This does not mean they are gone. Refresh the page and try again; if it keeps happening, tell us."
+    }
+  },
+  "errorSummary": {
+    "title": "There is something to fix before you continue"
+  },
+  "errors": {
+    "notFound": {
+      "title": "This page cannot be found",
+      "body": "This address does not exist, or it has moved."
+    },
+    "unexpected": {
+      "title": "Something went wrong",
+      "body": "That did not complete. Refresh the page and try again."
+    },
+    "retry": "Try again"
+  },
+  "validation": {
+    "required": "Fill in this field.",
+    "invalid": "Check this entry and enter it again.",
+    "email": {
+      "invalid": "Enter a valid email address."
+    },
+    "otp": {
+      "invalidFormat": "Your code is 6 digits. Check it and enter it again."
+    },
+    "tooShort": "{min, plural, one {Enter at least # character.} other {Enter at least # characters.}}",
+    "tooLong": "{max, plural, one {Enter no more than # character.} other {Enter no more than # characters.}}",
+    "date": {
+      "invalid": "Enter a real date.",
+      "future": "This date cannot be later than today.",
+      "past": "This date cannot be earlier than today."
+    },
+    "phone": {
+      "invalid": "Enter an 11-digit mobile number."
+    },
+    "pinyin": {
+      "invalid": "Use the Latin spelling from the passport in this field."
+    },
+    "passport": {
+      "number": {
+        "invalid": "A passport number is {length} characters. Copy it from the passport and enter it again."
+      },
+      "expiry": {
+        "beforeIssue": "The expiry date cannot be earlier than the issue date. Check both dates.",
+        "tooSoon": "This passport has less than {monthsRequired} months left. Renew it first, then come back and prepare the documents.",
+        "tooSoonForTrip": "Counting from the return date, this passport has less than {monthsRequired} months left. Renew it first."
+      }
+    },
+    "amount": {
+      "invalid": "Enter the amount as digits, for example 12000."
+    },
+    "travel": {
+      "returnBeforeDeparture": "The return date cannot be earlier than the departure date. Check both dates."
+    }
+  },
+  "intake": {
+    "hubTitle": "Fill in your application",
+    "hubIntro": "It comes in sections and you can stop at any point. Each answer is saved as you give it, and signing in again brings you back to where you stopped.",
+    "progress": "{answered} of {total} questions answered",
+    "resumeCta": "Continue",
+    "startCta": "Start filling it in",
+    "backToHub": "Back to the section list",
+    "saved": "Saved. You can close this page at any time and carry on later.",
+    "saveFailed": "That answer was not saved. Try again.",
+    "next": "Save and continue",
+    "state": {
+      "done": "Done",
+      "inProgress": "Started",
+      "todo": "To do",
+      "unavailable": "Not open yet"
+    },
+    "unavailableHint": "We have not built this section yet. Everything you have answered is saved.",
+    "section": {
+      "applicant": "About the applicant",
+      "passport": "Passport",
+      "residence": "Where you live",
+      "employment": "Work and income",
+      "travel": "Travel plans",
+      "companions": "Who you travel with, and who pays",
+      "history": "Visa and travel history",
+      "review": "Check and send"
+    },
+    "question": {
+      "applicant": {
+        "name": "What is the applicant’s name in Chinese?",
+        "nameHint": "Write it as it appears on their identity card.",
+        "pinyin": "How is the name written on the passport?",
+        "pinyinHint": "Copy the spelling from the passport’s data page, spaces and all. Every document uses this spelling.",
+        "birthDate": "What is the applicant’s date of birth?",
+        "birthDateHint": "As printed on the passport.",
+        "phone": "Which mobile number should we use?",
+        "phoneHint": "We use it when the documents are ready, or if something is missing."
+      },
+      "passport": {
+        "number": "What is the passport number?",
+        "numberHint": "Top right of the passport’s data page. It is 9 characters.",
+        "issuedAt": "When was the passport issued?",
+        "expiresAt": "When does the passport expire?",
+        "expiresAtHint": "Schengen rules ask for at least 3 months of validity after you leave the Schengen area."
+      },
+      "residence": {
+        "city": "Which city does the applicant live in?",
+        "cityHint": "Where they actually live: this is what decides which consulate handles the application.",
+        "address": "What is the full address?",
+        "addressHint": "Down to the building and unit number. The application form asks for the full address."
+      },
+      "employment": {
+        "employer": "What is the full name of the applicant’s employer?",
+        "employerHint": "As it appears on the business licence and social-insurance records. The employment letter uses this name.",
+        "position": "What is their job title?",
+        "startDate": "When did they start this job?",
+        "startDateHint": "How long they have worked there goes into the employment letter.",
+        "monthlyIncome": "What is their monthly salary before tax?",
+        "monthlyIncomeHint": "In yuan, digits only. This figure has to match the bank statements."
+      },
+      "travel": {
+        "departureDate": "When do they plan to leave?",
+        "departureDateHint": "An estimate is fine if nothing is booked yet. You can change it later.",
+        "returnDate": "When do they plan to come back?",
+        "cities": "Which cities are they going to?",
+        "citiesHint": "In the order they will visit them, separated by commas — for example: Madrid, Seville, Barcelona. The itinerary follows this order."
+      },
+      "companions": {
+        "travellingWith": "Who is travelling with them?",
+        "whoPays": "Who is paying for this trip?",
+        "whoPaysHint": "If somebody else is paying, that person’s proof of funds is needed as well."
+      },
+      "history": {
+        "schengenBefore": "Have they been to a Schengen country before?",
+        "schengenBeforeHint": "If they have, the earlier visas count as travel history.",
+        "refused": "Has a visa application of theirs ever been refused?",
+        "refusedHint": "Answer honestly. A refusal has to be declared on the form, and hiding one counts against the application more than the refusal itself."
+      }
+    },
+    "date": {
+      "year": "Year",
+      "month": "Month",
+      "day": "Day"
+    },
+    "option": {
+      "travellingWith": {
+        "alone": "On their own",
+        "family": "With family",
+        "friends": "With friends",
+        "colleagues": "With colleagues"
+      },
+      "whoPays": {
+        "self": "The applicant",
+        "family": "A family member",
+        "employer": "Their employer"
+      },
+      "yesNoUnsure": {
+        "yes": "Yes",
+        "no": "No",
+        "unsure": "I am not sure"
+      }
+    },
+    "review": {
+      "title": "Check and send",
+      "intro": "Once you send this we start checking the official requirements and preparing the documents. It takes about 10 minutes and you can close the page.",
+      "editCta": "Change",
+      "submit": "Send and start preparing",
+      "incompleteTitle": "There is still something to fill in",
+      "incompleteBody": "These need attention before the application can be sent.",
+      "submitFailed": "That was not sent. Try again.",
+      "alreadySubmitted": "This application has already been sent.",
+      "documentsMissing": "Some required documents have not been uploaded. Add them before sending."
+    }
+  },
+  "documents": {
+    "title": "Upload your documents",
+    "intro": "Photograph them or pick a file — either is fine. Each one says what it is for: these are checked against what you told us.",
+    "progress": "{stored} of {required} required documents received",
+    "necessity": {
+      "required": "Required",
+      "recommended": "Worth adding",
+      "conditional": "Needed in your case"
+    },
+    "state": {
+      "todo": "Not sent yet",
+      "uploading": "Sending",
+      "pending": "Waiting for confirmation",
+      "stored": "Received"
+    },
+    "addCta": "Choose a file or take a photo",
+    "addPageCta": "Add another page",
+    "replaceCta": "Send a different one",
+    "removeCta": "Remove",
+    "pageLabel": "Page {page}",
+    "uploadFailed": "That file was not sent. Try again.",
+    "confirmFailed": "The file went up, but we have not confirmed it. Refresh the page to check.",
+    "tooLarge": "That file is over 20 MB. Compress it, or photograph it a page at a time.",
+    "wrongType": "We accept JPG, PNG, HEIC and PDF.",
+    "statusNote": "We check only that a file opens and is legible. Whether it satisfies the consulate is decided by the person who reviews it.",
+    "doneCta": "Everything is here — send the application",
+    "item": {
+      "passportBio": "Passport data page",
+      "passportBioWhy": "The visa goes into this passport, and this page decides every identity field on the form. Photograph it so the number and the two machine-readable lines are sharp.",
+      "photo": "Recent passport photo",
+      "photoWhy": "Schengen sets the size and background colour, and rejects photos that miss them. Use one taken by a photo shop rather than a cropped snapshot.",
+      "hukou": "Household register",
+      "hukouWhy": "It evidences residence and family relationships. The head-of-household page and the applicant's own page at a minimum.",
+      "employmentLetter": "Employment letter",
+      "employmentLetterWhy": "It shows there is a job to come back to. The employer name and job title on it have to match what you entered.",
+      "bankStatement": "Bank statements",
+      "bankStatementWhy": "They show the trip can be paid for. Usually six months, stamped by the bank, with salary arriving in amounts that match what you entered.",
+      "socialInsurance": "Social-insurance record",
+      "socialInsuranceWhy": "Not required, but it evidences how long the job has lasted independently of the employment letter, and the two support each other.",
+      "insurance": "Schengen travel insurance",
+      "insuranceWhy": "Schengen asks for at least €30,000 of cover, across every date of the trip.",
+      "flightBooking": "Flight booking",
+      "flightBookingWhy": "It evidences a real itinerary. A booking is enough — do not buy the ticket first.",
+      "hotelBooking": "Accommodation bookings",
+      "hotelBookingWhy": "They have to cover every night inside the Schengen area, with no gaps.",
+      "sponsorProof": "Proof of funds from whoever is paying",
+      "sponsorProofWhy": "When somebody else pays, the money has to be evidenced too — usually their bank statements and a short letter.",
+      "previousVisas": "Earlier Schengen visas and entry stamps",
+      "previousVisasWhy": "A good travel record helps an application. Photograph the old visa pages and the stamps that go with them."
+    }
+  }
+}
