@@ -118,6 +118,126 @@ describe("running a job end to end", () => {
     expect(after.failure_reason).toBe("agent_error");
   });
 
+  it("does not call a pack done when its own QA says it failed", async () => {
+    const jobId = await enqueue("produce_pack", { max_attempts: 1 });
+    const registry: ExecutorRegistry = {
+      hermes: createFakeExecutor({
+        runMs: 10,
+        qaReport: {
+          schemaVersion: "visa-master.qa.v2",
+          status: "failed",
+          summary: { issues: 2 },
+          issues: ["PDF text extraction failed.", "Duplicate artifact detected."],
+        },
+      }),
+    };
+
+    const outcome = await runOnce(pool, registry, config);
+    expect(outcome).toEqual({ jobId, state: "failed" });
+
+    const after = await jobState(jobId);
+    // The distinction that matters: the artifact appeared, so this is not an
+    // agent_error. The pack exists and is not good enough to show anyone.
+    expect(after.state).toBe("failed");
+    expect(after.failure_reason).toBe("qa_failed");
+    expect(after.finished_at).not.toBeNull();
+  });
+
+  it("retries a QA failure while attempts remain", async () => {
+    const jobId = await enqueue("produce_pack", { max_attempts: 2 });
+    const registry: ExecutorRegistry = {
+      hermes: createFakeExecutor({
+        runMs: 10,
+        qaReport: { status: "failed", issues: ["something is wrong"] },
+      }),
+    };
+
+    const outcome = await runOnce(pool, registry, config);
+    expect(outcome).toEqual({ jobId, state: "queued" });
+
+    const after = await jobState(jobId);
+    expect(after.state).toBe("queued");
+    expect(after.failure_reason).toBe("qa_failed");
+  });
+
+  it("rejects a run whose QA report cannot be judged, and calls it drift", async () => {
+    // Fail closed: "we could not tell" is not evidence that a pack is good. The
+    // code differs from qa_failed on purpose — this is the two repos having
+    // stopped agreeing, not a pack the agent judged and rejected.
+    const jobId = await enqueue("produce_pack", { max_attempts: 1 });
+    const registry: ExecutorRegistry = {
+      hermes: createFakeExecutor({ runMs: 10, qaReport: { summary: { issues: 0 } } }),
+    };
+
+    const outcome = await runOnce(pool, registry, config);
+    expect(outcome).toEqual({ jobId, state: "failed" });
+
+    const after = await jobState(jobId);
+    expect(after.failure_reason).toBe("validation_failed");
+    expect(after.result).toBeNull();
+  });
+
+  it("turns a collection failure into a verdict instead of stranding the row", async () => {
+    // The producer gives up before writing a report on several preconditions,
+    // so a missing or unparseable file is an ordinary outcome. Before the gate
+    // this threw out of the run loop and left the row in `validating` until the
+    // reaper called it worker_lost a minute later.
+    const jobId = await enqueue("produce_pack", { max_attempts: 1 });
+    const fake = createFakeExecutor({ runMs: 10 });
+    const registry: ExecutorRegistry = {
+      hermes: {
+        ...fake,
+        async collect() {
+          throw new SyntaxError("Unexpected end of JSON input");
+        },
+      },
+    };
+
+    const outcome = await runOnce(pool, registry, config);
+    expect(outcome).toEqual({ jobId, state: "failed" });
+
+    const after = await jobState(jobId);
+    expect(after.state).toBe("failed");
+    expect(after.failure_reason).toBe("validation_failed");
+    expect(after.finished_at).not.toBeNull();
+  });
+
+  it("accepts the full report the real producer writes", async () => {
+    // The shape is copied from toolchain/qa.mjs in the agent repo rather than
+    // guessed, so this test fails if that producer changes under us.
+    const jobId = await enqueue();
+    const registry: ExecutorRegistry = {
+      hermes: createFakeExecutor({
+        runMs: 10,
+        qaReport: {
+          schemaVersion: "visa-master.qa.v2",
+          case: "chengdu-spain-tourism",
+          scope: "full",
+          deliveryFolder: "/opt/data/job/delivery",
+          startedAt: "2026-08-21T10:00:00.000Z",
+          completedAt: "2026-08-21T10:04:12.000Z",
+          status: "visual-review-required",
+          summary: {
+            artifacts: 9,
+            pages: 24,
+            officialArtifacts: 3,
+            visualPages: 6,
+            sheets: 3,
+            issues: 0,
+          },
+          retrievalManifest: "/opt/data/job/retrieval/manifest.json",
+          issues: [],
+          artifacts: [{ official: true, sha256: "abc", pages: 2 }],
+          vision: { required: true, sheets: [{ file: "full-1.jpg" }] },
+        },
+      }),
+    };
+
+    const outcome = await runOnce(pool, registry, config);
+    expect(outcome).toEqual({ jobId, state: "succeeded" });
+    expect((await jobState(jobId)).state).toBe("succeeded");
+  });
+
   it("stops a run that passes its deadline", async () => {
     // One second to do work that takes ten: the conductor's own clock catches
     // it without waiting for a sweep.

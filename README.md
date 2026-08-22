@@ -29,6 +29,7 @@ Two sections of it carry weight beyond description:
 |---|---|
 | `PRODUCT.md` | The project primer — read first |
 | `STATUS.md` | What is actually built, what is deliberately still fake, and what is left — read second |
+| `CODEBASE.md` | How the code works: the request-to-pack walkthrough, every file explained, how to run it, and where the work goes next — read before changing code |
 | `AGENTS.md` | The standing engineering constraints — one page, binding, each section pointing at its decision record. Read it before changing code. |
 | `doc/` | Architecture versions v0.1 → v0.4 (v0.4 is current) and the platform & development plan (v2 is active; the English v1 is kept and marked superseded, and its Chinese twin has not been regenerated for v2) |
 | `discussion/` | Architecture decision records and the discussions behind them, filed by which assistant they were held with — ADR-004 sits at the top level, having been held here |
@@ -63,7 +64,10 @@ Supabase stack, for the conductor's container tests, and for the agent plane in
 kept for its file tree, config layout, and migration decisions.
 
 Before changing code, read [`AGENTS.md`](AGENTS.md) — one page, binding, and it
-states the bar every commit has to clear.
+states the bar every commit has to clear. [`CODEBASE.md`](CODEBASE.md) is the
+orientation document for the code itself: what happens between a visa request
+and a finished pack, what every file in the repository is for, what to check
+locally, and what to build next.
 
 ```bash
 pnpm install                # install the workspace

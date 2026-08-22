@@ -67,6 +67,19 @@ eight-week plan — v1 is superseded), [AGENTS.md](AGENTS.md) (the constraints t
 - Artifact collection: the conductor uploads `qa-report.json` and the whole `delivery/` tree
   to the private `artifacts` bucket under its own credential (migration
   `20260819233145_artifacts_bucket`, no client policy — only the conductor can reach it).
+- **The QA gate** (`apps/conductor/src/qa.ts`): `validating` now means something. The
+  conductor reads the agent's own `qa-report.json` before marking anything succeeded.
+  `passed` and `visual-review-required` go forward — the second is the ordinary outcome and
+  is exactly what a review gate is for. `failed` becomes `qa_failed`. A report that is
+  missing, unparseable, self-contradictory, or written in a status this conductor does not
+  know becomes `validation_failed` instead: an unreadable verdict is not evidence of a good
+  pack, and an operator needs to see contract drift as something other than a bad pack. Both
+  retry while attempts remain, as everything except `budget_exceeded` does.
+
+  What it does not do: v0.4 §3.3 puts the QA report fourth in a six-step validation, behind
+  manifest role-completeness, recomputed checksums and format sanity. There is no manifest
+  yet, so a pack can still pass this gate missing a document the applicant needs. Until the
+  week-4 human gate exists this stops only the case where the machine already knew.
 
 ### API-first control plane (ADR-004, complete)
 
@@ -98,28 +111,28 @@ not the proxy: no credential reaches the container and nothing inside it knows w
 |---|---|---|
 | Playwright end-to-end, 10 spec files, **40 cases at runtime** (37 `test()` calls, 3 of them looped over both locales) | real sign-in via the Mailpit API, real uploads into the bucket, full journey to a queued job, plus the headless API contract | Docker + the local Supabase stack; Playwright starts both dev servers |
 | `packages/core` unit tests, **49** | schemas, the route gate, the Schengen-Spain document rules | nothing — the only layer that runs without Docker |
-| `apps/conductor` tests, **30** | lease and run-loop races against real Postgres; the docker executor and the egress denials against real containers | local Postgres; the last 10 also need Docker, and 5 of them need the `visa-master-hermes` image |
+| `apps/conductor` tests, **47** | lease and run-loop races against real Postgres; the QA gate's verdicts as a pure table; the docker executor and the egress denials against real containers | local Postgres; 10 of them also need Docker, and 5 of those the `visa-master-hermes` image |
 | pgTAP, 7 files, **52 assertions** | row-level security and privilege grants, one file per migration except `job_lease_owner`, which adds a column and has none | the local stack (`pnpm db:test`) |
 
 Plus the two i18n build gates: `pnpm --filter web build` runs the catalogue check directly,
 and the hardcoded-string rule reaches a build only through turbo, whose `build` depends on
 `lint` — so `pnpm build` runs both and the filtered form runs one.
 
-**Last full run: 2026-08-21**, against the local stack on the founder's machine — `lint` and
-`typecheck` 5/5 workspaces, `packages/core` 49 passed, `apps/conductor` 30 passed, the web
-build through the i18n gate, pgTAP 52 of 52, and Playwright 39 passed with 1 flaky. Two things
-that run is worth knowing for:
+**Last full run: 2026-08-21**, against the local stack on the founder's machine, after the QA
+gate landed — `lint` and `typecheck` 5/5 workspaces, `packages/core` 49 passed,
+`apps/conductor` 47 passed, the web build through the i18n gate, pgTAP 52 of 52, and
+Playwright 40 passed with none flaky. Two things that run is worth knowing for:
 
 - **The container path was genuinely exercised this time.** `docker.test.ts` booted the real
   `visa-master-hermes` image, staged input into it, killed a run that outlived its deadline,
   and asserted the container carries no provider key and reaches nothing directly. That is not
   guaranteed on another machine: those five cases **return early rather than skipping** when
   the 5 GB image is absent, so elsewhere the suite can go green without testing anything.
-- **One flaky case, and it is not a timing flake in the usual sense.** The headless journey in
+- **One case flaked earlier in the day and has not reproduced.** The headless journey in
   `api-contract.spec.ts` got a 500 where the contract says 422 (`validation.pinyin.invalid`),
-  on the first request of the run, and passed on retry. Re-running that spec three times with
-  retries disabled passed 18 of 18, so it does not reproduce on a warm server. Unexplained,
-  and worth explaining before the contract is anyone else's to depend on.
+  on the first request of an otherwise clean run, and passed on retry; three repeats with
+  retries disabled passed 18 of 18, and the run above was clean. Still unexplained, and worth
+  explaining before the contract is anyone else's to depend on.
 
 ## Where we are
 
@@ -134,9 +147,6 @@ Vercel project, nothing running in any cloud, zero spend so far. The source is p
 These are real, unfixed, and worth knowing before the first paying pack. None blocks the
 current milestone.
 
-- **No QA gate.** The moment the artifact appears the conductor goes validating → collect →
-  succeeded without reading the QA report; a report saying the pack failed still yields
-  `succeeded`. The human review gate is what stands between that and a customer.
 - **The egress tripwire is cleartext-only.** Rule 3 denies POST/PUT/PATCH/DELETE off the
   allowlist, but Squid cannot see a method inside a `CONNECT` tunnel, and tunnels to any
   public host on 443 are allowed. The prompt-injection tripwire the runbook is meant to watch

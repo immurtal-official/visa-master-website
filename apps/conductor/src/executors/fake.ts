@@ -28,6 +28,12 @@ export interface FakeExecutorOptions {
   runMs?: number;
   /** Fail instead of producing an artifact, to exercise the failure paths. */
   failWith?: string;
+  /**
+   * The QA report to write. Defaults to a pack that passed its own checks and
+   * wants a human to look at the rendered pages, which is the ordinary outcome;
+   * a test that wants the QA gate to reject something passes a failing one.
+   */
+  qaReport?: unknown;
 }
 
 export function createFakeExecutor(options: FakeExecutorOptions = {}): Executor {
@@ -56,7 +62,11 @@ export function createFakeExecutor(options: FakeExecutorOptions = {}): Executor 
         // The artifact appearing is the completion signal.
         void writeFile(
           join(ctx.scratchDir, "qa-report.json"),
-          JSON.stringify({ status: "visual-review-required", issues: 0 }, null, 2),
+          JSON.stringify(
+            options.qaReport ?? { status: "visual-review-required", issues: 0 },
+            null,
+            2,
+          ),
         );
       }, runMs);
 
