@@ -28,16 +28,20 @@ Two sections of it carry weight beyond description:
 | Path | Contents |
 |---|---|
 | `PRODUCT.md` | The project primer — read first |
-| `AGENTS.md` | The standing engineering constraints — one page, binding, each rule pointing at its decision record. Read it before changing code. |
-| `doc/` | Architecture versions v0.1 → v0.4 (v0.4 is current) and the platform & development plan |
-| `discussion/` | Architecture decision records and the discussions behind them, filed by which assistant they were held with |
+| `STATUS.md` | What is actually built, what is deliberately still fake, and what is left — read second |
+| `AGENTS.md` | The standing engineering constraints — one page, binding, each section pointing at its decision record. Read it before changing code. |
+| `doc/` | Architecture versions v0.1 → v0.4 (v0.4 is current) and the platform & development plan (v2 is active; the English v1 is kept and marked superseded, and its Chinese twin has not been regenerated for v2) |
+| `discussion/` | Architecture decision records and the discussions behind them, filed by which assistant they were held with — ADR-004 sits at the top level, having been held here |
 | `design/` | Product design, binding guidelines (device parity, internationalization, design system selection), the exported design system, and prototypes — see [`design/README.md`](design/README.md) and its ground rule: design output is reference, never production code |
-| `apps/` *(planned)* | `web` — the Next.js front end and API routes; `conductor` — the workflow orchestrator |
-| `packages/` *(planned)* | `core` — shared zod schemas, deterministic route rules, i18n message keys; `db`; `executors` |
-| `infra/` *(planned)* | Compose files, egress config, systemd units, deploy scripts |
+| `apps/` | `web` — the Next.js front end, its `/api/v1/**` handlers and the service layer behind them; `conductor` — the workflow orchestrator and its executors |
+| `packages/` | `core` — shared zod schemas, deterministic route rules, i18n message keys; `db` — migrations and pgTAP tests; `executors` — the adapter contract only, no implementations |
+| `infra/` | The agent plane as compose: the internal network and the Squid egress config. Systemd units and deploy scripts land with the VM |
+| `scripts/` | Repo-level build gates — today, the i18n catalogue check |
+| `EXECUTION-PLAN-week1-2.md` | The commit-by-commit plan weeks 1–2 executed; kept as the record of what was agreed |
 
 The monorepo shape (`pnpm` + Turborepo) and the build order come from
-[`doc/platform-and-dev-plan-en.md`](doc/platform-and-dev-plan-en.md). Two
+[`doc/platform-and-dev-plan-v2-en.md`](doc/platform-and-dev-plan-v2-en.md) — the active plan;
+v1 is kept, marked superseded, for the decisions it recorded. Two
 standing directives bind all application code from the first commit:
 **device parity** ([`design/guidelines/mobile-parity-en.md`](design/guidelines/mobile-parity-en.md))
 and **internationalization** ([`design/guidelines/internationalization-en.md`](design/guidelines/internationalization-en.md))
@@ -45,19 +49,25 @@ and **internationalization** ([`design/guidelines/internationalization-en.md`](d
 sentences, from the very first schema.
 
 Suggested entry point into the architecture: [`doc/architecture-v0.4-en.md`](doc/architecture-v0.4-en.md),
-Part I only — about ten minutes, and it ends with a table of every decision
-pointing at its detail section.
+Part I only — about ten minutes, and §I.5 summarises the key decisions in a
+table pointing at their detail sections.
 
 ## Development
 
-Requires Node 22.12+, pnpm 10, Docker (for the local Supabase stack), and the
-Supabase CLI. The build plan for the current milestone — file tree, config
-layout, migrations, commit sequence, and the test layer — is
-[`EXECUTION-PLAN-week1-2.md`](EXECUTION-PLAN-week1-2.md).
+Requires Node 22.12+, pnpm 10, the Supabase CLI, and Docker — for the local
+Supabase stack, for the conductor's container tests, and for the agent plane in
+`infra/compose.local.yml`. Where the build currently stands, and what is left, is
+[`STATUS.md`](STATUS.md); the plan it tracks against is
+[`doc/platform-and-dev-plan-v2-en.md`](doc/platform-and-dev-plan-v2-en.md) Part III.
+[`EXECUTION-PLAN-week1-2.md`](EXECUTION-PLAN-week1-2.md) is the finished weeks 1–2 plan,
+kept for its file tree, config layout, and migration decisions.
+
+Before changing code, read [`AGENTS.md`](AGENTS.md) — one page, binding, and it
+states the bar every commit has to clear.
 
 ```bash
 pnpm install                # install the workspace
-pnpm dev                    # run apps/web (works with no Supabase config; see stub mode)
+pnpm dev                    # run apps/web (stub mode, no config needed) and apps/conductor
 pnpm lint typecheck test    # the checks every commit must pass
 pnpm --filter web build     # build; also runs the i18n catalogue gate
 ```
@@ -72,9 +82,21 @@ pnpm db:test                # pgTAP tests: row-level security behaves as specifi
 
 `pnpm db:start` prints the local API URL and keys; put them in
 `apps/web/.env.local` (never committed — see `apps/web/.env.example` for the key
-names). Sign-in emails are captured by Mailpit at <http://127.0.0.1:54324>, so
-local logins need no mail provider. End-to-end tests run against that stack with
-`pnpm --filter web e2e`.
+names). The conductor is configured separately: see `apps/conductor/.env.example`,
+where `HERMES_JOB_COMMAND` is the switch between the real container executor and
+the fake one. Sign-in emails are captured by Mailpit at <http://127.0.0.1:54324>,
+so local logins need no mail provider. End-to-end tests run against that stack
+with `pnpm --filter web e2e`.
+
+Nothing loads the conductor's env file for it, so `pnpm dev` starts the web app
+and the conductor exits immediately unless `DATABASE_URL` is exported in the
+shell (`pnpm db:status` prints it).
+
+Ten of the conductor's thirty tests run real containers; the other twenty are
+lease and run-loop races against the local Postgres. The container ten bring the
+egress topology up from `infra/compose.local.yml`, and five of them need the
+`visa-master-hermes` image built from the `visa-master` repo — without it they
+return early and pass without having tested the container path.
 
 ## Conventions
 
@@ -89,7 +111,8 @@ local logins need no mail provider. End-to-end tests run against that stack with
   English-only, and user-facing strings live in the i18n catalogue.)
 - Architecture versions are **additive**. v0.4 supersedes the *framing* of the
   earlier versions but does not delete them; v0.3 remains authoritative for the
-  agent security model.
+  agent security model. The development plan works the same way: v2 is active,
+  v1 is kept with a status line pointing at its successor.
 - ADRs are **amended by new ADRs**, never edited in place. ADR-003 amending
   ADR-002 is the worked example.
 
@@ -98,6 +121,10 @@ local logins need no mail provider. End-to-end tests run against that stack with
 `doc/architecture-v0.4-en.html` and `doc/platform-and-dev-plan-en.html` are built
 from the matching `.md` files, with their mermaid diagrams pre-rendered to inline
 SVG so the pages need no network access.
+
+`platform-and-dev-plan-en.html` was last generated 2026-08-05 and is two
+revisions behind its source — the design-phase amendments and the status line
+that marks the `.md` superseded — and the active v2 plan has no `.html` at all.
 
 Their build pipeline is **not in this repo yet** and cannot be reproduced from a
 clean checkout. Until it is committed, treat the generated HTML as read-only:
