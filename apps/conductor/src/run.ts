@@ -11,6 +11,7 @@ import {
   markValidating,
   type JobRow,
 } from "./lease";
+import { readQaVerdict } from "./qa";
 import { routeToExecutor, type ExecutorRegistry } from "./router";
 
 export interface RunOutcome {
@@ -22,10 +23,10 @@ export interface RunOutcome {
  * Take one job through to a terminal state.
  *
  * The shape of this function is the shape of the contract: start, poll until
- * the artifact appears, collect it, destroy the scratch. Nothing here waits on
- * a process to exit, and the scratch is removed on every path out — it holds a
- * passport scan and a bank statement in the real thing, and the machine is not
- * supposed to keep either between jobs.
+ * the artifact appears, collect it, read the agent's own QA verdict, destroy
+ * the scratch. Nothing here waits on a process to exit, and the scratch is
+ * removed on every path out — it holds a passport scan and a bank statement in
+ * the real thing, and the machine is not supposed to keep either between jobs.
  */
 export async function runJob(
   pool: Pool,
@@ -107,7 +108,44 @@ export async function runJob(
 
       if (status === "artifact_ready") {
         await markValidating(pool, job.id, config.leaseOwner);
-        const collected = await executor.collect(handle);
+
+        // Collect first, whatever the verdict turns out to be: a rejected pack
+        // is precisely the thing an operator will want to open, and the scratch
+        // it lives in is destroyed on the way out of this function.
+        //
+        // Collection itself can throw — the report may be missing or not be
+        // JSON, which is a real outcome and not an edge case: the producer
+        // gives up before writing one on several preconditions. Left
+        // uncaught it escapes to the main loop and strands the row in
+        // `validating` until the reaper calls it worker_lost a minute later.
+        let collected;
+        try {
+          collected = await executor.collect(handle);
+        } catch (error) {
+          const { requeued } = await failJob(
+            pool,
+            job.id,
+            config.leaseOwner,
+            "validation_failed",
+            `the qa report could not be collected (${errorName(error)})`,
+          );
+          return { jobId: job.id, state: requeued ? "queued" : "failed" };
+        }
+
+        // `validating` now labels something: the agent's own verdict is read
+        // before anything is called done.
+        const verdict = readQaVerdict(collected.qaReport);
+        if (!verdict.ok) {
+          const { requeued } = await failJob(
+            pool,
+            job.id,
+            config.leaseOwner,
+            verdict.code,
+            verdict.detail,
+          );
+          return { jobId: job.id, state: requeued ? "queued" : "failed" };
+        }
+
         await markSucceeded(pool, job.id, config.leaseOwner, collected);
         return { jobId: job.id, state: "succeeded" };
       }
@@ -129,6 +167,17 @@ export async function runOnce(
   const job = await claimNextJob(pool, config);
   if (!job) return null;
   return runJob(pool, job, registry, config);
+}
+
+/**
+ * The class of a thrown value, for the failure record.
+ *
+ * Deliberately not the message: a collection failure's message carries the
+ * scratch path and sometimes a fragment of the file, and `jobs.error` is
+ * readable by the applicant's own session through row-level security.
+ */
+function errorName(error: unknown): string {
+  return error instanceof Error ? error.name : typeof error;
 }
 
 export function sleep(ms: number): Promise<void> {
