@@ -1,5 +1,7 @@
 import { Pool } from "pg";
+import { createSupabaseArtifactStore } from "./artifacts";
 import { readConfig } from "./config";
+import { createDockerExecutor } from "./executors/docker";
 import { createFakeExecutor } from "./executors/fake";
 import { runOnce, sleep } from "./run";
 import { sweep } from "./watchdog";
@@ -22,11 +24,39 @@ async function main(): Promise<void> {
   const config = readConfig();
   const pool = new Pool({ connectionString: config.databaseUrl, max: 4 });
 
-  const registry: ExecutorRegistry = {
-    // Swapped for the container-running one when the agent host exists. The
-    // conductor cannot tell the difference: that is what the contract buys.
-    hermes: createFakeExecutor(),
-  };
+  // The docker executor is the real one; it needs to be told what to run
+  // inside the container. Until a model credential exists there is no honest
+  // default for that command, so its absence falls back to the fake executor
+  // with a plain statement of what to set.
+  const store =
+    config.supabaseUrl && config.supabaseSecretKey
+      ? createSupabaseArtifactStore(config.supabaseUrl, config.supabaseSecretKey)
+      : null;
+  if (!store) {
+    console.warn("conductor: SUPABASE_URL / SUPABASE_SECRET_KEY unset — artifacts stay local");
+  }
+
+  let hermes;
+  if (config.hermes.command) {
+    hermes = createDockerExecutor({
+      image: config.hermes.image,
+      command: config.hermes.command,
+      network: config.hermes.network,
+      proxyUrl: config.hermes.proxyUrl,
+      cpus: config.hermes.cpus,
+      memory: config.hermes.memory,
+      store,
+    });
+    console.log(`conductor: hermes -> docker (${config.hermes.image} on ${config.hermes.network})`);
+  } else {
+    hermes = createFakeExecutor();
+    console.warn(
+      "conductor: HERMES_JOB_COMMAND unset — using the fake executor. " +
+        "Set HERMES_JOB_COMMAND (JSON array or space-separated) to drive the real container.",
+    );
+  }
+
+  const registry: ExecutorRegistry = { hermes };
 
   let running = true;
   const stop = () => {

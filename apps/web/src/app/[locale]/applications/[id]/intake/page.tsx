@@ -5,9 +5,8 @@ import { INTAKE_SECTIONS, intakeProgress, resumePoint, sectionState } from "@vis
 import { LinkButton } from "@/components/ui/link-button";
 import { Card } from "@/components/ui/card";
 import { Link, getPathname } from "@/i18n/navigation";
+import { apiGet } from "@/lib/api/server";
 import { isSupabaseConfigured } from "@/lib/supabase/config";
-import { createClient } from "@/lib/supabase/server";
-import { readSession } from "@/lib/supabase/session";
 
 /**
  * The section list.
@@ -29,19 +28,15 @@ export default async function IntakeHubPage({
 
   if (!isSupabaseConfigured()) redirect(getPathname({ href: "/login", locale }));
 
-  const supabase = await createClient();
-  const session = await readSession(supabase);
-  if (session.status !== "signed-in") redirect(getPathname({ href: "/login", locale }));
+  const result = await apiGet<{
+    application: { id: string; answers: Record<string, unknown>; last_step: string | null };
+  }>(`/api/v1/applications/${id}`);
+  if (result.status === 401) redirect(getPathname({ href: "/login", locale }));
+  // Someone else's application is simply not there — the API's 404 is the
+  // honest answer, and this page passes it on.
+  if (result.status === 404 || !result.data) notFound();
 
-  const { data: application } = await supabase
-    .from("applications")
-    .select("id, answers, last_step")
-    .eq("id", id)
-    .maybeSingle<{ id: string; answers: Record<string, unknown>; last_step: string | null }>();
-
-  // Row-level security means someone else's application is simply not there,
-  // which is the right answer to give: not "you may not", just "no such page".
-  if (!application) notFound();
+  const application = result.data.application;
 
   const answers = application.answers ?? {};
   const progress = intakeProgress(answers);

@@ -151,7 +151,8 @@
       "title": "Something went wrong",
       "body": "That did not complete. Refresh the page and try again."
     },
-    "retry": "Try again"
+    "retry": "Try again",
+    "request": "That did not complete. Try again."
   },
   "validation": {
     "required": "Fill in this field.",

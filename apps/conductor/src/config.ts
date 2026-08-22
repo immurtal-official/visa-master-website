@@ -22,6 +22,28 @@ export interface ConductorConfig {
   reaperSeconds: number;
   /** How long the loop waits when there is nothing queued. */
   idlePollSeconds: number;
+
+  /** Artifact storage; absent means artifacts stay recorded but not uploaded. */
+  supabaseUrl?: string;
+  supabaseSecretKey?: string;
+
+  /** The per-job container. `command` unset means the docker executor is not enabled. */
+  hermes: {
+    image: string;
+    network: string;
+    proxyUrl: string;
+    command?: string[];
+    cpus: number;
+    memory: string;
+  };
+}
+
+/** HERMES_JOB_COMMAND accepts a JSON array or a whitespace-separated string. */
+function parseCommand(raw: string | undefined): string[] | undefined {
+  if (!raw) return undefined;
+  const trimmed = raw.trim();
+  if (trimmed.startsWith("[")) return JSON.parse(trimmed) as string[];
+  return trimmed.split(/\s+/);
 }
 
 export function readConfig(env: NodeJS.ProcessEnv = process.env): ConductorConfig {
@@ -44,5 +66,17 @@ export function readConfig(env: NodeJS.ProcessEnv = process.env): ConductorConfi
     heartbeatTimeoutSeconds: Number(env.HEARTBEAT_TIMEOUT_SECONDS ?? 60),
     reaperSeconds: Number(env.REAPER_SECONDS ?? 30),
     idlePollSeconds: Number(env.IDLE_POLL_SECONDS ?? 2),
+
+    supabaseUrl: env.SUPABASE_URL,
+    supabaseSecretKey: env.SUPABASE_SECRET_KEY,
+
+    hermes: {
+      image: env.HERMES_IMAGE ?? "visa-master-hermes:latest",
+      network: env.HERMES_NETWORK ?? "vm-egress-internal",
+      proxyUrl: env.HERMES_PROXY_URL ?? "http://proxy:3128",
+      command: parseCommand(env.HERMES_JOB_COMMAND),
+      cpus: Number(env.HERMES_CPUS ?? 4),
+      memory: env.HERMES_MEMORY ?? "8g",
+    },
   };
 }

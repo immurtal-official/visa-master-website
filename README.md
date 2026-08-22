@@ -28,6 +28,7 @@ Two sections of it carry weight beyond description:
 | Path | Contents |
 |---|---|
 | `PRODUCT.md` | The project primer — read first |
+| `AGENTS.md` | The standing engineering constraints — one page, binding, each rule pointing at its decision record. Read it before changing code. |
 | `doc/` | Architecture versions v0.1 → v0.4 (v0.4 is current) and the platform & development plan |
 | `discussion/` | Architecture decision records and the discussions behind them, filed by which assistant they were held with |
 | `design/` | Product design, binding guidelines (device parity, internationalization, design system selection), the exported design system, and prototypes — see [`design/README.md`](design/README.md) and its ground rule: design output is reference, never production code |

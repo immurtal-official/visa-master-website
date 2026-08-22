@@ -1,6 +1,6 @@
 # Platform Selection & Development Plan (v0.4 companion)
 
-**Status:** Proposal
+**Status:** Superseded by [platform-and-dev-plan-v2-en.md](platform-and-dev-plan-v2-en.md) (2026-08-12, [ADR-004](../discussion/ADR-004-api-first-control-plane.md)); kept as the decision record it was
 **Companion to:** [architecture-v0.4](architecture-v0.4-en.md) — this document is the platform-specific half: where to run the architecture, and the concrete build plan.
 
 > 中文版：[平台选型与开发计划（中文）](platform-and-dev-plan-zh.md)
