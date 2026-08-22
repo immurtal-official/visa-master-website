@@ -101,7 +101,7 @@ The architecture is specified in [`doc/architecture-v0.4-en.md`](doc/architectur
   Hermes server (today's pack producer), and a thin custom agent (the migration
   target). Swapping which one runs a task is a routing-table edit.
 - Planned hosting: **Vercel + Supabase** for the control plane, **one Hetzner VM**
-  for the agent plane — see [`doc/platform-and-dev-plan-en.md`](doc/platform-and-dev-plan-en.md)
+  for the agent plane — see [`doc/platform-and-dev-plan-v2-en.md`](doc/platform-and-dev-plan-v2-en.md)
   for the comparison, the eight-week build plan, and the cost model.
 
 ## 7. Non-negotiable constraints
@@ -138,12 +138,14 @@ These are settled and should not be re-litigated without a reason:
 | Repo | Contents |
 |---|---|
 | `visa-master` | The agent profile, the Node CLI and toolchain, the Docker packaging. This is the thing that produces packs. |
-| `visa-master-website` (this repo) | Design documents, decision records, and discussions. No application code. |
+| `visa-master-website` (this repo) | Everything else: the design documents, the decision records, and the application code built against them — the web app, the conductor, and the agent-plane compose. |
 
 Inside this repo: `doc/` holds the architecture versions (v0.1→v0.4) and the
 platform plan, in English with `-zh` Chinese translations of the v0.4 set;
 `discussion/` holds the architecture decision records and the reasoning behind
-them.
+them; `design/` holds the product design work and the exported design system;
+and `apps/`, `packages/` and `infra/` hold the product itself.
+[`STATUS.md`](STATUS.md) says which parts of it are built.
 
 ## 10. What is still open
 
