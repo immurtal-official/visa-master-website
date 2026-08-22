@@ -67,7 +67,7 @@ definition, two consumers. Design that with the schema in mind: the fields, thei
 types, which are required, and which are conditional on the route.
 
 The production code lives outside this folder, in the monorepo laid out in
-[`../doc/platform-and-dev-plan-en.md`](../doc/platform-and-dev-plan-en.md):
+[`../doc/archive/platform-and-dev-plan-en.md`](../doc/archive/platform-and-dev-plan-en.md):
 `apps/web` (Next.js front end and API routes), `apps/conductor` (the orchestrator),
 `packages/*` (shared schemas, rules, database, executors), and `infra/`.
 

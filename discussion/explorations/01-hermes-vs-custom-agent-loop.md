@@ -1,6 +1,6 @@
 # Discussion 01 — Do we need Hermes, or can a custom agent loop do this?
 
-> **Context:** This discussion starts **after** [`doc/architecture-v0.3-en.md`](../doc/architecture-v0.3-en.md).
+> **Context:** This discussion starts **after** [`doc/architecture-v0.3-en.md`](../../doc/architecture-v0.3-en.md).
 > It steps back from *how to deploy the agent safely* (v0.1–v0.3) to a more
 > foundational build-vs-adopt question about the agent runtime itself.
 >

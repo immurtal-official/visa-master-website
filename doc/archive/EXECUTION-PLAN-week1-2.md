@@ -1025,7 +1025,7 @@ catalogue keys — they are never translated.)
 ## 10. Placeholders (`apps/conductor`, `packages/executors`)
 
 - `apps/conductor/src/index.ts`: a typed `main()` that logs
-  `conductor: not implemented — arrives in week 3 (see doc/platform-and-dev-plan-en.md Part III §2)`
+  `conductor: not implemented — arrives in week 3 (see doc/archive/platform-and-dev-plan-en.md Part III §2)`
   and exits 0. Scripts: `typecheck`, `lint`. No dependencies.
 - `packages/executors/src/contract.ts`: the `Executor` interface **verbatim** from the
   platform plan Part III §1 (kind/start/poll/collect/destroy with the artifact-watch comment),

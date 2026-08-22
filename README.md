@@ -31,14 +31,14 @@ Two sections of it carry weight beyond description:
 | `STATUS.md` | What is actually built, what is deliberately still fake, and what is left — read second |
 | `CODEBASE.md` | How the code works: the request-to-pack walkthrough, every file explained, how to run it, and where the work goes next — read before changing code |
 | `AGENTS.md` | The standing engineering constraints — one page, binding, each section pointing at its decision record. Read it before changing code. |
-| `doc/` | Architecture versions v0.1 → v0.4 (v0.4 is current) and the platform & development plan (v2 is active; the English v1 is kept and marked superseded, and its Chinese twin has not been regenerated for v2) |
-| `discussion/` | Architecture decision records and the discussions behind them, filed by which assistant they were held with — ADR-004 sits at the top level, having been held here |
+| `doc/` | The architecture and the platform plan **that are in force**: v0.4 (current) and v0.3 (still authoritative for the agent security model), plus the v2 plan. Superseded versions live in [`doc/archive/`](doc/archive/README.md) and are kept, not deleted |
+| `doc/archive/` | Superseded documents, with a README naming what replaced each — including `EXECUTION-PLAN-week1-2.md`, the plan weeks 1–2 executed |
+| `discussion/` | The ADR ledger — every record in it is in force, and each is amended by a later ADR rather than edited. The long-form arguments they came out of are in `discussion/explorations/`; see [`discussion/README.md`](discussion/README.md) |
 | `design/` | Product design, binding guidelines (device parity, internationalization, design system selection), the exported design system, and prototypes — see [`design/README.md`](design/README.md) and its ground rule: design output is reference, never production code |
 | `apps/` | `web` — the Next.js front end, its `/api/v1/**` handlers and the service layer behind them; `conductor` — the workflow orchestrator and its executors |
 | `packages/` | `core` — shared zod schemas, deterministic route rules, i18n message keys; `db` — migrations and pgTAP tests; `executors` — the adapter contract only, no implementations |
 | `infra/` | The agent plane as compose: the internal network and the Squid egress config. Systemd units and deploy scripts land with the VM |
 | `scripts/` | Repo-level build gates — today, the i18n catalogue check |
-| `EXECUTION-PLAN-week1-2.md` | The commit-by-commit plan weeks 1–2 executed; kept as the record of what was agreed |
 
 The monorepo shape (`pnpm` + Turborepo) and the build order come from
 [`doc/platform-and-dev-plan-v2-en.md`](doc/platform-and-dev-plan-v2-en.md) — the active plan;
@@ -60,7 +60,7 @@ Supabase stack, for the conductor's container tests, and for the agent plane in
 `infra/compose.local.yml`. Where the build currently stands, and what is left, is
 [`STATUS.md`](STATUS.md); the plan it tracks against is
 [`doc/platform-and-dev-plan-v2-en.md`](doc/platform-and-dev-plan-v2-en.md) Part III.
-[`EXECUTION-PLAN-week1-2.md`](EXECUTION-PLAN-week1-2.md) is the finished weeks 1–2 plan,
+[`doc/archive/EXECUTION-PLAN-week1-2.md`](doc/archive/EXECUTION-PLAN-week1-2.md) is the finished weeks 1–2 plan,
 kept for its file tree, config layout, and migration decisions.
 
 Before changing code, read [`AGENTS.md`](AGENTS.md) — one page, binding, and it
@@ -115,14 +115,19 @@ return early and pass without having tested the container path.
   English-only, and user-facing strings live in the i18n catalogue.)
 - Architecture versions are **additive**. v0.4 supersedes the *framing* of the
   earlier versions but does not delete them; v0.3 remains authoritative for the
-  agent security model. The development plan works the same way: v2 is active,
-  v1 is kept with a status line pointing at its successor.
+  agent security model, which is why it sits in `doc/` and not in the archive.
+  The development plan works the same way: v2 is active, v1 is kept with a
+  status line pointing at its successor.
+- **Superseded is a location, not only a status line.** A replaced document
+  moves to `doc/archive/`, with a row in that folder's README naming what
+  replaced it. What stays in `doc/` is what is still in force, so the shape of
+  the folder answers "is this current?" before anything is opened.
 - ADRs are **amended by new ADRs**, never edited in place. ADR-003 amending
   ADR-002 is the worked example.
 
 ## The `.html` files are generated — do not hand-edit them
 
-`doc/architecture-v0.4-en.html` and `doc/platform-and-dev-plan-en.html` are built
+`doc/architecture-v0.4-en.html` and `doc/archive/platform-and-dev-plan-en.html` are built
 from the matching `.md` files, with their mermaid diagrams pre-rendered to inline
 SVG so the pages need no network access.
 
