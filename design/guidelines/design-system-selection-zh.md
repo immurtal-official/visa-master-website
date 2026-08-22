@@ -2,10 +2,10 @@
 
 **状态：** V1 已决定
 **决定：** 实现层采用 **Radix UI primitives + Tailwind CSS**，并把 **GOV.UK Design System** 仅作为*交互模式*参考借用 — 不整套照搬任何厂商的设计系统。
-**取代：** [`design-system-options-zh`](../../discussion/withchatgpt/design-system-options-zh.md) 中的建议 — 见 §6，其中大部分予以保留，一处予以推翻
+**取代：** [`design-system-options-zh`](../../discussion/explorations/design-system-options-zh.md) 中的建议 — 见 §6，其中大部分予以保留，一处予以推翻
 **指导来源：** [`../product/03_Information_Architecture.md`](../product/03_Information_Architecture.md)（页面结构）· [`../product/05_Content_Strategy_Homepage.md`](../product/05_Content_Strategy_Homepage.md)（视觉关键词、颜色方向）
 **配套文档：** [`mobile-parity-zh.md`](mobile-parity-zh.md) — 移动端长期指令及 §7 背后逐阶段的完整需求 · [`internationalization-zh.md`](internationalization-zh.md) — 中英双语指令，以及让后续语言变便宜的那些设计
-**使用方：** [`../../doc/platform-and-dev-plan-zh.md`](../../doc/platform-and-dev-plan-zh.md) 中所述 monorepo 里的 `apps/web`
+**使用方：** [`../../doc/archive/platform-and-dev-plan-zh.md`](../../doc/archive/platform-and-dev-plan-zh.md) 中所述 monorepo 里的 `apps/web`
 
 > 英文原件：[Design System Selection (English)](design-system-selection-en.md)
 
@@ -78,7 +78,7 @@ GOV.UK Design System 是现存最好的公开参考，针对的正是**高风险
 
 ## 6. 既有分析，以及我们推翻的那一处
 
-一份更早的选型评估 — [`design-system-options-zh`](../../discussion/withchatgpt/design-system-options-zh.md) — 得出的是一个三层结论：官网营销页用 Tailwind + shadcn/ui，intake 用轻量的表单友好组件，**登录后 dashboard 和审核/管理后台用 Ant Design**。其中大部分我们予以保留，而它结尾处的那个观察，是迄今为止关于这个决定写得最锋利的一句：
+一份更早的选型评估 — [`design-system-options-zh`](../../discussion/explorations/design-system-options-zh.md) — 得出的是一个三层结论：官网营销页用 Tailwind + shadcn/ui，intake 用轻量的表单友好组件，**登录后 dashboard 和审核/管理后台用 Ant Design**。其中大部分我们予以保留，而它结尾处的那个观察，是迄今为止关于这个决定写得最锋利的一句：
 
 > 风险在于*名牌 design system 偏差* — 以为背后的公司越大就越合适。design system 的选择是任务匹配，不是品牌崇拜。
 

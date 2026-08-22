@@ -2,8 +2,8 @@
 
 **Version:** v0.4
 **Status:** Architecture Proposal
-**Builds on:** [architecture-v0.3](architecture-v0.3-en.md) (trust boundary, ephemeral single-tenant execution, egress control) · [ADR-002](../discussion/withchatgpt/ADR-002-Agent-Framework-Evaluation.md) (custom workflow engine, LLM APIs as intelligence services — Accepted) · [Discussion 01](../discussion/withclaude/01-hermes-vs-custom-agent-loop.md) (Hermes vs. thin custom agent; middle path)
-**Companion:** [Platform selection & development plan](platform-and-dev-plan-en.md) — the platform-specific half of this proposal.
+**Builds on:** [architecture-v0.3](architecture-v0.3-en.md) (trust boundary, ephemeral single-tenant execution, egress control) · [ADR-002](../discussion/ADR-002-Agent-Framework-Evaluation.md) (custom workflow engine, LLM APIs as intelligence services — Accepted) · [Discussion 01](../discussion/explorations/01-hermes-vs-custom-agent-loop.md) (Hermes vs. thin custom agent; middle path)
+**Companion:** [Platform selection & development plan](archive/platform-and-dev-plan-en.md) — the platform-specific half of this proposal.
 
 > 中文版：[架构 v0.4（中文）](architecture-v0.4-zh.md)
 
@@ -90,7 +90,7 @@ Mid-run follow-up questions are supported (`awaiting_user` state) but deliberate
 
 ## I.6 What this deliberately defers
 
-Concurrency > 1, Redis, Temporal-class durable execution, egress DLP (TLS-intercept), the thin agent's `produce_pack` takeover, multi-region, Stripe self-serve billing — each parked behind an explicit trigger listed in the companion [platform & dev plan](platform-and-dev-plan-en.md).
+Concurrency > 1, Redis, Temporal-class durable execution, egress DLP (TLS-intercept), the thin agent's `produce_pack` takeover, multi-region, Stripe self-serve billing — each parked behind an explicit trigger listed in the companion [platform & dev plan](archive/platform-and-dev-plan-en.md).
 
 ---
 
@@ -876,7 +876,7 @@ The ephemeral-scratch model means the container leaves nothing behind; durable P
 
 **Fallback: Clerk.** If auth maintenance burden bites (deliverability, abuse, MFA), swap it in — the schema absorbs the change by design: `users(auth_provider, auth_subject)` is the only coupling, so migration is a backfill of subjects plus a login-path change, with no rewiring of cases/jobs/billing.
 
-**Platform carve-out (adopted by the companion dev plan).** When the control plane lands on Supabase (the [platform doc](platform-and-dev-plan-en.md) ranks it #1), use **Supabase Auth** instead — auth, Postgres, storage and realtime then share one vendor, and RLS keys directly off `auth.uid()`. Two v0.4 requirements need explicit handling in that configuration: (1) *instant revocation* — Supabase sessions are JWT-based, so sensitive routes (operator actions, review-gate mutations, pack downloads) must re-check `users.status`/`role` server-side per request via the `authorize()` chokepoint (they do anyway), keep access-token TTL ≤ 1 h, and kill sessions via refresh-token revocation; acceptable because every high-consequence action is server-verified, never claims-trusted. (2) *China reachability* — serve auth under a first-party custom domain and monitor mainland login success; if it degrades, migrate to Better-Auth — `users(auth_provider, auth_subject)` was designed to absorb exactly that swap. Better-Auth remains the default whenever the database is plain Postgres.
+**Platform carve-out (adopted by the companion dev plan).** When the control plane lands on Supabase (the [platform doc](archive/platform-and-dev-plan-en.md) ranks it #1), use **Supabase Auth** instead — auth, Postgres, storage and realtime then share one vendor, and RLS keys directly off `auth.uid()`. Two v0.4 requirements need explicit handling in that configuration: (1) *instant revocation* — Supabase sessions are JWT-based, so sensitive routes (operator actions, review-gate mutations, pack downloads) must re-check `users.status`/`role` server-side per request via the `authorize()` chokepoint (they do anyway), keep access-token TTL ≤ 1 h, and kill sessions via refresh-token revocation; acceptable because every high-consequence action is server-verified, never claims-trusted. (2) *China reachability* — serve auth under a first-party custom domain and monitor mainland login success; if it degrades, migrate to Better-Auth — `users(auth_provider, auth_subject)` was designed to absorb exactly that swap. Better-Auth remains the default whenever the database is plain Postgres.
 
 #### Session model
 
@@ -1207,7 +1207,7 @@ The invariants that hold regardless of executor: sanitized input only; artifacts
 ## Relationship to prior documents
 
 - **v0.3** remains the authoritative treatment of the trust boundary, ephemeral single-tenant execution, egress policy, and the human review gate; v0.4 embeds those controls per executor (Chapter C §5) rather than restating them.
-- **ADR-002**'s decision (custom workflow engine; LLMs as stateless intelligence services) is implemented literally by Chapter A; Hermes appears only as a pluggable executor, matching ADR-002's "general-purpose Agent Runtimes remain future options" — inverted into "remains a present option behind the contract, strangled over time" (Chapter C §4.1). This amendment is recorded as [ADR-003](../discussion/withclaude/ADR-003-hermes-as-pluggable-executor-in-v1.md), so ADR-002 read alone does not mislead.
+- **ADR-002**'s decision (custom workflow engine; LLMs as stateless intelligence services) is implemented literally by Chapter A; Hermes appears only as a pluggable executor, matching ADR-002's "general-purpose Agent Runtimes remain future options" — inverted into "remains a present option behind the contract, strangled over time" (Chapter C §4.1). This amendment is recorded as [ADR-003](../discussion/ADR-003-hermes-as-pluggable-executor-in-v1.md), so ADR-002 read alone does not mislead.
 - **Discussion 01**'s thin-agent middle path is Executor C; its speed levers (model routing, parallel steps, caching, small prompts) are realized in the routing table (A §2.2) and the gateway step design (C §2.2).
 
 ## Open questions

@@ -1,6 +1,6 @@
 # ADR-003：V1 中把 Hermes 作为可插拔执行器
 
-**状态：** 已接受 **修订：** [ADR-002](../withchatgpt/ADR-002-Agent-Framework-Evaluation.md) **日期：** 2026-08-03
+**状态：** 已接受 **修订：** [ADR-002](ADR-002-Agent-Framework-Evaluation.md) **日期：** 2026-08-03
 
 > 英文原件：[ADR-003 (English)](ADR-003-hermes-as-pluggable-executor-in-v1.md)
 
@@ -9,7 +9,7 @@
 ADR-002（状态：已接受）的决定是：自建 Workflow Engine，把 LLM API 当作无状态的智能服务使用，并且明确写道
 *"通用 Agent Runtime 仍是未来选项，但在 Version 1 中不予采用。"*
 
-在那之后，[架构 v0.4](../../doc/architecture-v0.4-zh.md) 引入了统一的 **Agent 适配器契约**，在工作流引擎之下
+在那之后，[架构 v0.4](../doc/architecture-v0.4-zh.md) 引入了统一的 **Agent 适配器契约**，在工作流引擎之下
 挂了三种执行器 —— LLM API 网关、Hermes 服务器、轻量自研 Agent。而现实情况是：基于 Hermes 的流水线
 是**今天唯一能产出可售卖签证包的组件**（已在 Docker 中端到端验证：研究 → 检索 → 文档构建 → QA）。
 

@@ -339,7 +339,7 @@ Visa Master 的内容策略不应该围绕“AI 很强”展开，而应该围�
 定价原则：
 
 - 面向用户永远只展示**一个价格**，不展示价格区间（内部测算区间不出现在任何对外文案中）。
-- 单一 SKU，对应一个 Stripe Payment Link（见 `../../doc/platform-and-dev-plan-zh.md` 第 6 周）。
+- 单一 SKU，对应一个 Stripe Payment Link（见 `../../doc/archive/platform-and-dev-plan-zh.md` 第 6 周）。
 - 若后续路线成本不同，价格按路线分别标定，仍然是每条路线一个明确价格。
 
 说明：

@@ -328,7 +328,7 @@ V1 支持本人申请与**简单代他人申请**：恰好一名操作者（账�
 本文档不发明状态名。权威词汇已在两层定稿，产品文档的职责是把用户旅程**映射**上去：
 
 - **案件生命周期（用户可见）**：[architecture v0.4](../../doc/architecture-v0.4-zh.md) A 章的 `case_state` 枚举——`draft, intake, queued, running, awaiting_user, qa_pending, review_pending, delivered, failed, timeout, cancelled`。**V1 实现其中不含 `awaiting_user` 的子集**：没有运行中途的交互，确定性信息采集把所有问题前置到 intake。
-- **作业层**：[开发计划](../../doc/platform-and-dev-plan-zh.md) B.1 的 `jobs.status = queued|leased|running|awaiting_review|delivered|failed|expired`；运行内部阶段记录在 `progress` JSONB（`intake → research → documents → qa → awaiting_review`）。
+- **作业层**：[开发计划](../../doc/archive/platform-and-dev-plan-zh.md) B.1 的 `jobs.status = queued|leased|running|awaiting_review|delivered|failed|expired`；运行内部阶段记录在 `progress` JSONB（`intake → research → documents → qa → awaiting_review`）。
 - **支付不是状态**：它是入队前检查的守卫/信用（`pack_credits`，webhook 翻转）。状态机里没有“已付款”一格。
 
 ### 5.1 V1 状态映射表

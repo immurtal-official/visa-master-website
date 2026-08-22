@@ -70,10 +70,18 @@ packages/
   executors/    the Executor adapter interface. Types only, no implementation
 infra/          the agent plane as compose: internal network + Squid egress
 scripts/        repo-level build gates (today: the i18n catalogue check)
-doc/            architecture v0.1 → v0.4 and the platform & development plan
-discussion/     architecture decision records, and the arguments behind them
+doc/            the architecture and plan in force: v0.4, v0.3, the v2 plan
+  archive/      superseded versions, kept, with a README naming what replaced each
+discussion/     the ADR ledger — every record in it is in force
+  explorations/ the long-form arguments those records came out of
 design/         product design, binding guidelines, the exported design system
 ```
+
+Two of those folders answer "is this current?" by their shape: a document in
+`doc/` is in force, one in `doc/archive/` was replaced, and the archive's README
+says by what. Note that v0.3 sits in `doc/` even though v0.4 exists — v0.4
+supersedes its framing and not its §5.2 egress rules, which
+`infra/squid/squid.conf` implements. Version number is not the axis.
 
 Five workspaces (`pnpm-workspace.yaml` is `apps/*` and `packages/*`), one
 Turborepo task graph, no build step for internal packages — they export raw
@@ -169,7 +177,8 @@ single gap in the product — see §7.
 - **`tsconfig.base.json`** — `strict`, `noUncheckedIndexedAccess`, `isolatedModules`, `noEmit`, ES2022/Bundler. Internal packages are source-exported, so nothing compiles to `dist/`; this file is the whole build story for internal code.
 - **`.prettierrc.json` / `.prettierignore`** — 100 columns, double quotes. The ignore list is the formatter-side expression of the generated-files rule: `design/prototypes/`, `design/system/`, `doc/*.html`, `apps/web/src/styles/tokens/`.
 - **`.gitignore`** — beyond the usual: `.env*` ignored with `!.env.example` re-included; `.next-stub/` (the e2e suite's second dev server); `packages/db/supabase/.temp`.
-- **`AGENTS.md`, `PRODUCT.md`, `STATUS.md`, `README.md`, `EXECUTION-PLAN-week1-2.md`** — see §1. The execution plan is 81 KB of history, not instruction; its §14 ("read before objecting to the code") is where deviations are recorded.
+- **`AGENTS.md`, `PRODUCT.md`, `STATUS.md`, `README.md`, `CODEBASE.md`** — the five documents at the repo root, each an entry point; see §1.
+- **`doc/archive/EXECUTION-PLAN-week1-2.md`** — 81 KB of history, not instruction, and the reason several root config files look the way they do (§3), the first three migrations (§7) and the two i18n gates (§5.3–5.4). Its §14, "read before objecting to the code", is where deviations are recorded.
 - **`.claude/skills/visa-master-design`** — a tracked symlink to `design/system`, so the design skill loads the checked-in export rather than a copy.
 
 ### 5.2 `packages/core` — the rules

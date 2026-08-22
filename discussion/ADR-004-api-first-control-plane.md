@@ -1,7 +1,7 @@
 # ADR-004 — API-first control plane: the web UI is one client of `/api/v1`
 
 **Status:** Accepted, 2026-08-12
-**Amends:** [platform-and-dev-plan-en.md](../doc/platform-and-dev-plan-en.md) §B.4 row 1 and Part III §1 — superseded by [platform-and-dev-plan-v2-en.md](../doc/platform-and-dev-plan-v2-en.md)
+**Amends:** [platform-and-dev-plan-en.md](../doc/archive/platform-and-dev-plan-en.md) §B.4 row 1 and Part III §1 — superseded by [platform-and-dev-plan-v2-en.md](../doc/platform-and-dev-plan-v2-en.md)
 **Does not amend:** [architecture-v0.4-en.md](../doc/architecture-v0.4-en.md) — see "What this does not change"
 
 ## Decision

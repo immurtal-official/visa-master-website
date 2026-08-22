@@ -19,7 +19,7 @@ Visa Master 的信息架构需要同时服务三类对象：
 
 > 官网前台 + 用户申请工作台 + 帮助/信任中心，外加**同一应用内按角色隔离的内部审核区**。
 
-内部审核不是独立的 Portal 或第二套系统，而是 `apps/web` 里按角色鉴权的一组 `/admin/*` 路由（与开发计划第 4 周的 `/admin/review` 对齐，见 [`../../doc/platform-and-dev-plan-zh.md`](../../doc/platform-and-dev-plan-zh.md)），详见 §9。
+内部审核不是独立的 Portal 或第二套系统，而是 `apps/web` 里按角色鉴权的一组 `/admin/*` 路由（与开发计划第 4 周的 `/admin/review` 对齐，见 [`../../doc/archive/platform-and-dev-plan-zh.md`](../../doc/archive/platform-and-dev-plan-zh.md)），详见 §9。
 
 ---
 
@@ -415,7 +415,7 @@ zip 整包下载是**次要路径**（在系统浏览器内提供）；微信内
 
 ## 9. 内部审核区 Admin Review（apps/web 内的角色路由）
 
-审核界面不是独立的 Portal 或第二套应用：它是 `apps/web` 内按角色（operator/admin）鉴权的一组路由，与开发计划第 4 周的 `/admin/review` 对齐（见 [`../../doc/platform-and-dev-plan-zh.md`](../../doc/platform-and-dev-plan-zh.md)）。
+审核界面不是独立的 Portal 或第二套应用：它是 `apps/web` 内按角色（operator/admin）鉴权的一组路由，与开发计划第 4 周的 `/admin/review` 对齐（见 [`../../doc/archive/platform-and-dev-plan-zh.md`](../../doc/archive/platform-and-dev-plan-zh.md)）。
 
 **运营者的移动端范围**（有界平权，见 [`../guidelines/mobile-parity-zh.md`](../guidelines/mobile-parity-zh.md) §3.9）：三件事必须能在手机上完成 —— 带 SLA 计时的审核队列、阅读一份申请（含材料包预览图片）、创建并发送驳回/补材料请求；深度并排比对复核保持桌面优先。
 

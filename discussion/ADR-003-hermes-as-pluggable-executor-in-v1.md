@@ -1,6 +1,6 @@
 # ADR-003: Hermes as a Pluggable Executor in V1
 
-**Status:** Accepted **Amends:** [ADR-002](../withchatgpt/ADR-002-Agent-Framework-Evaluation.md) **Date:** 2026-08-03
+**Status:** Accepted **Amends:** [ADR-002](ADR-002-Agent-Framework-Evaluation.md) **Date:** 2026-08-03
 
 > 中文版:[ADR-003(中文)](ADR-003-hermes-as-pluggable-executor-in-v1-zh.md)
 
@@ -10,7 +10,7 @@ ADR-002 (Accepted) decided: build a custom Workflow Engine, use LLM APIs as stat
 intelligence services, and *"General-purpose Agent Runtimes remain future options but are
 not adopted in Version 1."*
 
-Since then, [architecture v0.4](../../doc/architecture-v0.4-en.md) introduced a uniform
+Since then, [architecture v0.4](../doc/architecture-v0.4-en.md) introduced a uniform
 **agent adapter contract** with three executor kinds behind the workflow engine — LLM API
 gateway, Hermes server, thin custom agent — and the practical situation is that the
 Hermes-based pipeline is the **only component that produces a sellable visa pack today**

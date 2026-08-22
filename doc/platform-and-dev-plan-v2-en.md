@@ -1,10 +1,10 @@
 # Platform Selection & Development Plan, v2 (v0.4 companion)
 
-**Status:** Active — supersedes [platform-and-dev-plan-en.md](platform-and-dev-plan-en.md) per [ADR-004](../discussion/ADR-004-api-first-control-plane.md) (2026-08-12)
+**Status:** Active — supersedes [platform-and-dev-plan-en.md](archive/platform-and-dev-plan-en.md) per [ADR-004](../discussion/ADR-004-api-first-control-plane.md) (2026-08-12)
 **What changed in v2:** the control plane adopts the API-first discipline — every core business capability behind `/api/v1/**` route handlers over a service layer, the web UI being one client of that contract; Server Actions carry no core business operations. Placement, weekly plan, and monorepo notes updated accordingly. The zh mirror has not been regenerated for v2 yet.
 **Companion to:** [architecture-v0.4](architecture-v0.4-en.md) — this document is the platform-specific half: where to run the architecture, and the concrete build plan.
 
-> 中文版：[平台选型与开发计划（中文）](platform-and-dev-plan-zh.md)
+> 中文版：[平台选型与开发计划（中文）](archive/platform-and-dev-plan-zh.md) —— 是 v1 的镜像，尚未按 v2 重新生成，因此与本文不一致的地方以本文为准。
 
 ## Executive summary
 

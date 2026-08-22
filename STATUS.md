@@ -3,7 +3,7 @@
 **As of:** 2026-08-21 · everything described here is on `main`. Weeks 1–2 arrived in PR #4;
 the API-first work — six commits, `22cbfe1` through `fa36fbd` — missed that crossing, because
 PR #5 merged into a base that had already been merged, and followed in PR #6.
-Companion documents: [EXECUTION-PLAN-week1-2.md](EXECUTION-PLAN-week1-2.md) (the plan weeks 1–2
+Companion documents: [doc/archive/EXECUTION-PLAN-week1-2.md](doc/archive/EXECUTION-PLAN-week1-2.md) (the plan weeks 1–2
 executed), [doc/platform-and-dev-plan-v2-en.md](doc/platform-and-dev-plan-v2-en.md) (the active
 eight-week plan — v1 is superseded), [AGENTS.md](AGENTS.md) (the constraints this is built under).
 

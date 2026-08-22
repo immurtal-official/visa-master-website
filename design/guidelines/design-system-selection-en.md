@@ -2,10 +2,10 @@
 
 **Status:** Decided for V1
 **Decision:** **Radix UI primitives + Tailwind CSS** for implementation, with **GOV.UK Design System** borrowed as an *interaction-pattern* reference only — no wholesale adoption of any vendor system.
-**Supersedes:** the recommendation in [`design-system-options-zh`](../../discussion/withchatgpt/design-system-options-zh.md) — see §6, which keeps most of it and reverses one part
+**Supersedes:** the recommendation in [`design-system-options-zh`](../../discussion/explorations/design-system-options-zh.md) — see §6, which keeps most of it and reverses one part
 **Informed by:** [`../product/03_Information_Architecture.md`](../product/03_Information_Architecture.md) (page structure) · [`../product/05_Content_Strategy_Homepage.md`](../product/05_Content_Strategy_Homepage.md) (visual keywords, colour direction)
 **Companion:** [`mobile-parity-en.md`](mobile-parity-en.md) — the standing mobile directive and the stage-by-stage requirements behind §7 · [`internationalization-en.md`](internationalization-en.md) — the zh/en directive and what makes further languages cheap
-**Consumed by:** `apps/web` in the monorepo described in [`../../doc/platform-and-dev-plan-en.md`](../../doc/platform-and-dev-plan-en.md)
+**Consumed by:** `apps/web` in the monorepo described in [`../../doc/archive/platform-and-dev-plan-en.md`](../../doc/archive/platform-and-dev-plan-en.md)
 
 > 中文版：[设计系统选型（中文）](design-system-selection-zh.md)
 
@@ -120,7 +120,7 @@ the typography and black bars.
 
 ## 6. The prior analysis, and the one part we reverse
 
-An earlier options review — [`design-system-options-zh`](../../discussion/withchatgpt/design-system-options-zh.md) — reached a
+An earlier options review — [`design-system-options-zh`](../../discussion/explorations/design-system-options-zh.md) — reached a
 three-layer conclusion: Tailwind + shadcn/ui for the marketing site, light
 form-friendly components for intake, and **Ant Design for the logged-in
 dashboard and the reviewer/admin portal**. Most of it we keep, and its closing
