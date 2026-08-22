@@ -1,9 +1,11 @@
 # Status — where the build stands
 
-**As of:** 2026-08-12 · branch `feat/week1-foundations`, 30 commits, all work verified locally.
-Companion documents: [EXECUTION-PLAN-week1-2.md](EXECUTION-PLAN-week1-2.md) (the plan these
-commits executed), [doc/platform-and-dev-plan-en.md](doc/platform-and-dev-plan-en.md) (the
-eight-week plan this tracks against).
+**As of:** 2026-08-21 · everything described here is on `main`. Weeks 1–2 arrived in PR #4;
+the API-first work — six commits, `22cbfe1` through `fa36fbd` — missed that crossing, because
+PR #5 merged into a base that had already been merged, and followed in PR #6.
+Companion documents: [EXECUTION-PLAN-week1-2.md](EXECUTION-PLAN-week1-2.md) (the plan weeks 1–2
+executed), [doc/platform-and-dev-plan-v2-en.md](doc/platform-and-dev-plan-v2-en.md) (the active
+eight-week plan — v1 is superseded), [AGENTS.md](AGENTS.md) (the constraints this is built under).
 
 ---
 
@@ -21,7 +23,7 @@ eight-week plan this tracks against).
   recorded), `0003_usage_events`.
 - Design-token layer copied from the design system verbatim; owned UI components ported
   against the skill's contracts (Button, Input, Callout, Card, ErrorSummary, DateInput,
-  RadioGroup, LanguageSwitcher, chrome).
+  RadioGroup, LanguageSwitcher, Icon, LinkButton, chrome).
 
 ### Week 2 — intake and documents (complete)
 
@@ -41,49 +43,138 @@ eight-week plan this tracks against).
   press bills once). The job payload carries the work, never the account identity.
 - Application detail page mapping job states to the fixed status vocabulary.
 
-### Week 3 — brought forward, in part (conductor state machine complete)
+### Week 3 — conductor, real executor, egress boundary (gateway still out)
 
 - `apps/conductor` is real: claim via `FOR UPDATE SKIP LOCKED`, heartbeat-renewed leases,
   wall-clock enforcement in the run loop **and** a reaper as backstop, failure taxonomy with
   per-class retry policy (`budget_exceeded` never auto-retries), completion judged by the
-  artifact appearing — never by process exit — and scratch destroyed on every path out.
-- The executor behind it is deliberately fake (writes a `qa-report.json` after a delay), so
-  the state machine was built and tested before any VM, image, or provider key exists.
-  Swapping in the real container executor is invisible to the conductor — that is what the
-  adapter contract in `packages/executors` buys.
+  artifact appearing — never by process exit — and scratch destroyed on every path out of the
+  run loop.
+- The **real Docker executor** (`apps/conductor/src/executors/docker.ts`) replaced the fake as
+  the intended path: one detached container per attempt, image and network and proxy from
+  config, `--cpus` / `--memory` / `--pids-limit 512` / `--security-opt no-new-privileges`, one
+  bind mount (the job scratch at `/opt/data/job`) and no docker socket, an environment built
+  from an allowlist rather than inherited, and force-removal plus `rm -rf` of the scratch when
+  the run loop unwinds.
+- The **egress boundary** exists and is asserted from inside it: `infra/compose.local.yml`
+  puts the job container on an `internal: true` network with no default route, dual-homed
+  Squid as the only way out, and `infra/squid/squid.conf` implements v0.3 §5.2 rules 1–3
+  (link-local and RFC1918 denied, ports 80/443 only, write methods denied off-allowlist).
+  `egress.test.ts` proves each denial, and that the network leaks nothing without the proxy.
+  Note what rule 3 can and cannot see: the method restriction bites on cleartext only, and
+  `CONNECT` to any public host on 443 is allowed, so an HTTPS body passes unread. Reading it
+  is v0.3 §5.2 rule 4 — TLS interception, phase 2 by design, not built.
+- Artifact collection: the conductor uploads `qa-report.json` and the whole `delivery/` tree
+  to the private `artifacts` bucket under its own credential (migration
+  `20260819233145_artifacts_bucket`, no client policy — only the conductor can reach it).
 
-### Verification (all green locally)
+### API-first control plane (ADR-004, complete)
 
-| Layer | Count |
-|---|---|
-| Playwright end-to-end (real sign-in via Mailpit API, real uploads into the bucket, full journey to a queued job) | 34 |
-| `packages/core` unit tests | 49 |
-| `apps/conductor` integration tests (against real Postgres — the point is what Postgres does under races) | 20 |
-| pgTAP RLS/privilege assertions | 49 |
+- Fourteen route handlers under `/api/v1/**` over six services in `apps/web/src/lib/services/`
+  (seven modules — the seventh holds the two error classes). Handlers are thin — parse, call
+  one service, map the result; the longest route file is 13 lines.
+- **Zero `use server` directives remain anywhere in the repo.** Server Components read through
+  `lib/api/server.ts`, Client Components call through `lib/api/client.ts`; no page or component
+  imports a service or touches the database directly.
+- The wire protocol carries catalogue keys, never sentences: `422 {issues:[{path,key,params?}]}`
+  for rule failures, `{error:{key}}` otherwise, produced in one place (`lib/api/http.ts`).
+- `apps/web/e2e/api-contract.spec.ts` pins the contract, including the whole journey
+  (create → answer → gate → submit, exactly once) driven headlessly with no browser UI.
+- [AGENTS.md](AGENTS.md) states the discipline as six rules under a heading that points at its
+  record; [ADR-004](discussion/ADR-004-api-first-control-plane.md) is the decision itself, in
+  ten numbered points, and the v2 plan carries the revision.
 
-Plus the two i18n build gates and `supabase db reset` applying all 7 migrations cleanly.
+## What the checked-in default actually runs
+
+The docker executor is selected only when `HERMES_JOB_COMMAND` is set; unset — which is how
+`.env.example` ships — the conductor falls back to the fake executor with a warning. The real
+kickoff command is not in this repo: it lands together with the provider credential. So a
+`pnpm start` today produces no real pack, by design. What stops a model call is that absence,
+not the proxy: no credential reaches the container and nothing inside it knows what to run.
+
+## Verification
+
+| Layer | What it is | Needs |
+|---|---|---|
+| Playwright end-to-end, 10 spec files, **40 cases at runtime** (37 `test()` calls, 3 of them looped over both locales) | real sign-in via the Mailpit API, real uploads into the bucket, full journey to a queued job, plus the headless API contract | Docker + the local Supabase stack; Playwright starts both dev servers |
+| `packages/core` unit tests, **49** | schemas, the route gate, the Schengen-Spain document rules | nothing — the only layer that runs without Docker |
+| `apps/conductor` tests, **30** | lease and run-loop races against real Postgres; the docker executor and the egress denials against real containers | local Postgres; the last 10 also need Docker, and 5 of them need the `visa-master-hermes` image |
+| pgTAP, 7 files, **52 assertions** | row-level security and privilege grants, one file per migration except `job_lease_owner`, which adds a column and has none | the local stack (`pnpm db:test`) |
+
+Plus the two i18n build gates: `pnpm --filter web build` runs the catalogue check directly,
+and the hardcoded-string rule reaches a build only through turbo, whose `build` depends on
+`lint` — so `pnpm build` runs both and the filtered form runs one.
+
+**Last full run: 2026-08-21**, against the local stack on the founder's machine — `lint` and
+`typecheck` 5/5 workspaces, `packages/core` 49 passed, `apps/conductor` 30 passed, the web
+build through the i18n gate, pgTAP 52 of 52, and Playwright 39 passed with 1 flaky. Two things
+that run is worth knowing for:
+
+- **The container path was genuinely exercised this time.** `docker.test.ts` booted the real
+  `visa-master-hermes` image, staged input into it, killed a run that outlived its deadline,
+  and asserted the container carries no provider key and reaches nothing directly. That is not
+  guaranteed on another machine: those five cases **return early rather than skipping** when
+  the 5 GB image is absent, so elsewhere the suite can go green without testing anything.
+- **One flaky case, and it is not a timing flake in the usual sense.** The headless journey in
+  `api-contract.spec.ts` got a 500 where the contract says 422 (`validation.pinyin.invalid`),
+  on the first request of the run, and passed on retry. Re-running that spec three times with
+  retries disabled passed 18 of 18, so it does not reproduce on a warm server. Unexplained,
+  and worth explaining before the contract is anyone else's to depend on.
 
 ## Where we are
 
 The full journey runs locally end to end: sign up → route check → create application →
 20-question intake → upload documents → review → submit → conductor claims the job → status
 reaches "being reviewed by a person". Local-first by decision: no hosted Supabase, no
-Vercel project, nothing pushed to any cloud, zero spend so far.
+Vercel project, nothing running in any cloud, zero spend so far. The source is pushed and
+`main` carries all of it; nothing is deployed anywhere.
+
+## Known gaps in what is built
+
+These are real, unfixed, and worth knowing before the first paying pack. None blocks the
+current milestone.
+
+- **No QA gate.** The moment the artifact appears the conductor goes validating → collect →
+  succeeded without reading the QA report; a report saying the pack failed still yields
+  `succeeded`. The human review gate is what stands between that and a customer.
+- **The egress tripwire is cleartext-only.** Rule 3 denies POST/PUT/PATCH/DELETE off the
+  allowlist, but Squid cannot see a method inside a `CONNECT` tunnel, and tunnels to any
+  public host on 443 are allowed. The prompt-injection tripwire the runbook is meant to watch
+  therefore fires on plain HTTP and not on HTTPS.
+- **One path leaks scratch.** `executor.start()` runs before the `try`/`finally` that owns
+  `destroy()`, so a failure inside it — after the docker executor has created the scratch and
+  written the sanitized intake into it — leaves that directory on disk.
+- **No write-completion barrier.** `artifactReady` can fire while the container is still
+  writing into `delivery/`, so a partially written pack can be collected.
+- **A crashed conductor leaks.** The container is started without `--rm` and only `destroy()`
+  cleans up, so a conductor killed mid-run leaves a live container holding the applicant's
+  documents, and a scratch directory on disk, while the reaper only rewrites the row.
+- **Metering is schema-only.** `jobs.tokens_in`/`tokens_out` and the whole `usage_events` table
+  are never written or read; `max_tokens_total` and `max_cost_usd` are written by their column
+  defaults and selected on every claim, but nothing ever compares anything to them.
+  `budget_exceeded` is in the taxonomy and nothing can emit it yet.
+- **Executor kind vocabularies disagree.** The contract says `llm-gateway`, the router says
+  `llm_gateway`, and only `hermes` is registered — six of eight routed task types would fail
+  as `validation_failed` today.
 
 ## Not done yet
 
-- **Real executor + agent-plane compose** (week 3 remainder): `egress-internal` network,
-  Squid egress proxy with the v0.3 §5.2 rules, LiteLLM gateway, docker executor driving
-  `visa-master-hermes` (image already present locally, arm64). First three steps need no
-  API key; the first real pack run does (a few dollars).
-- **Progress UI + review gate + delivery** (week 4): stage timeline, `/admin/review`
-  queue with approve → `delivered` / reject → structured `failure_reason`, migration
-  `packs`/`reviews`/`audit_log`, delivery page with signed URLs.
-- **Gateway executor, budgets, requirements cache** (week 5).
-- **CI/CD, hardening, observability** (week 6) — deferred with deployment.
+- **LLM gateway** — the largest piece of week 3 still missing: the version-pinned LiteLLM
+  service, the provider key it holds, Hermes pointed at it, and the Squid allowlist reduced to
+  the gateway itself. The first real pack run waits on this (and costs a few dollars). Week 3
+  also still owes `infra/compose.vm.yml`, the rest of the container hardening, and per-job
+  token metering; the conductor, the executor and the egress boundary are what is done.
+- **Progress UI + review gate + delivery** (week 4): the `progress`/`job_events` stage machine
+  and its timeline, `/admin/review` with approve → `delivered` / reject → structured
+  `failure_reason`, migration `packs`/`reviews`/`audit_log`, the pre-review validator, and the
+  delivery page with signed URLs. The `artifacts` bucket it delivers from already exists.
+- **Gateway executor, budgets, requirements cache** (week 5) — including the budget predicate
+  that would make the metering columns mean something.
+- **CI/CD, hardening, observability** (week 6) — there is no `.github/` at all; container
+  hardening has four flags and no non-root user, read-only rootfs, or dropped capabilities.
 - **Notifications, retention enforcement, restore drill** (week 7); **payments** (week 8).
-- **Deployment**: hosted Supabase (staging), Vercel project, domain; then the Hetzner VM.
-  Blockers are accounts and spend, not code.
+- **Deployment**: hosted Supabase (staging), Vercel project, domain; then the Hetzner VM,
+  `infra/compose.vm.yml`, and the systemd units. Blockers are accounts and spend, not code.
 - **CN-entity-gated items** (tracked, not blocking): ICP filing, WeChat Pay, +86 SMS, any
   WeChat Mini Program — all hang off the same prerequisite.
 
@@ -91,11 +182,13 @@ Vercel project, nothing pushed to any cloud, zero spend so far.
 
 - Backend shape examined in depth (Next.js fullstack vs separate FastAPI-class service):
   staying **Next.js as frontend + request/response backend**, with a hard **API-first
-  discipline** adopted going forward — every core business capability behind a stable
-  `/api/v1/**` HTTP contract with a service layer, the web UI being one client of it, so a
-  mobile app or WeChat Mini Program consumes the same contract and a future backend
-  extraction is a re-homing, not a rewrite. Implementation starts on `feat/api-first`;
-  the decision record and document revisions land with it.
+  discipline** — every core business capability behind a stable `/api/v1/**` HTTP contract
+  with a service layer, the web UI being one client of it, so a mobile app or WeChat Mini
+  Program consumes the same contract and a future backend extraction is a re-homing, not a
+  rewrite. This is now implemented and binding, not planned: the decision is
+  [ADR-004](discussion/ADR-004-api-first-control-plane.md), the rules are [AGENTS.md](AGENTS.md),
+  and the plan revision is [v2](doc/platform-and-dev-plan-v2-en.md). The Chinese mirror of the
+  plan has not been regenerated for v2.
 - The agent plane stays one VM until a written trigger fires (isolation review → per-job
   microVMs; capacity → second VM). The gateway stays co-located with the conductor: it
   holds the provider keys and is the job containers' only inference route.
