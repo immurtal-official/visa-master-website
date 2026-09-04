@@ -49,3 +49,8 @@ test-results/
 playwright-report/
 blob-report/
 .playwright/
+.env*
+# `vercel env pull` appends the line above every time it runs, and it matches
+# .env.example too — which the exception near the top of this file exists to
+# keep tracked. Restate the exception here so the last matching pattern wins.
+!.env.example
