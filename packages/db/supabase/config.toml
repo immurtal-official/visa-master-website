@@ -427,3 +427,46 @@ enabled = true
 # declarative_schema_path = "./database"
 # JSON string passed through to pg-delta SQL formatting.
 # format_options = "{\"keywordCase\":\"upper\",\"indent\":2,\"maxWidth\":80,\"commaStyle\":\"trailing\"}"
+
+# ---------------------------------------------------------------------------
+# Staging — the hosted project the Vercel deployment talks to.
+#
+# Everything above configures the local stack. This block is what the hosted
+# project receives from `supabase config push`, so the two line up in git
+# rather than in someone's browser history. Only the differences are restated;
+# the rest is inherited from the sections above — including
+# `enable_confirmations = false` and the `{{ .Token }}` sign-in template that
+# makes signInWithOtp send a code instead of a magic link.
+#
+# The hosted project refuses a custom email template unless custom SMTP is
+# configured, so the SMTP block below is a precondition for the template, not
+# an independent nicety.
+# ---------------------------------------------------------------------------
+[remotes.staging]
+project_id = "rmsdyqmuztydicfintbs"
+
+[remotes.staging.auth]
+site_url = "https://app.wdnx.world"
+additional_redirect_urls = ["https://app.wdnx.world"]
+
+# Resend over SMTP. The API key is read from the environment at push time and
+# never lands in the repository.
+[remotes.staging.auth.email.smtp]
+enabled = true
+host = "smtp.resend.com"
+port = 587
+user = "resend"
+pass = "env(RESEND_API_KEY)"
+admin_email = "no-reply@wdnx.world"
+sender_name = "Visa Master"
+
+# The rate limits above are raised so the end-to-end suite can sign a few dozen
+# throwaway users in from one address in a couple of minutes. On a deployment
+# anyone can reach they are not limits at all, so restore the hosted defaults.
+# email_sent is the one exception: the hosted default of 2/hour belongs to
+# Supabase's built-in SMTP, and with Resend carrying the mail it only has to
+# stay well under the free plan's 100/day.
+[remotes.staging.auth.rate_limit]
+email_sent = 30
+sign_in_sign_ups = 30
+token_verifications = 30
