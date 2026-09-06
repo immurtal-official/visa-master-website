@@ -8,6 +8,7 @@
  * work, because that is how these documents get read.
  *
  *   pnpm doc:html                                # all documents
+ *   node scripts/doc-reader/build.mjs --check    # fail if any reader is stale
  *   node scripts/doc-reader/build.mjs arch-zh    # one, by key
  *
  * Nothing here needs a browser. When a mermaid block changes, this build stops
@@ -365,7 +366,9 @@ ${toc}
 
 /* ------------------------------------------------------------------ main -- */
 
-const wanted = process.argv.slice(2);
+const argv = process.argv.slice(2);
+const check = argv.includes("--check");
+const wanted = argv.filter((a) => !a.startsWith("-"));
 const targets = wanted.length ? DOCS.filter((d) => wanted.includes(d.key)) : DOCS;
 if (!targets.length) {
   console.error(`Unknown document. Known keys: ${DOCS.map((d) => d.key).join(", ")}`);
@@ -384,10 +387,16 @@ for (const meta of targets) {
     strings,
   });
   built.push({ meta, strings, html, toc, diagrams });
-  console.log(`  ${meta.src} → ${meta.out}  (${toc.length} sections, ${diagrams.length} diagrams)`);
+  if (!check) {
+    console.log(
+      `  ${meta.src} → ${meta.out}  (${toc.length} sections, ${diagrams.length} diagrams)`,
+    );
+  }
 }
 
 const svgs = await loadDiagrams(built.flatMap((b) => b.diagrams));
+
+const stale = [];
 
 for (const { meta, strings, html, toc, diagrams } of built) {
   let body = html;
@@ -399,6 +408,28 @@ for (const { meta, strings, html, toc, diagrams } of built) {
     );
   }
   const page = assemble(meta, { css, js, body, toc: renderToc(toc), strings });
-  await writeFile(path.join(DOC, meta.out), page);
+  const out = path.join(DOC, meta.out);
+
+  if (check) {
+    let current = null;
+    try {
+      current = await readFile(out, "utf8");
+    } catch (err) {
+      if (err.code !== "ENOENT") throw err;
+    }
+    if (current !== page) stale.push(meta.out + (current === null ? " — missing" : ""));
+    continue;
+  }
+
+  await writeFile(out, page);
   console.log(`  wrote doc/${meta.out}  (${(page.length / 1024).toFixed(0)} KB)`);
+}
+
+if (check) {
+  if (stale.length) {
+    console.error("Readers are out of date:\n" + stale.map((l) => `  ${l}`).join("\n"));
+    console.error("\nRun: pnpm doc:html");
+    process.exit(1);
+  }
+  console.log(`  ${targets.length} reader${targets.length === 1 ? "" : "s"}, all current`);
 }

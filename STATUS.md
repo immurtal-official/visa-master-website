@@ -180,7 +180,9 @@ current milestone.
   delivery page with signed URLs. The `artifacts` bucket it delivers from already exists.
 - **Gateway executor, budgets, requirements cache** (week 5) — including the budget predicate
   that would make the metering columns mean something.
-- **CI/CD, hardening, observability** (week 6) — there is no `.github/` at all; container
+- **CI/CD, hardening, observability** (week 6) — `.github/workflows/docs.yml` is the only
+  workflow, and it guards the generated documents rather than the code: there is no `ci.yml`
+  running lint/typecheck/test, no migration check, and no deploy pipeline. Container
   hardening has four flags and no non-root user, read-only rootfs, or dropped capabilities.
 - **Notifications, retention enforcement, restore drill** (week 7); **payments** (week 8).
 - **Deployment**: hosted Supabase (staging), Vercel project, domain; then the Hetzner VM,

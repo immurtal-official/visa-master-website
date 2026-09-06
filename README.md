@@ -144,9 +144,18 @@ pnpm doc:html   # rebuild the four .html readers
 ```
 
 Both are hermetic and take under a second: no browser, no network, nothing
-platform-specific, and both are idempotent. `pnpm doc:toc --check` fails when a
-table of contents is stale rather than rewriting it, which is the form to wire
-into CI.
+platform-specific, and both are idempotent.
+
+Because the output is committed, it can be committed stale — so each step has a
+`--check` form that fails instead of writing, and `pnpm doc:check` runs all three:
+
+```
+pnpm doc:check   # toc, diagrams, and readers all current — or exit 1 saying which
+```
+
+That is what [`.github/workflows/docs.yml`](.github/workflows/docs.yml) runs on
+every pull request. A stale reader is worse than a missing one: it is plausible
+and wrong.
 
 The diagrams are the exception, and they are handled by being **rendered ahead of
 time and committed** as SVG under [`doc/diagrams/`](doc/diagrams/). That is what
@@ -169,8 +178,9 @@ pnpm doc:html
 
 `doc:diagrams` drives the Chrome already on the machine rather than downloading one
 (`CHROME_PATH` if it lives somewhere unusual), `--all` re-renders everything, and
-`--check` reports staleness without writing. Commit the SVGs it produces alongside
-the Markdown change.
+`--check` reports staleness without writing — that is the form CI runs, and it
+compares hashes rather than rendering, so CI needs no browser either. Commit the
+SVGs it produces alongside the Markdown change.
 
 Edit the `.md` and rerun the build. Editing the HTML directly appears to work and
 is silently discarded by the next rebuild — this has already happened once. The

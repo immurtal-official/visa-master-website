@@ -1,0 +1,53 @@
+name: Docs
+
+# The generated half of doc/ is committed — the <!-- toc --> blocks, the diagram
+# SVGs, and the four HTML readers — which means it can be committed stale, and a
+# stale reader is worse than a missing one: it is plausible and wrong. This is
+# the gate that says so.
+#
+# It is deliberately not the whole PR gate. Week 6 adds ci.yml (turbo lint /
+# typecheck / test, and a supabase db diff check that migrations are committed
+# and linear) as its own file, per the plan's one-workflow-per-concern shape —
+# doc/platform-and-dev-plan-v2-en.md Part III §3.
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+# A second push to the same branch makes the first run's answer irrelevant.
+concurrency:
+  group: docs-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    name: Generated docs are current
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # Version comes from package.json's packageManager field.
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      # Three ways the committed output can fall behind the Markdown it came from:
+      #
+      #   toc       a heading changed, the <!-- toc --> block did not
+      #   diagrams  a mermaid block changed, doc/diagrams/*.svg did not
+      #   html      any of the above, or the prose, and the readers were not rebuilt
+      #
+      # None of them needs a browser. The diagram check compares the hashes in
+      # doc/diagrams/manifest.json against the sources; rendering is a separate
+      # command that only runs on the machine of whoever changes a diagram.
+      - name: pnpm doc:check
+        run: pnpm doc:check
