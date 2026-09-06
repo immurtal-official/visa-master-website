@@ -3,85 +3,21 @@
  * Builds the standalone HTML readers in doc/ from their Markdown sources.
  *
  * Each reader is one file with no network dependency: the shell stylesheet and
- * behaviour from this directory are inlined, and every mermaid diagram is
- * rendered to SVG at build time and embedded. Opening the file over file://
- * has to work, because that is how these documents get read.
+ * behaviour from this directory are inlined, and the diagrams come from the
+ * SVGs committed under doc/diagrams/. Opening the file over file:// has to
+ * work, because that is how these documents get read.
  *
- *   node scripts/doc-reader/build.mjs            # all documents
+ *   pnpm doc:html                                # all documents
  *   node scripts/doc-reader/build.mjs arch-zh    # one, by key
  *
- * Diagram rendering drives a headless Chrome through puppeteer-core. It uses
- * the browser already installed on the machine rather than downloading one;
- * point CHROME_PATH at it if it is somewhere unusual.
+ * Nothing here needs a browser. When a mermaid block changes, this build stops
+ * and tells you to run `pnpm doc:diagrams`, which is the half that does.
  */
 
-import { readFile, writeFile, access } from "node:fs/promises";
-import { fileURLToPath } from "node:url";
+import { readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { Marked, Renderer } from "marked";
-import puppeteer from "puppeteer-core";
-
-const HERE = path.dirname(fileURLToPath(import.meta.url));
-const ROOT = path.resolve(HERE, "..", "..");
-const DOC = path.join(ROOT, "doc");
-
-/* ------------------------------------------------------------------ docs -- */
-
-/**
- * `mermaidPrefix` becomes the SVG element id and the lightbox caption, so it
- * has to stay unique per document — two readers open in one browser tab is not
- * a case we have, but duplicate ids inside one file would be.
- */
-const DOCS = [
-  {
-    key: "arch-en",
-    lang: "en",
-    src: "architecture-v0.4-en.md",
-    out: "architecture-v0.4-en.html",
-    doc: "arch",
-    mermaidPrefix: "arch",
-    title: "Visa Master Platform Architecture",
-    badge: "v0.4 · Architecture",
-    sibling: { href: "platform-and-dev-plan-v2-en.html", label: "Platform & plan →" },
-    twin: { href: "architecture-v0.4-zh.html", label: "中文" },
-  },
-  {
-    key: "arch-zh",
-    lang: "zh-Hans",
-    src: "architecture-v0.4-zh.md",
-    out: "architecture-v0.4-zh.html",
-    doc: "arch",
-    mermaidPrefix: "archzh",
-    title: "Visa Master 平台架构",
-    badge: "v0.4 · 架构",
-    sibling: { href: "platform-and-dev-plan-v2-zh.html", label: "平台与计划 →" },
-    twin: { href: "architecture-v0.4-en.html", label: "English" },
-  },
-  {
-    key: "plan-en",
-    lang: "en",
-    src: "platform-and-dev-plan-v2-en.md",
-    out: "platform-and-dev-plan-v2-en.html",
-    doc: "plat",
-    mermaidPrefix: "plat",
-    title: "Platform Selection & Development Plan",
-    badge: "v2 · Platform & Plan",
-    sibling: { href: "architecture-v0.4-en.html", label: "← Architecture" },
-    twin: { href: "platform-and-dev-plan-v2-zh.html", label: "中文" },
-  },
-  {
-    key: "plan-zh",
-    lang: "zh-Hans",
-    src: "platform-and-dev-plan-v2-zh.md",
-    out: "platform-and-dev-plan-v2-zh.html",
-    doc: "plat",
-    mermaidPrefix: "platzh",
-    title: "平台选型与开发计划",
-    badge: "v2 · 平台与计划",
-    sibling: { href: "architecture-v0.4-zh.html", label: "← 架构" },
-    twin: { href: "platform-and-dev-plan-v2-en.html", label: "English" },
-  },
-];
+import { DOC, DOCS, HERE, mermaidSources, readManifest, sourceHash, svgPath } from "./docs.mjs";
 
 /** Markdown sources that exist as readers: links between them get repointed. */
 const AS_HTML = new Map(DOCS.map((d) => [d.src, d.out]));
@@ -209,7 +145,8 @@ function plainText(tokens) {
 function renderBody(markdown, { mermaidPrefix, strings }) {
   const toc = []; // the sidebar: h2-h4, the working navigation
   const headings = []; // everything, for the in-page contents
-  const diagrams = [];
+  const diagrams = mermaidSources(markdown, mermaidPrefix);
+  let nextDiagram = 0;
   const seen = new Map();
   const base = new Renderer();
 
@@ -233,9 +170,14 @@ function renderBody(markdown, { mermaidPrefix, strings }) {
     code(token) {
       const lang = (token.lang || "text").trim().split(/\s+/)[0];
       if (lang === "mermaid") {
-        const id = `${mermaidPrefix}-${diagrams.length}`;
-        diagrams.push({ id, source: token.text });
-        return `<!--diagram:${id}-->\n`;
+        // The cache is keyed by position, so the order the renderer meets the
+        // blocks in has to be the order mermaidSources() listed them in. It is
+        // — but a silent mismatch would embed the wrong picture, so say so.
+        const expected = diagrams[nextDiagram++];
+        if (!expected || expected.source !== token.text) {
+          throw new Error(`diagram ${nextDiagram - 1} of ${mermaidPrefix} is not where it was`);
+        }
+        return `<!--diagram:${expected.id}-->\n`;
       }
       const bar =
         `<div class="codeblock__bar"><span class="codeblock__lang">${escapeHtml(lang)}</span>` +
@@ -313,95 +255,39 @@ function renderContents(headings, strings) {
 
 /* -------------------------------------------------------------- diagrams -- */
 
-const CHROME_CANDIDATES = [
-  process.env.CHROME_PATH,
-  "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
-  "/Applications/Chromium.app/Contents/MacOS/Chromium",
-  "/usr/bin/google-chrome",
-  "/usr/bin/chromium",
-  "/usr/bin/chromium-browser",
-].filter(Boolean);
-
-async function findChrome() {
-  for (const candidate of CHROME_CANDIDATES) {
-    try {
-      await access(candidate);
-      return candidate;
-    } catch {}
-  }
-  throw new Error(
-    "No Chrome found for diagram rendering. Install Google Chrome, or set CHROME_PATH " +
-      "to a Chrome/Chromium binary.",
-  );
-}
-
 /**
- * Renders every diagram of every document in one browser session.
+ * The committed SVGs, checked against the mermaid they were rendered from.
  *
- * The font stack and size are the page's own, so diagram text matches the prose
- * around it; the default mermaid theme supplies the rest, and the reader
- * stylesheet keeps the diagram panel light in both themes because these SVGs
- * are theme-unaware.
+ * A cache that can silently go stale is worse than no cache: the page would
+ * keep showing last year's picture and nothing would say so. So the manifest
+ * carries a hash of each source, and a mismatch stops the build rather than
+ * producing a plausible wrong page.
  */
-async function renderDiagrams(jobs) {
-  if (!jobs.length) return new Map();
-  const executablePath = await findChrome();
-  const browser = await puppeteer.launch({ executablePath, headless: true });
-  try {
-    const page = await browser.newPage();
-    await page.setViewport({ width: 1600, height: 1200, deviceScaleFactor: 1 });
-    await page.setContent("<!doctype html><html><body></body></html>");
-    await page.addScriptTag({ path: path.join(ROOT, "node_modules/mermaid/dist/mermaid.min.js") });
-    await page.evaluate(() => {
-      window.mermaid.initialize({
-        startOnLoad: false,
-        theme: "default",
-        securityLevel: "strict",
-        fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif',
-        fontSize: 15,
-      });
-    });
+async function loadDiagrams(jobs) {
+  const manifest = await readManifest();
+  const svgs = new Map();
+  const stale = [];
 
-    const out = new Map();
-    for (const { id, source } of jobs) {
-      const svg = await page.evaluate(
-        async (renderId, code) => (await window.mermaid.render(renderId, code)).svg,
-        id,
-        source,
-      );
-      out.set(id, postProcessSvg(svg, id));
-      process.stdout.write(`    diagram ${id}\n`);
+  for (const { id, source } of jobs) {
+    const hash = sourceHash(source);
+    if (manifest[id]?.sha256 !== hash) {
+      stale.push(`${id} — the mermaid source changed since it was rendered`);
+      continue;
     }
-    return out;
-  } finally {
-    await browser.close();
+    try {
+      svgs.set(id, (await readFile(svgPath(id), "utf8")).trim());
+    } catch (err) {
+      if (err.code !== "ENOENT") throw err;
+      stale.push(`${id} — doc/diagrams/${id}.svg is missing`);
+    }
   }
-}
 
-/**
- * mermaid hands back an SVG sized for the viewport it was rendered in. The
- * reader wants one that fills its column and can be zoomed, so the intrinsic
- * size moves onto data attributes (shell.js reads them to compute the minimum
- * width at which the smallest label is still legible) and the width becomes
- * fluid.
- */
-function postProcessSvg(svg, id) {
-  const open = svg.match(/^<svg[^>]*>/);
-  if (!open) throw new Error(`mermaid returned no <svg> for ${id}`);
-  let tag = open[0];
-  const viewBox = tag.match(/viewBox="([^"]*)"/)?.[1] ?? "";
-  const [, , w = "0", h = "0"] = viewBox.split(/\s+/);
-
-  tag = tag
-    .replace(/\s(width|height)="[^"]*"/g, "")
-    .replace(/\sstyle="[^"]*"/, "")
-    .replace(/^<svg/, '<svg style="background-color: transparent;"')
-    .replace(
-      />$/,
-      ` width="100%" preserveAspectRatio="xMidYMid meet" data-diagram-id="${id}"` +
-        ` data-intrinsic-width="${w}" data-intrinsic-height="${h}">`,
-    );
-  return tag + svg.slice(open[0].length);
+  if (stale.length) {
+    console.error("Diagrams are out of date:\n" + stale.map((l) => `  ${l}`).join("\n"));
+    console.error("\nRun: pnpm doc:diagrams");
+    process.exit(1);
+  }
+  return svgs;
 }
 
 /* -------------------------------------------------------------- assembly -- */
@@ -501,7 +387,7 @@ for (const meta of targets) {
   console.log(`  ${meta.src} → ${meta.out}  (${toc.length} sections, ${diagrams.length} diagrams)`);
 }
 
-const svgs = await renderDiagrams(built.flatMap((b) => b.diagrams));
+const svgs = await loadDiagrams(built.flatMap((b) => b.diagrams));
 
 for (const { meta, strings, html, toc, diagrams } of built) {
   let body = html;

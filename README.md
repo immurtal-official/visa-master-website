@@ -31,14 +31,14 @@ Two sections of it carry weight beyond description:
 | `STATUS.md` | What is actually built, what is deliberately still fake, and what is left — read second |
 | `CODEBASE.md` | How the code works: the request-to-pack walkthrough, every file explained, how to run it, and where the work goes next — read before changing code |
 | `AGENTS.md` | The standing engineering constraints — one page, binding, each section pointing at its decision record. Read it before changing code. |
-| `doc/` | The architecture and the platform plan **that are in force**: v0.4 (current) and v0.3 (still authoritative for the agent security model), plus the v2 plan. v0.4 and the v2 plan each ship in English and Chinese, each with a generated single-file `.html` reader beside it. Superseded versions live in [`doc/archive/`](doc/archive/README.md) and are kept, not deleted |
+| `doc/` | The architecture and the platform plan **that are in force**: v0.4 (current) and v0.3 (still authoritative for the agent security model), plus the v2 plan. v0.4 and the v2 plan each ship in English and Chinese, each with a generated single-file `.html` reader beside it; `doc/diagrams/` holds their rendered diagrams. Superseded versions live in [`doc/archive/`](doc/archive/README.md) and are kept, not deleted |
 | `doc/archive/` | Superseded documents, with a README naming what replaced each — including `EXECUTION-PLAN-week1-2.md`, the plan weeks 1–2 executed |
 | `discussion/` | The ADR ledger — every record in it is in force, and each is amended by a later ADR rather than edited. The long-form arguments they came out of are in `discussion/explorations/`; see [`discussion/README.md`](discussion/README.md) |
 | `design/` | Product design, binding guidelines (device parity, internationalization, design system selection), the exported design system, and prototypes — see [`design/README.md`](design/README.md) and its ground rule: design output is reference, never production code |
 | `apps/` | `web` — the Next.js front end, its `/api/v1/**` handlers and the service layer behind them; `conductor` — the workflow orchestrator and its executors |
 | `packages/` | `core` — shared zod schemas, deterministic route rules, i18n message keys; `db` — migrations and pgTAP tests; `executors` — the adapter contract only, no implementations |
 | `infra/` | The agent plane as compose: the internal network and the Squid egress config. Systemd units and deploy scripts land with the VM |
-| `scripts/` | Repo-level build gates — today, the i18n catalogue check — and `doc-reader/`, which generates the documents' tables of contents and their HTML readers |
+| `scripts/` | Repo-level build gates — today, the i18n catalogue check — and `doc-reader/`, which generates the documents' tables of contents, their diagrams, and their HTML readers |
 
 The monorepo shape (`pnpm` + Turborepo) and the build order come from
 [`doc/platform-and-dev-plan-v2-en.md`](doc/platform-and-dev-plan-v2-en.md) — the active plan;
@@ -134,18 +134,43 @@ return early and pass without having tested the container path.
 
 The four readers in `doc/` — architecture v0.4 and the v2 plan, each in English
 and Chinese — are built from the matching `.md` files by
-[`scripts/doc-reader/`](scripts/doc-reader/build.mjs), with their mermaid diagrams
-pre-rendered to inline SVG so the pages need no network access at all:
+[`scripts/doc-reader/`](scripts/doc-reader/build.mjs). Each is one file with the
+stylesheet, the behaviour and every diagram inlined, so it needs no network at
+all — that is the point of it, and `file://` has to work.
 
 ```
 pnpm doc:toc    # rewrite the <!-- toc --> block in each .md
 pnpm doc:html   # rebuild the four .html readers
 ```
 
-`doc:html` renders the diagrams through a headless Chrome it finds on the machine
-(set `CHROME_PATH` if it is somewhere unusual). Both commands are idempotent;
-`pnpm doc:toc --check` fails when a table of contents is stale, which is the form
-to wire into CI.
+Both are hermetic and take under a second: no browser, no network, nothing
+platform-specific, and both are idempotent. `pnpm doc:toc --check` fails when a
+table of contents is stale rather than rewriting it, which is the form to wire
+into CI.
+
+The diagrams are the exception, and they are handled by being **rendered ahead of
+time and committed** as SVG under [`doc/diagrams/`](doc/diagrams/). That is what
+keeps `doc:html` hermetic, and it makes a change to a picture reviewable as a diff
+rather than invisible inside a 380 KB blob. The price is that an SVG can fall
+behind the mermaid it came from, so `doc/diagrams/manifest.json` records a hash of
+each block's source and **`doc:html` refuses to build against a stale one** —
+before writing anything, not after.
+
+When you change a mermaid block, that refusal is what you will see. Rendering is
+the one step that needs a browser, and the only reason to install mermaid, so
+neither is a dependency of this repo — together they are ~91 MB and 139 packages
+in every clone and every CI job, for a build that runs about once a year:
+
+```
+pnpm add -w -D mermaid puppeteer-core   # once, when you are the one changing a diagram
+pnpm doc:diagrams                       # re-render what changed
+pnpm doc:html
+```
+
+`doc:diagrams` drives the Chrome already on the machine rather than downloading one
+(`CHROME_PATH` if it lives somewhere unusual), `--all` re-renders everything, and
+`--check` reports staleness without writing. Commit the SVGs it produces alongside
+the Markdown change.
 
 Edit the `.md` and rerun the build. Editing the HTML directly appears to work and
 is silently discarded by the next rebuild — this has already happened once. The
