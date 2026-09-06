@@ -150,7 +150,11 @@ to wire into CI.
 Edit the `.md` and rerun the build. Editing the HTML directly appears to work and
 is silently discarded by the next rebuild — this has already happened once. The
 same goes for the `<!-- toc -->` block inside the `.md`: it is generated, and the
-reader strips it because the HTML has a sidebar instead.
+reader replaces it with its own contents panel — same headings, but anchored to
+the ids the HTML actually uses, which are not GitHub's. The reader therefore
+carries the table of contents twice: once in the sidebar, which is navigation and
+hides behind a button on a narrow screen, and once in the document at the top,
+which is the shape of the thing and is what prints.
 
 `doc/archive/platform-and-dev-plan-en.html` predates this pipeline and is left as
 it was: it is an archived rendering of an archived document, and regenerating it

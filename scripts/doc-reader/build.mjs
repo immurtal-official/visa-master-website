@@ -100,6 +100,7 @@ const STRINGS = {
     filter: "Filter sections",
     theme_toggle: "Toggle colour theme",
     toc: "Table of contents",
+    contents: "Contents",
     to_top: "Back to top",
     permalink: "Permalink",
     copy: "Copy",
@@ -128,6 +129,7 @@ const STRINGS = {
     filter: "筛选章节",
     theme_toggle: "切换配色主题",
     toc: "目录",
+    contents: "目录",
     to_top: "回到顶部",
     permalink: "本节链接",
     copy: "复制",
@@ -176,6 +178,7 @@ function slugify(text) {
 }
 
 const TOC_FENCE = /^<!-- toc -->[\s\S]*?^<!-- \/toc -->[ \t]*\r?\n?/m;
+const CONTENTS_SLOT = "<!--contents-->";
 
 /* -------------------------------------------------------------- markdown -- */
 
@@ -204,7 +207,8 @@ function plainText(tokens) {
  * keyed by the id they will carry in the page.
  */
 function renderBody(markdown, { mermaidPrefix, strings }) {
-  const toc = [];
+  const toc = []; // the sidebar: h2-h4, the working navigation
+  const headings = []; // everything, for the in-page contents
   const diagrams = [];
   const seen = new Map();
   const base = new Renderer();
@@ -219,8 +223,9 @@ function renderBody(markdown, { mermaidPrefix, strings }) {
       if (n) id = `${id}-${n}`;
       // The sidebar carries plain text: inline code and emphasis add noise at
       // that size, and the filter box matches against what is displayed.
-      if (depth >= 2 && depth <= 4)
-        toc.push({ depth, id, label: escapeHtml(plainText(token.tokens)) });
+      const label = escapeHtml(plainText(token.tokens));
+      headings.push({ depth, id, label });
+      if (depth >= 2 && depth <= 4) toc.push({ depth, id, label });
       const anchor = `<a class="hd__anchor" href="#${id}" aria-label="${escapeHtml(strings.permalink)}">#</a>`;
       return `<h${depth} id="${id}" class="hd">${inner}${anchor}</h${depth}>\n`;
     },
@@ -265,8 +270,45 @@ function renderBody(markdown, { mermaidPrefix, strings }) {
   };
 
   const parser = new Marked({ gfm: true, renderer });
-  const html = parser.parse(markdown.replace(TOC_FENCE, ""));
+  let html = parser.parse(markdown.replace(TOC_FENCE, `\n${CONTENTS_SLOT}\n`));
+  if (html.includes(CONTENTS_SLOT)) {
+    html = html.replace(CONTENTS_SLOT, renderContents(headings, strings));
+  }
   return { html, toc, diagrams };
+}
+
+/**
+ * The document's own table of contents, in the place its Markdown source puts
+ * it — h1-h3, the same slice the `<!-- toc -->` block carries, and the same
+ * omission of the document title.
+ *
+ * The sidebar is not a substitute for it: the sidebar hides behind a button on
+ * a narrow screen, is absent from print, and is navigation rather than part of
+ * the document. This is the shape of the thing, read once at the top.
+ */
+function renderContents(headings, strings) {
+  let title = true;
+  const entries = headings.filter((h) => {
+    if (title && h.depth === 1) {
+      title = false;
+      return false;
+    }
+    return h.depth <= 3;
+  });
+  if (!entries.length) return "";
+  const top = Math.min(...entries.map((h) => h.depth));
+  const items = entries
+    .map(
+      (h) =>
+        `  <li class="contents__item contents__item--d${h.depth - top + 1}">` +
+        `<a class="contents__link" href="#${h.id}">${h.label}</a></li>`,
+    )
+    .join("\n");
+  return (
+    `<nav class="contents" aria-labelledby="contents-title">\n` +
+    `<h2 class="contents__title" id="contents-title">${escapeHtml(strings.contents)}</h2>\n` +
+    `<ol class="contents__list">\n${items}\n</ol>\n</nav>`
+  );
 }
 
 /* -------------------------------------------------------------- diagrams -- */

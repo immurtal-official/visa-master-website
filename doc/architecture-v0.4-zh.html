@@ -850,6 +850,80 @@ hr.rule {
 }
 
 /* ---------- print ---------- */
+/* =========================================================================
+   In-page contents
+   Added after this shell was first extracted from the generated HTML. The
+   sidebar is navigation: it hides behind a button under 1080px and it does not
+   print. This is the document's own table of contents, in the position its
+   Markdown source puts it — read once, to see the shape of the thing.
+   ========================================================================= */
+
+.prose > .contents { grid-column: wide; }
+
+.contents {
+  padding: 1.15rem 1.35rem 1.25rem;
+  background: var(--canvas-sunken);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+/* `.prose h2` gives every h2 a rule above it and 1.5rem of air; inside a panel
+   that reads as a stray line, so this one opts out and shrinks to a label. */
+.prose .contents__title {
+  margin: 0 0 .85rem;
+  padding-top: 0;
+  border-top: 0;
+  font-size: var(--fs-h4);
+  font-weight: 600;
+  line-height: 1.3;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  color: var(--text-3);
+}
+.prose:lang(zh-Hans) .contents__title { letter-spacing: .1em; text-transform: none; }
+
+/* The `.prose` selectors these override are element-qualified, so every rule
+   here has to carry the same weight or the prose list styling wins. */
+.prose .contents__list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  columns: 19rem 2;
+  column-gap: 2.75rem;
+  font-size: var(--fs-sm);
+  line-height: 1.5;
+}
+
+.prose .contents__item { margin: .3rem 0 0; break-inside: avoid; }
+.prose .contents__item::marker { content: none; }
+.prose .contents__item--d1 { margin-top: 1rem; font-weight: 600; }
+.prose .contents__item--d1:first-child { margin-top: 0; }
+.prose .contents__item--d2 { padding-left: .95rem; }
+.prose .contents__item--d3 {
+  padding-left: 2rem;
+  font-size: var(--fs-xs);
+  color: var(--text-3);
+}
+
+.contents__link {
+  color: inherit;
+  text-decoration: none;
+  border-bottom: 1px solid transparent;
+}
+.prose .contents__item--d1 > .contents__link { color: var(--text); }
+.prose .contents__item--d2 > .contents__link { color: var(--text-2); }
+.contents__link:hover { color: var(--accent); border-bottom-color: var(--accent-line); }
+.contents__link:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+@media (max-width: 620px) {
+  .contents { padding: 1rem 1.05rem 1.1rem; }
+  .prose .contents__item--d3 { display: none; }
+}
+
 @media print {
   :root, :root[data-theme="dark"], :root[data-theme="light"] {
     color-scheme: light;
@@ -896,11 +970,14 @@ hr.rule {
   .diagram { filter: none !important; overflow: visible !important; }
   .diagram svg { min-width: 0 !important; width: 100% !important; }
   .diagram__zoom, .diagram__hint, .lightbox { display: none !important; }
+  .contents { background: none; border: 1px solid #ccc; break-inside: avoid; page-break-inside: avoid; }
+  .prose .contents__list { columns: 2; font-size: 9pt; }
+  .contents__link { text-decoration: none !important; }
   @page { margin: 16mm 14mm; }
 }
 </style>
 <script>
-window.__DOC_UI = {"skip":"跳到正文","nav_toggle":"切换目录","filter":"筛选章节","theme_toggle":"切换配色主题","toc":"目录","to_top":"回到顶部","permalink":"本节链接","copy":"复制","copied":"已复制","theme_auto":"跟随系统","theme_light":"浅色","theme_dark":"深色","theme_aria":"配色主题：{label}。点击切换。","theme_title":"主题：{label}","toc_empty":"没有匹配“{query}”的章节","table_scrollable":"可横向滚动的表格","lightbox_aria":"放大后的图","zoom_in":"放大","zoom_out":"缩小","zoom_fit":"适应宽度","close_esc":"关闭（Esc）","diagram":"图","diagram_width":"宽 {px}px","enlarge":"放大","enlarge_aria":"放大此图","diagram_hint":"↔ 可横向滚动 · 点击放大"};
+window.__DOC_UI = {"skip":"跳到正文","nav_toggle":"切换目录","filter":"筛选章节","theme_toggle":"切换配色主题","toc":"目录","contents":"目录","to_top":"回到顶部","permalink":"本节链接","copy":"复制","copied":"已复制","theme_auto":"跟随系统","theme_light":"浅色","theme_dark":"深色","theme_aria":"配色主题：{label}。点击切换。","theme_title":"主题：{label}","toc_empty":"没有匹配“{query}”的章节","table_scrollable":"可横向滚动的表格","lightbox_aria":"放大后的图","zoom_in":"放大","zoom_out":"缩小","zoom_fit":"适应宽度","close_esc":"关闭（Esc）","diagram":"图","diagram_width":"宽 {px}px","enlarge":"放大","enlarge_aria":"放大此图","diagram_hint":"↔ 可横向滚动 · 点击放大"};
 </script>
 <script>
 /* =========================================================================
@@ -1558,7 +1635,40 @@ window.__DOC_UI = {"skip":"跳到正文","nav_toggle":"切换目录","filter":"�
 </blockquote>
 <p>v0.1–v0.3 回答的是<em>如何安全地运行一个 agent</em>。v0.4 是第一份<strong>完整产品</strong>级架构：可信的 Backend API 服务器、<strong>多服务器 Agent 执行面</strong>、路由、完成判定、数据层与用户管理 — 与平台无关。全文分两个层次撰写：<strong>第一部分</strong>是高层摘要（请先读这部分；约 10 分钟），<strong>第二部分</strong>是详细规格（契约、DDL、状态机、时序）。</p>
 <hr class="rule">
-<h1 id="第一部分-高层架构摘要层" class="hd">第一部分 — 高层架构（摘要层）<a class="hd__anchor" href="#第一部分-高层架构摘要层" aria-label="本节链接">#</a></h1>
+<nav class="contents" aria-labelledby="contents-title">
+<h2 class="contents__title" id="contents-title">目录</h2>
+<ol class="contents__list">
+  <li class="contents__item contents__item--d1"><a class="contents__link" href="#第一部分-高层架构摘要层">第一部分 — 高层架构（摘要层）</a></li>
+  <li class="contents__item contents__item--d2"><a class="contents__link" href="#i1-论点">I.1 论点</a></li>
+  <li class="contents__item contents__item--d2"><a class="contents__link" href="#i2-一张图">I.2 一张图</a></li>
+  <li class="contents__item contents__item--d2"><a class="contents__link" href="#i3-三个执行器速览">I.3 三个执行器速览</a></li>
+  <li class="contents__item contents__item--d2"><a class="contents__link" href="#i4-一个案件如何流转">I.4 一个案件如何流转</a></li>
+  <li class="contents__item contents__item--d2"><a class="contents__link" href="#i5-关键决策摘要">I.5 关键决策（摘要）</a></li>
+  <li class="contents__item contents__item--d2"><a class="contents__link" href="#i6-本文刻意推迟的内容">I.6 本文刻意推迟的内容</a></li>
+  <li class="contents__item contents__item--d1"><a class="contents__link" href="#第二部分-详细规格">第二部分 — 详细规格</a></li>
+  <li class="contents__item contents__item--d2"><a class="contents__link" href="#第-a-章-控制面工作流引擎路由与完成判定">第 A 章 — 控制面：工作流引擎、路由与完成判定</a></li>
+  <li class="contents__item contents__item--d3"><a class="contents__link" href="#1-工作流引擎">1. 工作流引擎</a></li>
+  <li class="contents__item contents__item--d3"><a class="contents__link" href="#2-agent-路由器">2. Agent 路由器</a></li>
+  <li class="contents__item contents__item--d3"><a class="contents__link" href="#3-完成判定">3. 完成判定</a></li>
+  <li class="contents__item contents__item--d3"><a class="contents__link" href="#4-时序一次带运行中追问的签证包作业">4. 时序：一次带运行中追问的签证包作业</a></li>
+  <li class="contents__item contents__item--d3"><a class="contents__link" href="#5-控制面自建还是用框架">5. 控制面：自建还是用框架</a></li>
+  <li class="contents__item contents__item--d2"><a class="contents__link" href="#第-b-章-数据层与用户管理">第 B 章 — 数据层与用户管理</a></li>
+  <li class="contents__item contents__item--d3"><a class="contents__link" href="#1-数据库选型postgres">1. 数据库选型：Postgres</a></li>
+  <li class="contents__item contents__item--d3"><a class="contents__link" href="#2-schemaddl">2. Schema（DDL）</a></li>
+  <li class="contents__item contents__item--d3"><a class="contents__link" href="#3-对象存储">3. 对象存储</a></li>
+  <li class="contents__item contents__item--d3"><a class="contents__link" href="#4-认证与用户管理">4. 认证与用户管理</a></li>
+  <li class="contents__item contents__item--d2"><a class="contents__link" href="#第-c-章-agent-执行面一套适配器契约三种执行器种类">第 C 章 — Agent 执行面：一套适配器契约，三种执行器种类</a></li>
+  <li class="contents__item contents__item--d3"><a class="contents__link" href="#0-在架构中的位置">0. 在架构中的位置</a></li>
+  <li class="contents__item contents__item--d3"><a class="contents__link" href="#1-agent-适配器契约v1">1. Agent 适配器契约（v1）</a></li>
+  <li class="contents__item contents__item--d3"><a class="contents__link" href="#2-执行器种类-a-llm-api-网关v1-主力">2. 执行器种类 A — LLM API 网关（V1 主力）</a></li>
+  <li class="contents__item contents__item--d3"><a class="contents__link" href="#3-执行器种类-b-hermes-server可用的签证包生产者">3. 执行器种类 B — Hermes server（可用的签证包生产者）</a></li>
+  <li class="contents__item contents__item--d3"><a class="contents__link" href="#4-执行器种类-c-自研轻量-agent-server迁移目标">4. 执行器种类 C — 自研轻量 agent server（迁移目标）</a></li>
+  <li class="contents__item contents__item--d3"><a class="contents__link" href="#5-安全区把-v03-的控制项映射到三个执行器上">5. 安全区：把 v0.3 的控制项映射到三个执行器上</a></li>
+  <li class="contents__item contents__item--d1"><a class="contents__link" href="#结语">结语</a></li>
+  <li class="contents__item contents__item--d2"><a class="contents__link" href="#与既有文档的关系">与既有文档的关系</a></li>
+  <li class="contents__item contents__item--d2"><a class="contents__link" href="#开放问题">开放问题</a></li>
+</ol>
+</nav><h1 id="第一部分-高层架构摘要层" class="hd">第一部分 — 高层架构（摘要层）<a class="hd__anchor" href="#第一部分-高层架构摘要层" aria-label="本节链接">#</a></h1>
 <h2 id="i1-论点" class="hd">I.1 论点<a class="hd__anchor" href="#i1-论点" aria-label="本节链接">#</a></h2>
 <p>Visa Master 是一个<strong>以工作流为中心</strong>的产品（ADR-002）：收集信息 → 校验 → 研究 → 生成文档 → QA → 人工复核 → 交付。因此该架构恰好有一个大脑和若干双手：</p>
 <blockquote class="note">

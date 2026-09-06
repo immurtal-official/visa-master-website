@@ -842,6 +842,80 @@ hr.rule {
 }
 
 /* ---------- print ---------- */
+/* =========================================================================
+   In-page contents
+   Added after this shell was first extracted from the generated HTML. The
+   sidebar is navigation: it hides behind a button under 1080px and it does not
+   print. This is the document's own table of contents, in the position its
+   Markdown source puts it — read once, to see the shape of the thing.
+   ========================================================================= */
+
+.prose > .contents { grid-column: wide; }
+
+.contents {
+  padding: 1.15rem 1.35rem 1.25rem;
+  background: var(--canvas-sunken);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+/* `.prose h2` gives every h2 a rule above it and 1.5rem of air; inside a panel
+   that reads as a stray line, so this one opts out and shrinks to a label. */
+.prose .contents__title {
+  margin: 0 0 .85rem;
+  padding-top: 0;
+  border-top: 0;
+  font-size: var(--fs-h4);
+  font-weight: 600;
+  line-height: 1.3;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  color: var(--text-3);
+}
+.prose:lang(zh-Hans) .contents__title { letter-spacing: .1em; text-transform: none; }
+
+/* The `.prose` selectors these override are element-qualified, so every rule
+   here has to carry the same weight or the prose list styling wins. */
+.prose .contents__list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  columns: 19rem 2;
+  column-gap: 2.75rem;
+  font-size: var(--fs-sm);
+  line-height: 1.5;
+}
+
+.prose .contents__item { margin: .3rem 0 0; break-inside: avoid; }
+.prose .contents__item::marker { content: none; }
+.prose .contents__item--d1 { margin-top: 1rem; font-weight: 600; }
+.prose .contents__item--d1:first-child { margin-top: 0; }
+.prose .contents__item--d2 { padding-left: .95rem; }
+.prose .contents__item--d3 {
+  padding-left: 2rem;
+  font-size: var(--fs-xs);
+  color: var(--text-3);
+}
+
+.contents__link {
+  color: inherit;
+  text-decoration: none;
+  border-bottom: 1px solid transparent;
+}
+.prose .contents__item--d1 > .contents__link { color: var(--text); }
+.prose .contents__item--d2 > .contents__link { color: var(--text-2); }
+.contents__link:hover { color: var(--accent); border-bottom-color: var(--accent-line); }
+.contents__link:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+@media (max-width: 620px) {
+  .contents { padding: 1rem 1.05rem 1.1rem; }
+  .prose .contents__item--d3 { display: none; }
+}
+
 @media print {
   :root, :root[data-theme="dark"], :root[data-theme="light"] {
     color-scheme: light;
@@ -888,5 +962,8 @@ hr.rule {
   .diagram { filter: none !important; overflow: visible !important; }
   .diagram svg { min-width: 0 !important; width: 100% !important; }
   .diagram__zoom, .diagram__hint, .lightbox { display: none !important; }
+  .contents { background: none; border: 1px solid #ccc; break-inside: avoid; page-break-inside: avoid; }
+  .prose .contents__list { columns: 2; font-size: 9pt; }
+  .contents__link { text-decoration: none !important; }
   @page { margin: 16mm 14mm; }
 }
