@@ -62,15 +62,19 @@ This reconciles ADR-002 with the multi-agent-server requirement: the custom work
 ```mermaid
 flowchart TB
   U["User (browser)"] --> FE["Frontend — Next.js"]
-  FE --> BE
+  FE -->|"submit case"| API
+  API -.->|"progress: case_events<br/>SSE / polling"| FE
   subgraph TZ["TRUSTED ZONE"]
-    BE["Backend API + Workflow Engine<br/>auth · routing · budgets · completion judgment · review gate"]
-    DB[("Postgres<br/>cases · jobs · events · usage")]
+    API["Backend API<br/>auth · intake validation · review gate"]
+    DB[("Postgres<br/>cases · tasks · events · usage")]
     S3[("Object storage<br/>uploads · packs")]
-    BE --> DB
-    BE --> S3
+    WK["Workflow engine — worker / conductor<br/>routing · budgets · completion judgment · reaper"]
+    API -->|"enqueue task"| DB
+    API -->|"signed URLs"| S3
+    DB <-->|"lease · heartbeat · transitions<br/>(SKIP LOCKED)"| WK
+    WK -->|"artifacts"| S3
   end
-  BE -- "one adapter contract<br/>(POST /v1/tasks · events · answers)" --> EP
+  WK -- "one adapter contract<br/>(POST /v1/tasks · events · answers)" --> EP
   subgraph EP["UNTRUSTED EXECUTION PLANE"]
     GW["Executor A<br/>LLM API Gateway<br/>(LiteLLM: OpenAI · Anthropic · Kimi · Gemini)"]
     HM["Executor B<br/>Hermes server<br/>ephemeral container per pack"]
@@ -234,31 +238,36 @@ The MVP job queue is the `tasks` table itself (`SELECT … WHERE state='queued' 
 #### 1.2 Case state machine
 
 ```mermaid
+%% Labels name the trigger only — §1.3 carries each transition in full.
+%% Spacing is raised because dagre packs 20 edge labels into overlap at the default.
+%%{init: {"state": {"nodeSpacing": 90, "rankSpacing": 130}}}%%
 stateDiagram-v2
-  [*] --> draft: user creates case
-  draft --> intake: user submits initial form
-  intake --> queued: requirements_check passes AND user confirms "generate"
-  queued --> running: worker leases produce_pack task
-  running --> awaiting_user: executor emits needs_input
-  awaiting_user --> running: user answers (schema-valid)
-  running --> qa_pending: worker detects artifacts (qa-report.json + delivery/)
-  qa_pending --> review_pending: server-side validation passes
-  review_pending --> delivered: operator approves
-  review_pending --> queued: operator requests rework (new attempt)
-  qa_pending --> queued: retryable failure, attempts left
-  running --> timeout: wall-clock deadline exceeded
-  timeout --> queued: retry budget left (1 retry)
-  timeout --> failed: retries exhausted
-  running --> failed: non-retryable / attempts exhausted
-  qa_pending --> failed: attempts exhausted
-  awaiting_user --> cancelled: 72h no answer (user_abandoned)
-  draft --> cancelled: user cancels / 7d idle
-  intake --> cancelled: user cancels
-  queued --> cancelled: user cancels
+  [*] --> draft: create case
+  draft --> intake: submit form
+  intake --> queued: requirements ok
+  queued --> running: worker leases
+  running --> awaiting_user: needs_input
+  awaiting_user --> running: answered
+  running --> qa_pending: artifacts
+  qa_pending --> review_pending: validated
+  review_pending --> delivered: approved
+  review_pending --> queued: rework
+  qa_pending --> queued: retryable
+  running --> timeout: deadline
+  timeout --> queued: retry left
+  timeout --> failed: retries gone
+  running --> failed: non-retryable
+  qa_pending --> failed: attempts gone
+  awaiting_user --> cancelled: 72h no answer
+  draft --> cancelled: cancel / 7d idle
+  intake --> cancelled: cancel
+  queued --> cancelled: cancel
   delivered --> [*]
   failed --> [*]
   cancelled --> [*]
 ```
+
+Edge labels name the trigger only; §1.3 gives every transition its full trigger, guard and side effects.
 
 #### 1.3 Transitions: trigger, guard, side effects
 

@@ -169,6 +169,8 @@ A pack job runs ~10 minutes of wall-clock with dozens of sequential LLM calls, D
 The cleanest integration pattern — and the one that should be a selection criterion — is **"DB as the interface, outbound-only VM"**:
 
 ```mermaid
+%% Spacing raised: at the default the "signed URLs" and conductor-poll labels overlap.
+%%{init: {"flowchart": {"nodeSpacing": 55, "rankSpacing": 110}}}%%
 flowchart LR
   B[Browser Next.js] -->|HTTPS + JWT| V[Vercel / control-plane API]
   V -->|SQL| P[(Postgres: jobs, users, usage)]

@@ -1,11 +1,11 @@
 {
   "arch-0": {
     "doc": "arch-en",
-    "sha256": "5c3394fe9cafab47"
+    "sha256": "0595bb4a7f14152c"
   },
   "arch-1": {
     "doc": "arch-en",
-    "sha256": "cd78b35c323f9cb7"
+    "sha256": "3be63a69084be421"
   },
   "arch-2": {
     "doc": "arch-en",
@@ -21,11 +21,11 @@
   },
   "archzh-0": {
     "doc": "arch-zh",
-    "sha256": "9527adb355b96732"
+    "sha256": "7a050294edea2f1c"
   },
   "archzh-1": {
     "doc": "arch-zh",
-    "sha256": "ae2ae3bad115a436"
+    "sha256": "427f6b09b83fa97d"
   },
   "archzh-2": {
     "doc": "arch-zh",
@@ -45,7 +45,7 @@
   },
   "plat-1": {
     "doc": "plan-en",
-    "sha256": "ac695f8664d1f9e3"
+    "sha256": "7964ec3912107a73"
   },
   "plat-2": {
     "doc": "plan-en",
@@ -57,7 +57,7 @@
   },
   "platzh-1": {
     "doc": "plan-zh",
-    "sha256": "861e1a88ed053446"
+    "sha256": "d797b51b84a8767b"
   },
   "platzh-2": {
     "doc": "plan-zh",

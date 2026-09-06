@@ -182,6 +182,13 @@ pnpm doc:html
 compares hashes rather than rendering, so CI needs no browser either. Commit the
 SVGs it produces alongside the Markdown change.
 
+Every render is measured for **edge labels that land on top of each other**, and
+warns with the pair and the overlap in pixels. Dagre places labels without
+checking, and past about a dozen it reliably collides; the fix is spacing
+(`%%{init: {"flowchart": {"nodeSpacing": .., "rankSpacing": ..}}}%%`, or `"state"`
+for a state diagram) or shorter labels. Four diagrams carry such a directive today,
+each with a `%%` comment saying why.
+
 Edit the `.md` and rerun the build. Editing the HTML directly appears to work and
 is silently discarded by the next rebuild — this has already happened once. The
 same goes for the `<!-- toc -->` block inside the `.md`: it is generated, and the

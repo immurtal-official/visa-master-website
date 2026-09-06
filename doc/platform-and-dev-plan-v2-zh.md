@@ -170,6 +170,8 @@ K8s Job + NetworkPolicy（默认拒绝）+ 节点缓存镜像 + gVisor/Kata，�
 最干净的集成模式 —— 也应当作为一条选型标准 —— 是「**数据库即接口，虚拟机只出不进**」：
 
 ```mermaid
+%% 间距调大：默认值下「预签名 URL」与 conductor 轮询两个标签会重叠。
+%%{init: {"flowchart": {"nodeSpacing": 60, "rankSpacing": 120}}}%%
 flowchart LR
   B[浏览器 Next.js] -->|HTTPS + JWT| V[Vercel / 控制面 API]
   V -->|SQL| P[(Postgres: jobs, users, usage)]

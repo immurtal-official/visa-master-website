@@ -12,6 +12,11 @@
  *
  *   pnpm add -w -D mermaid puppeteer-core
  *
+ * Every render is measured for edge labels that land on top of each other, and
+ * warns with the pair and the overlap in pixels. The fix is spacing
+ * (`%%{init: {"flowchart": {"nodeSpacing": .., "rankSpacing": ..}}}%%`) or shorter
+ * labels; it is a warning, not an error, because both are judgement calls.
+ *
  * Rendering uses the Chrome already on the machine rather than downloading one;
  * point CHROME_PATH at it if it lives somewhere unusual. Commit the SVGs it
  * writes together with the Markdown change, then run `pnpm doc:html`.
@@ -96,9 +101,59 @@ async function renderDiagrams(jobs) {
   try {
     const page = await browser.newPage();
     await page.setViewport({ width: 1600, height: 1200, deviceScaleFactor: 1 });
-    await page.setContent("<!doctype html><html><body></body></html>");
+    await page.setContent('<!doctype html><html><body><div id="measure"></div></body></html>');
     await page.addScriptTag({ path: await mermaidBundle() });
     await page.evaluate(() => {
+      /**
+       * Dagre places edge labels without checking whether they land on each
+       * other, and with twenty of them it reliably does. Nobody notices until a
+       * reader says the picture is unreadable — which is how this check came to
+       * exist — so measure it here, where the diagram is already in a browser.
+       *
+       * A warning rather than an error: the fix is spacing or shorter labels,
+       * both judgement calls, and a hard failure would block work on a diagram
+       * that may be fine at the size it is actually read.
+       */
+      window.__labelCollisions = (svg) => {
+        const host = document.getElementById("measure");
+        host.innerHTML = svg;
+        const el = host.querySelector("svg");
+        el.removeAttribute("style");
+        el.setAttribute("width", el.viewBox.baseVal.width);
+        el.setAttribute("height", el.viewBox.baseVal.height);
+        const seen = new Set();
+        const boxes = [
+          ...host.querySelectorAll(".edgeLabel foreignObject, .edgeLabels foreignObject"),
+        ]
+          .map((e) => ({
+            t: e.textContent.trim().replace(/\s+/g, " "),
+            r: e.getBoundingClientRect(),
+          }))
+          .filter((b) => b.t && b.r.width > 1)
+          .filter((b) => {
+            // mermaid emits each label twice; keep one per text-and-position
+            const k = `${b.t}@${Math.round(b.r.left)},${Math.round(b.r.top)}`;
+            if (seen.has(k)) return false;
+            seen.add(k);
+            return true;
+          });
+        const hits = [];
+        for (let i = 0; i < boxes.length; i++) {
+          for (let j = i + 1; j < boxes.length; j++) {
+            const a = boxes[i].r;
+            const b = boxes[j].r;
+            const ox = Math.min(a.right, b.right) - Math.max(a.left, b.left);
+            const oy = Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top);
+            if (ox > 0 && oy > 0) {
+              hits.push(
+                `"${boxes[i].t}" over "${boxes[j].t}" (${Math.round(ox)}×${Math.round(oy)}px)`,
+              );
+            }
+          }
+        }
+        host.innerHTML = "";
+        return hits;
+      };
       window.mermaid.initialize({
         startOnLoad: false,
         theme: "default",
@@ -110,12 +165,19 @@ async function renderDiagrams(jobs) {
 
     const out = new Map();
     for (const { id, source } of jobs) {
-      const svg = await page.evaluate(
-        async (renderId, code) => (await window.mermaid.render(renderId, code)).svg,
+      const { svg, collisions } = await page.evaluate(
+        async (renderId, code) => {
+          const { svg } = await window.mermaid.render(renderId, code);
+          return { svg, collisions: window.__labelCollisions(svg) };
+        },
         id,
         source,
       );
       out.set(id, postProcessSvg(svg, id));
+      if (collisions.length) {
+        console.warn(`  ${id} — ${collisions.length} overlapping edge label(s):`);
+        for (const c of collisions) console.warn(`      ${c}`);
+      }
     }
     return out;
   } finally {
