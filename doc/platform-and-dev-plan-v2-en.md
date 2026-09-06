@@ -1,10 +1,36 @@
 # Platform Selection & Development Plan, v2 (v0.4 companion)
 
 **Status:** Active — supersedes [platform-and-dev-plan-en.md](archive/platform-and-dev-plan-en.md) per [ADR-004](../discussion/ADR-004-api-first-control-plane.md) (2026-08-12)
-**What changed in v2:** the control plane adopts the API-first discipline — every core business capability behind `/api/v1/**` route handlers over a service layer, the web UI being one client of that contract; Server Actions carry no core business operations. Placement, weekly plan, and monorepo notes updated accordingly. The zh mirror has not been regenerated for v2 yet.
+**What changed in v2:** the control plane adopts the API-first discipline — every core business capability behind `/api/v1/**` route handlers over a service layer, the web UI being one client of that contract; Server Actions carry no core business operations. Placement, weekly plan, and monorepo notes updated accordingly.
 **Companion to:** [architecture-v0.4](architecture-v0.4-en.md) — this document is the platform-specific half: where to run the architecture, and the concrete build plan.
 
-> 中文版：[平台选型与开发计划（中文）](archive/platform-and-dev-plan-zh.md) —— 是 v1 的镜像，尚未按 v2 重新生成，因此与本文不一致的地方以本文为准。
+> 中文版：[平台选型与开发计划 v2（中文）](platform-and-dev-plan-v2-zh.md)
+
+<!-- toc -->
+## Contents
+
+- [Executive summary](#executive-summary)
+- [Part I — Container platforms for the agent plane](#part-i--container-platforms-for-the-agent-plane)
+  - [A.1 Workload profile (what the platform must fit)](#a1-workload-profile-what-the-platform-must-fit)
+  - [A.2 Option-by-option assessment](#a2-option-by-option-assessment)
+  - [A.3 Comparison matrix](#a3-comparison-matrix)
+  - [A.4 Recommendation (ranked)](#a4-recommendation-ranked)
+- [Part II — Trusted-zone stack (frontend · API · Postgres · auth · storage · realtime)](#part-ii--trusted-zone-stack-frontend--api--postgres--auth--storage--realtime)
+  - [B.0 Framing: the split is architectural, not incidental](#b0-framing-the-split-is-architectural-not-incidental)
+  - [B.1 Job contract (the table both planes agree on)](#b1-job-contract-the-table-both-planes-agree-on)
+  - [B.2 Stack comparison](#b2-stack-comparison)
+  - [B.3 Realtime progress: pick boring first](#b3-realtime-progress-pick-boring-first)
+  - [B.4 Where does the workflow engine live?](#b4-where-does-the-workflow-engine-live)
+  - [B.5 Ranked recommendation](#b5-ranked-recommendation)
+- [Part III — Chosen stack and 8-week development plan](#part-iii--chosen-stack-and-8-week-development-plan)
+  - [1. Final chosen stack](#1-final-chosen-stack)
+  - [2. Week-by-week plan (8 weeks, solo, to paying-ready beta)](#2-week-by-week-plan-8-weeks-solo-to-paying-ready-beta)
+  - [3. CI/CD + environments](#3-cicd--environments)
+  - [4. MVP monthly cost](#4-mvp-monthly-cost)
+  - [5. Ops / runbook basics](#5-ops--runbook-basics)
+  - [6. Explicitly later — with triggers](#6-explicitly-later--with-triggers)
+- [Closing note](#closing-note)
+<!-- /toc -->
 
 ## Executive summary
 

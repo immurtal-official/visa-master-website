@@ -197,8 +197,8 @@ current milestone.
   Program consumes the same contract and a future backend extraction is a re-homing, not a
   rewrite. This is now implemented and binding, not planned: the decision is
   [ADR-004](discussion/ADR-004-api-first-control-plane.md), the rules are [AGENTS.md](AGENTS.md),
-  and the plan revision is [v2](doc/platform-and-dev-plan-v2-en.md). The Chinese mirror of the
-  plan has not been regenerated for v2.
+  and the plan revision is [v2](doc/platform-and-dev-plan-v2-en.md), which now also exists
+  in [Chinese](doc/platform-and-dev-plan-v2-zh.md).
 - The agent plane stays one VM until a written trigger fires (isolation review → per-job
   microVMs; capacity → second VM). The gateway stays co-located with the conductor: it
   holds the provider keys and is the job containers' only inference route.

@@ -31,14 +31,14 @@ Two sections of it carry weight beyond description:
 | `STATUS.md` | What is actually built, what is deliberately still fake, and what is left — read second |
 | `CODEBASE.md` | How the code works: the request-to-pack walkthrough, every file explained, how to run it, and where the work goes next — read before changing code |
 | `AGENTS.md` | The standing engineering constraints — one page, binding, each section pointing at its decision record. Read it before changing code. |
-| `doc/` | The architecture and the platform plan **that are in force**: v0.4 (current) and v0.3 (still authoritative for the agent security model), plus the v2 plan. Superseded versions live in [`doc/archive/`](doc/archive/README.md) and are kept, not deleted |
+| `doc/` | The architecture and the platform plan **that are in force**: v0.4 (current) and v0.3 (still authoritative for the agent security model), plus the v2 plan. v0.4 and the v2 plan each ship in English and Chinese, each with a generated single-file `.html` reader beside it. Superseded versions live in [`doc/archive/`](doc/archive/README.md) and are kept, not deleted |
 | `doc/archive/` | Superseded documents, with a README naming what replaced each — including `EXECUTION-PLAN-week1-2.md`, the plan weeks 1–2 executed |
 | `discussion/` | The ADR ledger — every record in it is in force, and each is amended by a later ADR rather than edited. The long-form arguments they came out of are in `discussion/explorations/`; see [`discussion/README.md`](discussion/README.md) |
 | `design/` | Product design, binding guidelines (device parity, internationalization, design system selection), the exported design system, and prototypes — see [`design/README.md`](design/README.md) and its ground rule: design output is reference, never production code |
 | `apps/` | `web` — the Next.js front end, its `/api/v1/**` handlers and the service layer behind them; `conductor` — the workflow orchestrator and its executors |
 | `packages/` | `core` — shared zod schemas, deterministic route rules, i18n message keys; `db` — migrations and pgTAP tests; `executors` — the adapter contract only, no implementations |
 | `infra/` | The agent plane as compose: the internal network and the Squid egress config. Systemd units and deploy scripts land with the VM |
-| `scripts/` | Repo-level build gates — today, the i18n catalogue check |
+| `scripts/` | Repo-level build gates — today, the i18n catalogue check — and `doc-reader/`, which generates the documents' tables of contents and their HTML readers |
 
 The monorepo shape (`pnpm` + Turborepo) and the build order come from
 [`doc/platform-and-dev-plan-v2-en.md`](doc/platform-and-dev-plan-v2-en.md) — the active plan;
@@ -49,9 +49,14 @@ and **internationalization** ([`design/guidelines/internationalization-en.md`](d
 — in particular, validation in `packages/core` emits message keys, never
 sentences, from the very first schema.
 
-Suggested entry point into the architecture: [`doc/architecture-v0.4-en.md`](doc/architecture-v0.4-en.md),
-Part I only — about ten minutes, and §I.5 summarises the key decisions in a
-table pointing at their detail sections.
+Suggested entry point into the architecture: [`doc/architecture-v0.4-en.md`](doc/architecture-v0.4-en.md).
+Read **Part I** first and stop there — about ten minutes, and §I.5 summarises the
+key decisions in a table pointing at their detail sections. **Part II** is the
+other 90% of the document and is not optional reading so much as *reference*
+reading: contracts, DDL, state machines and sequences, opened by the chapter when
+you are about to build against one of them. The table of contents at the top of
+the file, and the sidebar of the `.html` reader, show both halves.
+Chinese: [`doc/architecture-v0.4-zh.md`](doc/architecture-v0.4-zh.md).
 
 ## Development
 
@@ -127,19 +132,29 @@ return early and pass without having tested the container path.
 
 ## The `.html` files are generated — do not hand-edit them
 
-`doc/architecture-v0.4-en.html` and `doc/archive/platform-and-dev-plan-en.html` are built
-from the matching `.md` files, with their mermaid diagrams pre-rendered to inline
-SVG so the pages need no network access.
+The four readers in `doc/` — architecture v0.4 and the v2 plan, each in English
+and Chinese — are built from the matching `.md` files by
+[`scripts/doc-reader/`](scripts/doc-reader/build.mjs), with their mermaid diagrams
+pre-rendered to inline SVG so the pages need no network access at all:
 
-`platform-and-dev-plan-en.html` was last generated 2026-08-05 and is two
-revisions behind its source — the design-phase amendments and the status line
-that marks the `.md` superseded — and the active v2 plan has no `.html` at all.
+```
+pnpm doc:toc    # rewrite the <!-- toc --> block in each .md
+pnpm doc:html   # rebuild the four .html readers
+```
 
-Their build pipeline is **not in this repo yet** and cannot be reproduced from a
-clean checkout. Until it is committed, treat the generated HTML as read-only:
-change the `.md` source and note that the HTML needs regenerating, rather than
-patching the output. Editing the HTML directly appears to work and is silently
-discarded by the next rebuild — this has already happened once.
+`doc:html` renders the diagrams through a headless Chrome it finds on the machine
+(set `CHROME_PATH` if it is somewhere unusual). Both commands are idempotent;
+`pnpm doc:toc --check` fails when a table of contents is stale, which is the form
+to wire into CI.
+
+Edit the `.md` and rerun the build. Editing the HTML directly appears to work and
+is silently discarded by the next rebuild — this has already happened once. The
+same goes for the `<!-- toc -->` block inside the `.md`: it is generated, and the
+reader strips it because the HTML has a sidebar instead.
+
+`doc/archive/platform-and-dev-plan-en.html` predates this pipeline and is left as
+it was: it is an archived rendering of an archived document, and regenerating it
+would only make an out-of-force plan look freshly maintained.
 
 (The exported design system under `design/system/` and the prototypes under
 `design/prototypes/` are also generated artifacts — theirs is Claude Design, and

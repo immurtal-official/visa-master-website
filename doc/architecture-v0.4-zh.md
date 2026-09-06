@@ -3,13 +3,47 @@
 **版本：** v0.4
 **状态：** 架构提案
 **承接自：** [architecture-v0.3](architecture-v0.3-en.md)（信任边界、即抛单租户执行、出站管控）· [ADR-002](../discussion/ADR-002-Agent-Framework-Evaluation.md)（自研工作流引擎，LLM API 作为智能服务 — 已接受）· [讨论 01](../discussion/explorations/01-hermes-vs-custom-agent-loop.md)（Hermes 对比轻量自研 agent；折中路线）
-**配套文档：** [平台选型与开发计划](archive/platform-and-dev-plan-zh.md) — 本提案中与平台相关的另一半。
+**配套文档：** [平台选型与开发计划](platform-and-dev-plan-v2-zh.md) — 本提案中与平台相关的另一半。
 
 > 英文原件：[architecture-v0.4 (English)](architecture-v0.4-en.md)
 
 v0.1–v0.3 回答的是*如何安全地运行一个 agent*。v0.4 是第一份**完整产品**级架构：可信的 Backend API 服务器、**多服务器 Agent 执行面**、路由、完成判定、数据层与用户管理 — 与平台无关。全文分两个层次撰写：**第一部分**是高层摘要（请先读这部分；约 10 分钟），**第二部分**是详细规格（契约、DDL、状态机、时序）。
 
 ---
+
+<!-- toc -->
+## 目录
+
+- [第一部分 — 高层架构（摘要层）](#第一部分--高层架构摘要层)
+  - [I.1 论点](#i1-论点)
+  - [I.2 一张图](#i2-一张图)
+  - [I.3 三个执行器速览](#i3-三个执行器速览)
+  - [I.4 一个案件如何流转](#i4-一个案件如何流转)
+  - [I.5 关键决策（摘要）](#i5-关键决策摘要)
+  - [I.6 本文刻意推迟的内容](#i6-本文刻意推迟的内容)
+- [第二部分 — 详细规格](#第二部分--详细规格)
+  - [第 A 章 — 控制面：工作流引擎、路由与完成判定](#第-a-章--控制面工作流引擎路由与完成判定)
+    - [1. 工作流引擎](#1-工作流引擎)
+    - [2. Agent 路由器](#2-agent-路由器)
+    - [3. 完成判定](#3-完成判定)
+    - [4. 时序：一次带运行中追问的签证包作业](#4-时序一次带运行中追问的签证包作业)
+    - [5. 控制面：自建还是用框架](#5-控制面自建还是用框架)
+  - [第 B 章 — 数据层与用户管理](#第-b-章--数据层与用户管理)
+    - [1. 数据库选型：Postgres](#1-数据库选型postgres)
+    - [2. Schema（DDL）](#2-schemaddl)
+    - [3. 对象存储](#3-对象存储)
+    - [4. 认证与用户管理](#4-认证与用户管理)
+  - [第 C 章 — Agent 执行面：一套适配器契约，三种执行器种类](#第-c-章--agent-执行面一套适配器契约三种执行器种类)
+    - [0. 在架构中的位置](#0-在架构中的位置)
+    - [1. Agent 适配器契约（v1）](#1-agent-适配器契约v1)
+    - [2. 执行器种类 A — LLM API 网关（V1 主力）](#2-执行器种类-a--llm-api-网关v1-主力)
+    - [3. 执行器种类 B — Hermes server（可用的签证包生产者）](#3-执行器种类-b--hermes-server可用的签证包生产者)
+    - [4. 执行器种类 C — 自研轻量 agent server（迁移目标）](#4-执行器种类-c--自研轻量-agent-server迁移目标)
+    - [5. 安全区：把 v0.3 的控制项映射到三个执行器上](#5-安全区把-v03-的控制项映射到三个执行器上)
+- [结语](#结语)
+  - [与既有文档的关系](#与既有文档的关系)
+  - [开放问题](#开放问题)
+<!-- /toc -->
 
 # 第一部分 — 高层架构（摘要层）
 
@@ -90,7 +124,7 @@ flowchart TB
 
 ## I.6 本文刻意推迟的内容
 
-并发 > 1、Redis、Temporal 一类的持久化执行、出站 DLP（TLS 拦截）、轻量 agent 接管 `produce_pack`、多区域、Stripe 自助计费 — 每一项都停在一个显式触发条件之后，列于配套的[平台与开发计划](archive/platform-and-dev-plan-zh.md)中。
+并发 > 1、Redis、Temporal 一类的持久化执行、出站 DLP（TLS 拦截）、轻量 agent 接管 `produce_pack`、多区域、Stripe 自助计费 — 每一项都停在一个显式触发条件之后，列于配套的[平台与开发计划](platform-and-dev-plan-v2-zh.md)中。
 
 ---
 
@@ -875,7 +909,7 @@ s3://vm-prod-artifacts/                     # generated material
 
 **退路：Clerk。** 如果认证的维护负担开始咬人（送达率、滥用、MFA），就把它换上 —— schema 在设计上就能吸收这一变更：`users(auth_provider, auth_subject)` 是唯一的耦合点，因此迁移只是一次 subject 的回填加上登录路径的改动，无需重新接线 cases/jobs/billing。
 
-**平台特例条款（配套开发计划已采纳）。** 当控制面落在 Supabase 上时（[平台文档](archive/platform-and-dev-plan-zh.md) 将其排为第 1 位），改用 **Supabase Auth** —— 届时认证、Postgres、存储和 realtime 共用同一家供应商，RLS 也直接以 `auth.uid()` 为键。在该配置下，v0.4 的两项要求需要显式处理：(1) *即时吊销* —— Supabase 的会话基于 JWT，因此敏感路由（运营人员操作、复核门变更、签证包下载）必须在每次请求时通过 `authorize()` 收口点在服务端重新检查 `users.status`/`role`（它们本来就会这么做），把 access token 的 TTL 保持在 ≤ 1 小时，并通过吊销 refresh token 来终止会话；这是可接受的，因为每一个高后果动作都经过服务端验证，绝不轻信 claims。（2） *中国可达性* —— 在第一方自定义域名下提供认证服务，并监控大陆的登录成功率；若出现劣化，则迁移到 Better-Auth —— `users(auth_provider, auth_subject)` 的设计初衷正是为了吸收这种替换。只要数据库是普通的 Postgres，Better-Auth 仍是默认选择。
+**平台特例条款（配套开发计划已采纳）。** 当控制面落在 Supabase 上时（[平台文档](platform-and-dev-plan-v2-zh.md) 将其排为第 1 位），改用 **Supabase Auth** —— 届时认证、Postgres、存储和 realtime 共用同一家供应商，RLS 也直接以 `auth.uid()` 为键。在该配置下，v0.4 的两项要求需要显式处理：(1) *即时吊销* —— Supabase 的会话基于 JWT，因此敏感路由（运营人员操作、复核门变更、签证包下载）必须在每次请求时通过 `authorize()` 收口点在服务端重新检查 `users.status`/`role`（它们本来就会这么做），把 access token 的 TTL 保持在 ≤ 1 小时，并通过吊销 refresh token 来终止会话；这是可接受的，因为每一个高后果动作都经过服务端验证，绝不轻信 claims。（2） *中国可达性* —— 在第一方自定义域名下提供认证服务，并监控大陆的登录成功率；若出现劣化，则迁移到 Better-Auth —— `users(auth_provider, auth_subject)` 的设计初衷正是为了吸收这种替换。只要数据库是普通的 Postgres，Better-Auth 仍是默认选择。
 
 #### 会话模型
 

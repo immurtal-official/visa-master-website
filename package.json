@@ -17,11 +17,17 @@
     "db:status": "pnpm --filter @visa-master/db db:status",
     "db:reset": "pnpm --filter @visa-master/db db:reset",
     "db:test": "pnpm --filter @visa-master/db db:test",
-    "format": "prettier --write ."
+    "format": "prettier --write .",
+    "doc:toc": "node scripts/doc-reader/toc.mjs",
+    "doc:html": "node scripts/doc-reader/build.mjs"
   },
   "devDependencies": {
     "@formatjs/icu-messageformat-parser": "^3.5.0",
+    "github-slugger": "^2.0.0",
+    "marked": "^18.0.11",
+    "mermaid": "^11.17.2",
     "prettier": "^3.9.0",
+    "puppeteer-core": "^25.10.0",
     "tsx": "^4.19.0",
     "turbo": "^2.10.9"
   },

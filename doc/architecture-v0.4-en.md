@@ -3,13 +3,47 @@
 **Version:** v0.4
 **Status:** Architecture Proposal
 **Builds on:** [architecture-v0.3](architecture-v0.3-en.md) (trust boundary, ephemeral single-tenant execution, egress control) · [ADR-002](../discussion/ADR-002-Agent-Framework-Evaluation.md) (custom workflow engine, LLM APIs as intelligence services — Accepted) · [Discussion 01](../discussion/explorations/01-hermes-vs-custom-agent-loop.md) (Hermes vs. thin custom agent; middle path)
-**Companion:** [Platform selection & development plan](archive/platform-and-dev-plan-en.md) — the platform-specific half of this proposal.
+**Companion:** [Platform selection & development plan](platform-and-dev-plan-v2-en.md) — the platform-specific half of this proposal.
 
 > 中文版：[架构 v0.4（中文）](architecture-v0.4-zh.md)
 
 v0.1–v0.3 answered *how to run one agent safely*. v0.4 is the first **whole-product** architecture: the trusted Backend API server, a **multi-server agent execution plane**, routing, completion judgment, data layer, and user management — platform-agnostic. It is written in two tiers: **Part I** is the high-level abstract (read this first; ~10 minutes), **Part II** is the detailed specification (contracts, DDL, state machines, sequences).
 
 ---
+
+<!-- toc -->
+## Contents
+
+- [Part I — High-level architecture (abstract tier)](#part-i--high-level-architecture-abstract-tier)
+  - [I.1 Thesis](#i1-thesis)
+  - [I.2 One diagram](#i2-one-diagram)
+  - [I.3 The three executors at a glance](#i3-the-three-executors-at-a-glance)
+  - [I.4 How a case flows](#i4-how-a-case-flows)
+  - [I.5 Key decisions (summary)](#i5-key-decisions-summary)
+  - [I.6 What this deliberately defers](#i6-what-this-deliberately-defers)
+- [Part II — Detailed specification](#part-ii--detailed-specification)
+  - [Chapter A — Control plane: workflow engine, routing, and completion judgment](#chapter-a--control-plane-workflow-engine-routing-and-completion-judgment)
+    - [1. Workflow engine](#1-workflow-engine)
+    - [2. Agent router](#2-agent-router)
+    - [3. Completion judgment](#3-completion-judgment)
+    - [4. Sequence: a pack job with a mid-run follow-up](#4-sequence-a-pack-job-with-a-mid-run-follow-up)
+    - [5. Build vs. framework for the control plane](#5-build-vs-framework-for-the-control-plane)
+  - [Chapter B — Data layer and user management](#chapter-b--data-layer-and-user-management)
+    - [1. Database choice: Postgres](#1-database-choice-postgres)
+    - [2. Schema (DDL)](#2-schema-ddl)
+    - [3. Object storage](#3-object-storage)
+    - [4. Auth and user management](#4-auth-and-user-management)
+  - [Chapter C — Agent execution plane: one adapter contract, three executor kinds](#chapter-c--agent-execution-plane-one-adapter-contract-three-executor-kinds)
+    - [0. Position in the architecture](#0-position-in-the-architecture)
+    - [1. The Agent Adapter Contract (v1)](#1-the-agent-adapter-contract-v1)
+    - [2. Executor Kind A — LLM API Gateway (V1 workhorse)](#2-executor-kind-a--llm-api-gateway-v1-workhorse)
+    - [3. Executor Kind B — Hermes server (working pack producer)](#3-executor-kind-b--hermes-server-working-pack-producer)
+    - [4. Executor Kind C — Custom thin agent server (migration target)](#4-executor-kind-c--custom-thin-agent-server-migration-target)
+    - [5. Security zones: v0.3 controls mapped onto the three executors](#5-security-zones-v03-controls-mapped-onto-the-three-executors)
+- [Closing](#closing)
+  - [Relationship to prior documents](#relationship-to-prior-documents)
+  - [Open questions](#open-questions)
+<!-- /toc -->
 
 # Part I — High-level architecture (abstract tier)
 
@@ -90,7 +124,7 @@ Mid-run follow-up questions are supported (`awaiting_user` state) but deliberate
 
 ## I.6 What this deliberately defers
 
-Concurrency > 1, Redis, Temporal-class durable execution, egress DLP (TLS-intercept), the thin agent's `produce_pack` takeover, multi-region, Stripe self-serve billing — each parked behind an explicit trigger listed in the companion [platform & dev plan](archive/platform-and-dev-plan-en.md).
+Concurrency > 1, Redis, Temporal-class durable execution, egress DLP (TLS-intercept), the thin agent's `produce_pack` takeover, multi-region, Stripe self-serve billing — each parked behind an explicit trigger listed in the companion [platform & dev plan](platform-and-dev-plan-v2-en.md).
 
 ---
 
@@ -876,7 +910,7 @@ The ephemeral-scratch model means the container leaves nothing behind; durable P
 
 **Fallback: Clerk.** If auth maintenance burden bites (deliverability, abuse, MFA), swap it in — the schema absorbs the change by design: `users(auth_provider, auth_subject)` is the only coupling, so migration is a backfill of subjects plus a login-path change, with no rewiring of cases/jobs/billing.
 
-**Platform carve-out (adopted by the companion dev plan).** When the control plane lands on Supabase (the [platform doc](archive/platform-and-dev-plan-en.md) ranks it #1), use **Supabase Auth** instead — auth, Postgres, storage and realtime then share one vendor, and RLS keys directly off `auth.uid()`. Two v0.4 requirements need explicit handling in that configuration: (1) *instant revocation* — Supabase sessions are JWT-based, so sensitive routes (operator actions, review-gate mutations, pack downloads) must re-check `users.status`/`role` server-side per request via the `authorize()` chokepoint (they do anyway), keep access-token TTL ≤ 1 h, and kill sessions via refresh-token revocation; acceptable because every high-consequence action is server-verified, never claims-trusted. (2) *China reachability* — serve auth under a first-party custom domain and monitor mainland login success; if it degrades, migrate to Better-Auth — `users(auth_provider, auth_subject)` was designed to absorb exactly that swap. Better-Auth remains the default whenever the database is plain Postgres.
+**Platform carve-out (adopted by the companion dev plan).** When the control plane lands on Supabase (the [platform doc](platform-and-dev-plan-v2-en.md) ranks it #1), use **Supabase Auth** instead — auth, Postgres, storage and realtime then share one vendor, and RLS keys directly off `auth.uid()`. Two v0.4 requirements need explicit handling in that configuration: (1) *instant revocation* — Supabase sessions are JWT-based, so sensitive routes (operator actions, review-gate mutations, pack downloads) must re-check `users.status`/`role` server-side per request via the `authorize()` chokepoint (they do anyway), keep access-token TTL ≤ 1 h, and kill sessions via refresh-token revocation; acceptable because every high-consequence action is server-verified, never claims-trusted. (2) *China reachability* — serve auth under a first-party custom domain and monitor mainland login success; if it degrades, migrate to Better-Auth — `users(auth_provider, auth_subject)` was designed to absorb exactly that swap. Better-Auth remains the default whenever the database is plain Postgres.
 
 #### Session model
 
