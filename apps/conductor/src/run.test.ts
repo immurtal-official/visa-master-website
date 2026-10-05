@@ -29,6 +29,10 @@ afterAll(async () => {
 
 let userId: string;
 
+// Every claim below names its own job. The local database is shared with the
+// other suites and with the end-to-end runs, and a claim that took whatever
+// was queued first used to run — and fail on — somebody else's job.
+
 beforeEach(async () => {
   // Only ever this suite's own rows. An earlier version deleted every
   // produce_pack job, which on a developer's machine is their own work.
@@ -77,7 +81,7 @@ describe("running a job end to end", () => {
     const jobId = await enqueue();
     const registry: ExecutorRegistry = { hermes: createFakeExecutor({ runMs: 10 }) };
 
-    const outcome = await runOnce(pool, registry, config);
+    const outcome = await runOnce(pool, registry, config, null, jobId);
     expect(outcome).toEqual({ jobId, state: "succeeded" });
 
     const after = await jobState(jobId);
@@ -93,7 +97,7 @@ describe("running a job end to end", () => {
     const jobId = await enqueue();
     const registry: ExecutorRegistry = { hermes: createFakeExecutor({ runMs: 10 }) };
 
-    await runOnce(pool, registry, config);
+    await runOnce(pool, registry, config, null, jobId);
 
     // In the real thing this directory holds a passport scan and a bank
     // statement; the machine keeps neither between jobs.
@@ -110,7 +114,7 @@ describe("running a job end to end", () => {
       hermes: createFakeExecutor({ runMs: 10, failWith: "the container died" }),
     };
 
-    const outcome = await runOnce(pool, registry, config);
+    const outcome = await runOnce(pool, registry, config, null, jobId);
     expect(outcome).toEqual({ jobId, state: "queued" });
 
     const after = await jobState(jobId);
@@ -133,7 +137,7 @@ describe("running a job end to end", () => {
       }),
     };
 
-    const outcome = await runOnce(pool, registry, config);
+    const outcome = await runOnce(pool, registry, config, null, jobId);
     expect(outcome).toEqual({ jobId, state: "failed" });
 
     const after = await jobState(jobId);
@@ -153,7 +157,7 @@ describe("running a job end to end", () => {
       }),
     };
 
-    const outcome = await runOnce(pool, registry, config);
+    const outcome = await runOnce(pool, registry, config, null, jobId);
     expect(outcome).toEqual({ jobId, state: "queued" });
 
     const after = await jobState(jobId);
@@ -170,7 +174,7 @@ describe("running a job end to end", () => {
       hermes: createFakeExecutor({ runMs: 10, qaReport: { summary: { issues: 0 } } }),
     };
 
-    const outcome = await runOnce(pool, registry, config);
+    const outcome = await runOnce(pool, registry, config, null, jobId);
     expect(outcome).toEqual({ jobId, state: "failed" });
 
     const after = await jobState(jobId);
@@ -194,7 +198,7 @@ describe("running a job end to end", () => {
       },
     };
 
-    const outcome = await runOnce(pool, registry, config);
+    const outcome = await runOnce(pool, registry, config, null, jobId);
     expect(outcome).toEqual({ jobId, state: "failed" });
 
     const after = await jobState(jobId);
@@ -234,7 +238,7 @@ describe("running a job end to end", () => {
       }),
     };
 
-    const outcome = await runOnce(pool, registry, config);
+    const outcome = await runOnce(pool, registry, config, null, jobId);
     expect(outcome).toEqual({ jobId, state: "succeeded" });
     expect((await jobState(jobId)).state).toBe("succeeded");
   });
@@ -245,7 +249,7 @@ describe("running a job end to end", () => {
     const jobId = await enqueue("produce_pack", { deadline_seconds: 1, max_attempts: 1 });
     const registry: ExecutorRegistry = { hermes: createFakeExecutor({ runMs: 10_000 }) };
 
-    const outcome = await runOnce(pool, registry, config);
+    const outcome = await runOnce(pool, registry, config, null, jobId);
     expect(outcome).toEqual({ jobId, state: "timed_out" });
     expect((await jobState(jobId)).state).toBe("timed_out");
   });
@@ -255,7 +259,7 @@ describe("running a job end to end", () => {
     const jobId = await enqueue("custom_research", { max_attempts: 3 });
     const registry: ExecutorRegistry = { hermes: createFakeExecutor({ runMs: 10 }) };
 
-    const outcome = await runOnce(pool, registry, config);
+    const outcome = await runOnce(pool, registry, config, null, jobId);
     expect(outcome).toEqual({ jobId, state: "failed" });
     expect((await jobState(jobId)).failure_reason).toBe("validation_failed");
   });
@@ -297,9 +301,13 @@ describe("running a job end to end", () => {
       },
     };
 
-    const outcome = await runOnce(pool, registry, config, {
-      get: async (path) => Buffer.from(path === upload.storage_path ? "SCAN" : "WRONG"),
-    });
+    const outcome = await runOnce(
+      pool,
+      registry,
+      config,
+      { get: async (path) => Buffer.from(path === upload.storage_path ? "SCAN" : "WRONG") },
+      rows[0]!.id,
+    );
     expect(outcome).toEqual({ jobId: rows[0]!.id, state: "succeeded" });
     expect(seen).toBe("SCAN");
   });
@@ -336,9 +344,13 @@ describe("running a job end to end", () => {
       },
     };
 
-    const outcome = await runOnce(pool, registry, config, {
-      get: () => Promise.reject(new Error("never asked")),
-    });
+    const outcome = await runOnce(
+      pool,
+      registry,
+      config,
+      { get: () => Promise.reject(new Error("never asked")) },
+      jobId,
+    );
     expect(outcome).toEqual({ jobId, state: "failed" });
     expect(started).toBe(false);
 
@@ -347,15 +359,19 @@ describe("running a job end to end", () => {
     await expect(access(scratchDirFor(jobId, state.attempt))).rejects.toThrow();
   });
 
-  it("does nothing when the queue is empty", async () => {
-    expect(await runOnce(pool, {}, config)).toBeNull();
+  it("does nothing when there is nothing to claim", async () => {
+    // A job that does not exist, rather than an empty queue: the local queue
+    // is shared with every other suite and with the end-to-end runs.
+    expect(
+      await runOnce(pool, {}, config, null, "00000000-0000-4000-8000-000000000000"),
+    ).toBeNull();
   });
 });
 
 describe("the watchdog", () => {
   it("releases a job whose worker stopped reporting in", async () => {
     const jobId = await enqueue();
-    await claimNextJob(pool, config);
+    await claimNextJob(pool, config, jobId);
     await markRunning(pool, jobId, config.leaseOwner);
 
     // What a killed conductor leaves behind: a job marked running that nobody
@@ -375,7 +391,7 @@ describe("the watchdog", () => {
 
   it("stops a job that is past its deadline even if its worker is alive", async () => {
     const jobId = await enqueue("produce_pack", { deadline_seconds: 1, max_attempts: 1 });
-    await claimNextJob(pool, config);
+    await claimNextJob(pool, config, jobId);
     await markRunning(pool, jobId, config.leaseOwner);
 
     await pool.query(
@@ -390,7 +406,7 @@ describe("the watchdog", () => {
 
   it("leaves a healthy run alone", async () => {
     const jobId = await enqueue();
-    await claimNextJob(pool, config);
+    await claimNextJob(pool, config, jobId);
     await markRunning(pool, jobId, config.leaseOwner);
 
     const result = await sweep(pool, config);
