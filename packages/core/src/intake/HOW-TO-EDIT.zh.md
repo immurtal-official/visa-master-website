@@ -101,6 +101,28 @@ pnpm check:intake
 
 并在两个文案文件的 `intake.section` 下加一条 `"accommodation": "住宿安排"`（英文同理），在 `intake.question` 下加一组 `accommodation`。每一节至少要有一道题。
 
+## 按前面的回答决定问不问（showIf）
+
+一道题或一整节可以只在某个条件成立时才问。条件的写法和材料清单的 `appliesWhen` 一样：
+
+```ts
+// 整节：只有别人承担费用时才问
+{
+  id: "sponsor",
+  showIf: { answer: "companions.whoPays", in: ["family", "employer"] },
+  questions: [
+    { id: "sponsorName", extra: true, rule: text(1, 60), example: "陈强" },
+    // 单题：只有家人承担时才问
+    { id: "relation", extra: true, rule: text(1, 20), example: "父亲",
+      showIf: { answer: "companions.whoPays", is: "family" } },
+  ],
+},
+```
+
+- `showIf` 只能看**排在它前面的选择题**的答案，比较的值必须是那道题真有的选项。
+- 条件不成立时，这道题（或这一节）不计入进度，「继续」会跳过它，首页上这一节显示「不需要填写」。申请人如果先答了、后来改了前面的回答，之前答的内容会保留，但不会被提交。
+- **核心题**能不能被跳过属于作业契约：给核心题加 `showIf` 需要工程师；核心题的条件也不能依赖补充题。补充题随意。
+
 ## 删除一道补充题
 
 在 `questionnaire.ts` 里删掉那一行，再把两个文案文件里对应的题面和提示语一起删掉。`pnpm check:intake` 会提醒你有没有删干净。
@@ -131,5 +153,6 @@ pnpm check:intake
 
 - **不要用补充题收集邮箱、账号或登录信息。** 补充题的答案会原样交给后台作业，而作业里不允许出现账号信息。检查会拦住看起来在问邮箱的题。
 - **已上线的题不要改 id。** 改 id 等于删掉旧题、加一道新题，已经填过的人要重新回答。
+- **从材料里读出来的答案要申请人确认**：这类答案在检查页上标着「待确认」，申请人打开那道题按「继续」就算确认；没确认之前不能提交。这是后台的规则，问卷里不需要做任何设置。
 - **新增的题对正在填写的人也生效**：他们提交前需要回答新题。
 - 改完的问卷在提交前请找工程师在本地跑一遍完整测试（`pnpm turbo lint typecheck test` 和浏览器测试）。
