@@ -149,4 +149,19 @@ describe("extra questions", () => {
   it("are well formed", () => {
     expect(declarationProblems()).toEqual([]);
   });
+
+  it("may only use a named rule, because the backend runs rules by name", async () => {
+    const { z } = await import("zod");
+    const travel = (QUESTIONNAIRE.sections as SectionDefinition[]).find((s) => s.id === "travel");
+    if (!travel || !("questions" in travel)) throw new Error("travel section missing");
+    const inline = { id: "probeInline", extra: true as const, rule: z.string(), example: "x" };
+    travel.questions.push(inline);
+    try {
+      expect(declarationProblems()).toEqual([
+        expect.stringContaining("`travel/probeInline` 的 rule 必须是 rules.ts 里有名字的规则"),
+      ]);
+    } finally {
+      travel.questions.splice(travel.questions.indexOf(inline), 1);
+    }
+  });
 });

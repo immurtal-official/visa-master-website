@@ -1,0 +1,3 @@
+# Written by `pnpm intake:export`; collapsed in review, never edited by hand.
+packages/core/conformance/*.json linguist-generated=true
+apps/api/app/rules/generated/*.json linguist-generated=true

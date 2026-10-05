@@ -15,6 +15,10 @@ dependencies = { file = ["requirements.txt"] }
 [tool.setuptools.packages.find]
 include = ["app*"]
 
+# The rules' data, exported from packages/core, ships with the code that reads it.
+[tool.setuptools.package-data]
+"app.rules" = ["generated/*.json"]
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["."]

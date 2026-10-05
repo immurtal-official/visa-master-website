@@ -72,11 +72,16 @@ function questionProblems(sectionId: string, question: QuestionDefinition): stri
         `${name} 没有写 rule，或者 rule 写得不对。\n` +
           `请从 packages/core/src/intake/rules.ts 里选一条，例如 rule: text(1, 100) 表示 1 到 100 个字。`,
       );
-    } else if (!question.extra && !ruleName(loose.rule)) {
+    } else if (!ruleName(loose.rule)) {
+      // The backend runs each rule by its name (ADR-005), so a rule written
+      // inline here is one it cannot run — for an extra question as for a core one.
       problems.push(
-        `${name} 属于作业契约，它的 rule 必须是 rules.ts 里有名字的规则，不能在 questionnaire.ts 里现写。\n` +
-          `如果需要新规则，请找工程师把它加进 rules.ts。`,
+        `${name} 的 rule 必须是 rules.ts 里有名字的规则，不能在 questionnaire.ts 里现写。\n` +
+          `常用的有 text(1, 100)、dateString、pastDate；需要新规则请找工程师把它加进 rules.ts。`,
       );
+    }
+    if (loose.alone !== undefined && isSchema(loose.alone) && !ruleName(loose.alone)) {
+      problems.push(`${name} 的 alone 必须是 rules.ts 里有名字的规则。`);
     }
     if (loose.alone !== undefined && !isSchema(loose.alone)) {
       problems.push(

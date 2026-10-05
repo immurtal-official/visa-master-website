@@ -1,0 +1,372 @@
+{
+ "contract": {
+  "version": 1,
+  "checksum": "7502e9fd56501b7e57ba400dbdeab1efe3d48048a12382445fd9f2c575c5b880"
+ },
+ "optionGroups": {
+  "travellingWith": [
+   "alone",
+   "family",
+   "friends",
+   "colleagues"
+  ],
+  "whoPays": [
+   "self",
+   "family",
+   "employer"
+  ],
+  "yesNoUnsure": [
+   "yes",
+   "no",
+   "unsure"
+  ]
+ },
+ "sections": [
+  {
+   "id": "applicant",
+   "kind": "questions",
+   "available": true,
+   "questions": [
+    {
+     "id": "name",
+     "path": "applicant.name",
+     "extra": false,
+     "kind": "text",
+     "rule": "text(1,60)"
+    },
+    {
+     "id": "pinyin",
+     "path": "applicant.pinyin",
+     "extra": false,
+     "kind": "text",
+     "rule": "pinyin"
+    },
+    {
+     "id": "birthDate",
+     "path": "applicant.birthDate",
+     "extra": false,
+     "kind": "date",
+     "rule": "pastDate"
+    },
+    {
+     "id": "phone",
+     "path": "applicant.phone",
+     "extra": false,
+     "kind": "text",
+     "rule": "mobilePhone"
+    }
+   ]
+  },
+  {
+   "id": "passport",
+   "kind": "questions",
+   "available": true,
+   "check": "passportDatesCheck",
+   "questions": [
+    {
+     "id": "number",
+     "path": "passport.number",
+     "extra": false,
+     "kind": "text",
+     "rule": "passportNumber"
+    },
+    {
+     "id": "issuedAt",
+     "path": "passport.issuedAt",
+     "extra": false,
+     "kind": "date",
+     "rule": "dateString"
+    },
+    {
+     "id": "expiresAt",
+     "path": "passport.expiresAt",
+     "extra": false,
+     "kind": "date",
+     "rule": "dateString",
+     "alone": "passportExpiryAlone"
+    }
+   ]
+  },
+  {
+   "id": "residence",
+   "kind": "questions",
+   "available": true,
+   "questions": [
+    {
+     "id": "city",
+     "path": "residence.city",
+     "extra": false,
+     "kind": "text",
+     "rule": "text(1,40)"
+    },
+    {
+     "id": "address",
+     "path": "residence.address",
+     "extra": false,
+     "kind": "text",
+     "rule": "text(4,200)"
+    }
+   ]
+  },
+  {
+   "id": "employment",
+   "kind": "questions",
+   "available": true,
+   "questions": [
+    {
+     "id": "employer",
+     "path": "employment.employer",
+     "extra": false,
+     "kind": "text",
+     "rule": "text(1,120)"
+    },
+    {
+     "id": "position",
+     "path": "employment.position",
+     "extra": false,
+     "kind": "text",
+     "rule": "text(1,80)"
+    },
+    {
+     "id": "startDate",
+     "path": "employment.startDate",
+     "extra": false,
+     "kind": "date",
+     "rule": "pastDate"
+    },
+    {
+     "id": "monthlyIncome",
+     "path": "employment.monthlyIncome",
+     "extra": false,
+     "kind": "text",
+     "rule": "amountInYuan"
+    }
+   ]
+  },
+  {
+   "id": "travel",
+   "kind": "questions",
+   "available": true,
+   "check": "travelDatesCheck",
+   "questions": [
+    {
+     "id": "departureDate",
+     "path": "travel.departureDate",
+     "extra": false,
+     "kind": "date",
+     "rule": "dateString"
+    },
+    {
+     "id": "returnDate",
+     "path": "travel.returnDate",
+     "extra": false,
+     "kind": "date",
+     "rule": "dateString"
+    },
+    {
+     "id": "cities",
+     "path": "travel.cities",
+     "extra": false,
+     "kind": "text",
+     "rule": "text(2,200)"
+    }
+   ]
+  },
+  {
+   "id": "companions",
+   "kind": "questions",
+   "available": true,
+   "questions": [
+    {
+     "id": "travellingWith",
+     "path": "companions.travellingWith",
+     "extra": false,
+     "kind": "choice",
+     "options": "travellingWith"
+    },
+    {
+     "id": "whoPays",
+     "path": "companions.whoPays",
+     "extra": false,
+     "kind": "choice",
+     "options": "whoPays"
+    }
+   ]
+  },
+  {
+   "id": "history",
+   "kind": "questions",
+   "available": true,
+   "questions": [
+    {
+     "id": "schengenBefore",
+     "path": "history.schengenBefore",
+     "extra": false,
+     "kind": "choice",
+     "options": "yesNoUnsure"
+    },
+    {
+     "id": "refused",
+     "path": "history.refused",
+     "extra": false,
+     "kind": "choice",
+     "options": "yesNoUnsure"
+    }
+   ]
+  },
+  {
+   "id": "review",
+   "kind": "review"
+  }
+ ],
+ "formCheck": "passportOutlivesTripCheck",
+ "documents": [
+  {
+   "id": "passportBio",
+   "necessity": "required",
+   "multiPage": false,
+   "extracts": [
+    "passport.number",
+    "passport.issuedAt",
+    "passport.expiresAt",
+    "applicant.pinyin",
+    "applicant.birthDate"
+   ]
+  },
+  {
+   "id": "photo",
+   "necessity": "required",
+   "multiPage": false
+  },
+  {
+   "id": "hukou",
+   "necessity": "required",
+   "multiPage": true
+  },
+  {
+   "id": "employmentLetter",
+   "necessity": "required",
+   "multiPage": false
+  },
+  {
+   "id": "bankStatement",
+   "necessity": "required",
+   "multiPage": true
+  },
+  {
+   "id": "socialInsurance",
+   "necessity": "recommended",
+   "multiPage": true
+  },
+  {
+   "id": "insurance",
+   "necessity": "required",
+   "multiPage": false
+  },
+  {
+   "id": "flightBooking",
+   "necessity": "required",
+   "multiPage": false
+  },
+  {
+   "id": "hotelBooking",
+   "necessity": "required",
+   "multiPage": true
+  },
+  {
+   "id": "sponsorProof",
+   "necessity": "conditional",
+   "multiPage": true,
+   "appliesWhen": {
+    "answer": "companions.whoPays",
+    "in": [
+     "family",
+     "employer"
+    ]
+   }
+  },
+  {
+   "id": "previousVisas",
+   "necessity": "conditional",
+   "multiPage": true,
+   "appliesWhen": {
+    "answer": "history.schengenBefore",
+    "is": "yes"
+   }
+  }
+ ],
+ "route": {
+  "residenceAreas": [
+   "sichuan",
+   "chongqing",
+   "yunnan",
+   "guizhou",
+   "xizang",
+   "other"
+  ],
+  "chengduDistrictAreas": [
+   "sichuan",
+   "chongqing",
+   "yunnan",
+   "guizhou",
+   "xizang"
+  ],
+  "destinations": [
+   "ES",
+   "FR",
+   "IT",
+   "DE",
+   "NL",
+   "PT",
+   "GR",
+   "other"
+  ],
+  "purposes": [
+   "tourism",
+   "family",
+   "business",
+   "conference"
+  ],
+  "employmentStatuses": [
+   "employed",
+   "student",
+   "retired",
+   "self_employed"
+  ],
+  "supported": {
+   "destination": "ES",
+   "purpose": "tourism",
+   "employment": "employed"
+  }
+ },
+ "messageKeys": {
+  "validation.required": [],
+  "validation.invalid": [],
+  "validation.email.invalid": [],
+  "validation.otp.invalidFormat": [],
+  "validation.tooShort": [
+   "min"
+  ],
+  "validation.tooLong": [
+   "max"
+  ],
+  "validation.date.invalid": [],
+  "validation.date.future": [],
+  "validation.phone.invalid": [],
+  "validation.pinyin.invalid": [],
+  "validation.passport.number.invalid": [
+   "length"
+  ],
+  "validation.passport.expiry.beforeIssue": [],
+  "validation.passport.expiry.tooSoon": [
+   "monthsRequired"
+  ],
+  "validation.passport.expiry.tooSoonForTrip": [
+   "monthsRequired"
+  ],
+  "validation.date.past": [],
+  "validation.amount.invalid": [],
+  "validation.travel.returnBeforeDeparture": [],
+  "validation.answer.unconfirmed": []
+ }
+}
