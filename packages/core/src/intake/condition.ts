@@ -1,4 +1,4 @@
-import { readAnswer } from "./sections";
+import { readAnswer } from "./answers";
 
 /**
  * A condition on the answers, written as data.

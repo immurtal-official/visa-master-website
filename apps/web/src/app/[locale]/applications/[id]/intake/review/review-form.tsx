@@ -65,8 +65,10 @@ export function ReviewForm({ applicationId }: { applicationId: string }) {
                 gap: "var(--space-2)",
               }}
             >
-              {state.issues.map((issue) => (
-                <li key={`${issue.path}-${issue.key}`}>{messageFor(t, issue)}</li>
+              {/* One line per distinct message: several answers awaiting
+                  confirmation are one thing to do, and the page marks each. */}
+              {[...new Set(state.issues.map((issue) => messageFor(t, issue)))].map((message) => (
+                <li key={message}>{message}</li>
               ))}
             </ul>
           </Callout>

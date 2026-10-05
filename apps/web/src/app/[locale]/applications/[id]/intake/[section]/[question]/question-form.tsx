@@ -45,7 +45,9 @@ function currentValue(form: HTMLFormElement, isDate: boolean): string {
   const complete = String(data.get("value") ?? "");
   if (complete || !isDate) return complete;
 
-  const parts = (["year", "month", "day"] as const).map((p) => String(data.get(`value.${p}`) ?? ""));
+  const parts = (["year", "month", "day"] as const).map((p) =>
+    String(data.get(`value.${p}`) ?? ""),
+  );
   return parts.some(Boolean) ? parts.join("-") : "";
 }
 
@@ -63,12 +65,15 @@ export function QuestionForm({
   questionId,
   path,
   savedValue,
+  fromDocument = false,
 }: {
   applicationId: string;
   sectionId: string;
   questionId: string;
   path: string;
   savedValue: string;
+  /** The saved value was read off a document and is waiting to be confirmed. */
+  fromDocument?: boolean;
 }) {
   const t = useTranslations();
   const router = useRouter();
@@ -231,6 +236,16 @@ export function QuestionForm({
         >
           {hint}
         </p>
+      ) : null}
+
+      {/* Said before the answer, not after: the reader should check the value
+          knowing where it came from. Pressing Continue is the confirmation. */}
+      {fromDocument ? (
+        <div style={{ marginBlockStart: "var(--space-6)" }}>
+          <Callout tone="info" title={t("intake.fromDocument.title")}>
+            {t("intake.fromDocument.body")}
+          </Callout>
+        </div>
       ) : null}
 
       <div style={{ marginBlockStart: "var(--space-6)" }}>

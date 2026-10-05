@@ -1,7 +1,7 @@
 import type { Locale } from "next-intl";
 import { getFormatter, getTranslations, setRequestLocale } from "next-intl/server";
 import { notFound, redirect } from "next/navigation";
-import { INTAKE_SECTIONS, intakeProgress, readAnswer } from "@visa-master/core";
+import { INTAKE_SECTIONS, askedQuestions, intakeProgress, readAnswer } from "@visa-master/core";
 import { Callout } from "@/components/ui/callout";
 import { Card } from "@/components/ui/card";
 import { LinkButton } from "@/components/ui/link-button";
@@ -146,38 +146,37 @@ export default async function ApplicationPage({
 
           <Card padding="var(--space-5)">
             <dl style={{ margin: 0, display: "grid", gap: "var(--space-3)" }}>
-              {INTAKE_SECTIONS.filter((section) => section.kind === "questions").flatMap(
-                (section) =>
-                  section.questions.map((question) => {
-                    const value = readAnswer(answers, question.path);
-                    return (
-                      <div
-                        key={question.path}
+              {INTAKE_SECTIONS.flatMap((section) =>
+                askedQuestions(section, answers).map((question) => {
+                  const value = readAnswer(answers, question.path);
+                  return (
+                    <div
+                      key={question.path}
+                      style={{
+                        display: "flex",
+                        flexWrap: "wrap",
+                        alignItems: "baseline",
+                        justifyContent: "space-between",
+                        gap: "var(--space-3)",
+                      }}
+                    >
+                      <dt style={{ color: "var(--text-muted)", maxInlineSize: "28em" }}>
+                        {t(
+                          `intake.question.${section.id}.${question.id}` as "intake.question.applicant.name",
+                        )}
+                      </dt>
+                      <dd
                         style={{
-                          display: "flex",
-                          flexWrap: "wrap",
-                          alignItems: "baseline",
-                          justifyContent: "space-between",
-                          gap: "var(--space-3)",
+                          margin: 0,
+                          color: "var(--text-body)",
+                          fontWeight: "var(--fw-medium)",
                         }}
                       >
-                        <dt style={{ color: "var(--text-muted)", maxInlineSize: "28em" }}>
-                          {t(
-                            `intake.question.${section.id}.${question.id}` as "intake.question.applicant.name",
-                          )}
-                        </dt>
-                        <dd
-                          style={{
-                            margin: 0,
-                            color: "var(--text-body)",
-                            fontWeight: "var(--fw-medium)",
-                          }}
-                        >
-                          {typeof value === "string" && value ? value : "—"}
-                        </dd>
-                      </div>
-                    );
-                  }),
+                        {typeof value === "string" && value ? value : "—"}
+                      </dd>
+                    </div>
+                  );
+                }),
               )}
             </dl>
           </Card>

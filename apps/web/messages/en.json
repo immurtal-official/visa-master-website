@@ -191,6 +191,9 @@
     },
     "travel": {
       "returnBeforeDeparture": "The return date cannot be earlier than the departure date. Check both dates."
+    },
+    "answer": {
+      "unconfirmed": "Some answers were read from your documents and still need you to confirm them. Open each one marked “To confirm” below, check it, and press Continue."
     }
   },
   "intake": {
@@ -207,7 +210,8 @@
       "done": "Done",
       "inProgress": "Started",
       "todo": "To do",
-      "unavailable": "Not open yet"
+      "unavailable": "Not open yet",
+      "notNeeded": "Not needed"
     },
     "unavailableHint": "We have not built this section yet. Everything you have answered is saved.",
     "section": {
@@ -304,7 +308,13 @@
       "incompleteBody": "These need attention before the application can be sent.",
       "submitFailed": "That was not sent. Try again.",
       "alreadySubmitted": "This application has already been sent.",
-      "documentsMissing": "Some required documents have not been uploaded. Add them before sending."
+      "documentsMissing": "Some required documents have not been uploaded. Add them before sending.",
+      "toConfirm": "To confirm"
+    },
+    "notNeededHint": "Your earlier answers mean this section does not apply to you.",
+    "fromDocument": {
+      "title": "This answer was read from your documents",
+      "body": "Check it. If it is right, press Continue. If it is not, correct it first, then press Continue."
     }
   },
   "documents": {

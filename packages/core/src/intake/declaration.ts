@@ -5,6 +5,7 @@ import {
   type SectionDefinition,
 } from "./questionnaire";
 import { ruleName } from "./rules";
+import { comparisonsOf, type Condition } from "./condition";
 
 /**
  * Whether questionnaire.ts is written the way the rest of the system can read.
@@ -131,10 +132,88 @@ function questionProblems(sectionId: string, question: QuestionDefinition): stri
   return problems;
 }
 
+/** A choice question that comes earlier in the form, by answer path. */
+interface Earlier {
+  extra: boolean;
+  /** Undefined for a question that is not a choice. */
+  options: readonly string[] | undefined;
+  choice: boolean;
+}
+
+function isCondition(value: unknown): value is Condition {
+  if (typeof value !== "object" || value === null) return false;
+  const c = value as Record<string, unknown>;
+  if (Array.isArray(c.all)) return c.all.every(isCondition);
+  if (Array.isArray(c.any)) return c.any.every(isCondition);
+  if ("not" in c) return isCondition(c.not);
+  return (
+    typeof c.answer === "string" &&
+    (typeof c.is === "string" || (Array.isArray(c.in) && c.in.every((v) => typeof v === "string")))
+  );
+}
+
+/**
+ * Whether a showIf can be evaluated, and is about the right things: answers
+ * to choice questions asked earlier — so the applicant has given them by the
+ * time the question comes up, and no condition can depend on itself — with
+ * values those questions can actually take. A condition that decides whether
+ * a core question is asked may not depend on an extra question, which can
+ * change on any day.
+ */
+function showIfProblems(
+  where: string,
+  showIf: unknown,
+  earlier: Map<string, Earlier>,
+  isCore: boolean,
+): string[] {
+  if (showIf === undefined) return [];
+  if (!isCondition(showIf)) {
+    return [
+      `${where} 的 showIf 写法不对。\n` +
+        `写法例如 { answer: "companions.whoPays", is: "family" }，或 { answer: "…", in: ["…", "…"] }；` +
+        `也可以用 { all: [ … ] }、{ any: [ … ] }、{ not: … } 组合。`,
+    ];
+  }
+  const problems: string[] = [];
+  for (const { answer, values } of comparisonsOf(showIf)) {
+    const target = earlier.get(answer);
+    if (target && !target.choice) {
+      problems.push(
+        `${where} 的 showIf 用到了 "${answer}"，但它不是选择题。showIf 只能比较选择题的答案。`,
+      );
+      continue;
+    }
+    if (!target) {
+      problems.push(
+        `${where} 的 showIf 用到了 "${answer}"，但它前面没有这道选择题。\n` +
+          `showIf 只能看排在它前面的选择题的答案（答案路径写成 "<节 id>.<题 id>"，补充题是 "extra.<节 id>.<题 id>"）。`,
+      );
+      continue;
+    }
+    if (isCore && target.extra) {
+      problems.push(
+        `${where} 属于作业契约，它是否被询问不能取决于补充题 "${answer}"。\n` +
+          `请改用核心题；或者把这道题也设为补充题（extra: true）。`,
+      );
+    }
+    for (const value of values) {
+      if (target.options?.includes(value)) continue;
+      problems.push(
+        `${where} 的 showIf 比较的是 "${answer}" 等于 "${value}"，但那道题没有这个选项，条件永远不会成立。\n` +
+          `它可选的是：${(target.options ?? []).join("、")}。`,
+      );
+    }
+  }
+  return problems;
+}
+
 /** Every way questionnaire.ts is written wrongly, in plain words. Empty when it is fine. */
 export function declarationProblems(): string[] {
   const problems: string[] = [];
   const sections = QUESTIONNAIRE.sections as SectionDefinition[];
+
+  // Choice questions seen so far, in form order, for checking showIf.
+  const earlier = new Map<string, Earlier>();
 
   sections.forEach((section, index) => {
     const loose = section as unknown as Record<string, unknown>;
@@ -164,8 +243,32 @@ export function declarationProblems(): string[] {
       problems.push(`「${section.id}」这一节没有写 questions: [ … ]。请在里面列出这一节的题。`);
       return;
     }
-    for (const question of section.questions)
+    const hasCore = section.questions.some((question) => !question.extra);
+    problems.push(
+      ...showIfProblems(`「${section.id}」这一节`, section.showIf, new Map(earlier), hasCore),
+    );
+    for (const question of section.questions) {
       problems.push(...questionProblems(section.id, question));
+      problems.push(
+        ...showIfProblems(
+          `\`${section.id}/${question.id}\``,
+          question.showIf,
+          earlier,
+          !question.extra,
+        ),
+      );
+      const path = question.extra
+        ? `extra.${section.id}.${question.id}`
+        : `${section.id}.${question.id}`;
+      earlier.set(path, {
+        extra: Boolean(question.extra),
+        choice: question.kind === "choice",
+        options:
+          question.kind === "choice"
+            ? (OPTION_GROUPS as Record<string, readonly string[]>)[question.options]
+            : undefined,
+      });
+    }
   });
 
   const reviews = sections.filter((section) => section.kind === "review");

@@ -5,6 +5,8 @@ import {
   QUESTION_OPTION_GROUP,
   QUESTIONNAIRE,
   answerPath,
+  askedAnswers,
+  askedPath,
   type SectionDefinition,
 } from "@visa-master/core";
 import en from "../../messages/en.json" with { type: "json" };
@@ -65,8 +67,8 @@ const EXAMPLES: Record<string, string> = Object.fromEntries(
   ),
 );
 
-/** Every question in the order the form asks it. */
-export const QUESTIONS = INTAKE_SECTIONS.filter((section) => section.kind === "questions").flatMap(
+/** Every question the questionnaire has, asked or not. */
+const ALL_QUESTIONS = INTAKE_SECTIONS.filter((section) => section.kind === "questions").flatMap(
   (section) => section.questions.map((question) => ({ sectionId: section.id, ...question })),
 );
 
@@ -82,10 +84,10 @@ export function answerFor(path: string): string {
   return answer;
 }
 
-/** Every answer, nested the way `applications.answers` stores them. */
-export function completeAnswers(): Record<string, unknown> {
+/** An answer to every question, nested the way `applications.answers` stores them. */
+function everyAnswer(): Record<string, unknown> {
   const answers: Record<string, unknown> = {};
-  for (const { path } of QUESTIONS) {
+  for (const { path } of ALL_QUESTIONS) {
     const keys = path.split(".");
     const last = keys.pop()!;
     let node = answers;
@@ -93,6 +95,17 @@ export function completeAnswers(): Record<string, unknown> {
     node[last] = answerFor(path);
   }
   return answers;
+}
+
+/**
+ * The questions these answers lead the form to ask, in order — what someone
+ * clicking through it sees, branches included or skipped as the answers decide.
+ */
+export const QUESTIONS = askedPath(everyAnswer());
+
+/** The answers to exactly the questions asked, as a finished form stores them. */
+export function completeAnswers(): Record<string, unknown> {
+  return askedAnswers(everyAnswer());
 }
 
 /** The hub's progress line once every question is answered. */

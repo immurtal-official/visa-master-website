@@ -1,4 +1,5 @@
 import {
+  askedAnswers,
   documentCompleteness,
   documentsFor,
   type DocumentCompleteness,
@@ -72,7 +73,9 @@ export const uploadService = {
       throw new ServiceError("dashboard.loadFailed.title", 502);
     }
 
-    const answers = application.answers ?? {};
+    // Only what is asked decides the checklist: an answer left in a branch the
+    // applicant closed must not keep a document on it.
+    const answers = askedAnswers(application.answers ?? {});
     const rows = uploads ?? [];
 
     return {

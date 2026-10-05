@@ -1,7 +1,7 @@
 import type { Locale } from "next-intl";
 import { setRequestLocale } from "next-intl/server";
 import { notFound, redirect } from "next/navigation";
-import { INTAKE_SECTIONS, readAnswer } from "@visa-master/core";
+import { INTAKE_SECTIONS, findAskedQuestion, isPlaceholder, readAnswer } from "@visa-master/core";
 import { getPathname } from "@/i18n/navigation";
 import { apiGet } from "@/lib/api/server";
 import { isSupabaseConfigured } from "@/lib/supabase/config";
@@ -27,11 +27,26 @@ export default async function QuestionPage({
       answers: Record<string, unknown>;
       draft_answers: Record<string, string>;
     };
+    answerSources: {
+      path: string;
+      source: "applicant" | "document";
+      confirmed_at: string | null;
+    }[];
   }>(`/api/v1/applications/${id}`);
   if (result.status === 401) redirect(getPathname({ href: "/login", locale }));
   if (result.status === 404 || !result.data) notFound();
 
   const application = result.data.application;
+
+  // A question the earlier answers have closed off is not asked: back to the
+  // sections, which show what is.
+  if (!findAskedQuestion(sectionId, questionId, application.answers ?? {})) {
+    redirect(getPathname({ href: `/applications/${id}/intake`, locale }));
+  }
+
+  const fromDocument = isPlaceholder(
+    result.data.answerSources.find((source) => source.path === question.path),
+  );
 
   const saved = readAnswer(application.answers ?? {}, question.path);
   const draft = (application.draft_answers ?? {})[question.path];
@@ -49,6 +64,7 @@ export default async function QuestionPage({
         questionId={questionId}
         path={question.path}
         savedValue={typeof initialValue === "string" ? initialValue : ""}
+        fromDocument={fromDocument}
       />
     </main>
   );

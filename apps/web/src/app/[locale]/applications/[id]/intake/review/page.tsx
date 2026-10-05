@@ -1,7 +1,7 @@
 import type { Locale } from "next-intl";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { notFound, redirect } from "next/navigation";
-import { INTAKE_SECTIONS, readAnswer } from "@visa-master/core";
+import { INTAKE_SECTIONS, askedQuestions, isPlaceholder, readAnswer } from "@visa-master/core";
 import { Card } from "@/components/ui/card";
 import { Link, getPathname } from "@/i18n/navigation";
 import { apiGet } from "@/lib/api/server";
@@ -26,13 +26,24 @@ export default async function ReviewPage({
 
   if (!isSupabaseConfigured()) redirect(getPathname({ href: "/login", locale }));
 
-  const result = await apiGet<{ application: { id: string; answers: Record<string, unknown> } }>(
-    `/api/v1/applications/${id}`,
-  );
+  const result = await apiGet<{
+    application: { id: string; answers: Record<string, unknown> };
+    answerSources: {
+      path: string;
+      source: "applicant" | "document";
+      confirmed_at: string | null;
+    }[];
+  }>(`/api/v1/applications/${id}`);
   if (result.status === 401) redirect(getPathname({ href: "/login", locale }));
   if (result.status === 404 || !result.data) notFound();
 
   const answers = result.data.application.answers ?? {};
+  const sources = new Map(result.data.answerSources.map((source) => [source.path, source]));
+  // Only what is asked is read back: a closed branch is not part of what is sent.
+  const sections = INTAKE_SECTIONS.map((section) => ({
+    section,
+    questions: askedQuestions(section, answers),
+  })).filter(({ questions }) => questions.length > 0);
 
   return (
     <main className="vm-container" style={{ paddingBlock: "var(--space-10)" }}>
@@ -58,7 +69,7 @@ export default async function ReviewPage({
       </p>
 
       <div style={{ display: "grid", gap: "var(--space-4)" }}>
-        {INTAKE_SECTIONS.filter((section) => section.kind === "questions").map((section) => (
+        {sections.map(({ section, questions }) => (
           <Card key={section.id} padding="var(--space-5)">
             <h2
               style={{
@@ -72,8 +83,9 @@ export default async function ReviewPage({
             </h2>
 
             <dl style={{ margin: 0, display: "grid", gap: "var(--space-3)" }}>
-              {section.questions.map((question) => {
+              {questions.map((question) => {
                 const value = readAnswer(answers, question.path);
+                const toConfirm = isPlaceholder(sources.get(question.path));
                 return (
                   <div
                     key={question.id}
@@ -101,6 +113,19 @@ export default async function ReviewPage({
                       <span style={{ color: "var(--text-body)", fontWeight: "var(--fw-medium)" }}>
                         {typeof value === "string" && value ? value : "—"}
                       </span>
+                      {toConfirm ? (
+                        <span
+                          style={{
+                            paddingInline: "var(--space-2)",
+                            borderRadius: "var(--radius-pill)",
+                            background: "var(--status-warning-bg)",
+                            color: "var(--status-warning-fg)",
+                            fontSize: "var(--fs-14)",
+                          }}
+                        >
+                          {t("intake.review.toConfirm")}
+                        </span>
+                      ) : null}
                       <Link
                         href={`/applications/${id}/intake/${section.id}/${question.id}`}
                         style={{ color: "var(--text-link)", fontSize: "var(--fs-14)" }}

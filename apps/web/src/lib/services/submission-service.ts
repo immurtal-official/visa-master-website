@@ -1,9 +1,12 @@
 import {
   INTAKE_CHECKSUM,
   INTAKE_VERSION,
+  askedAnswers,
   documentCompleteness,
   documentsForJob,
   parseIntake,
+  placeholderIssues,
+  type AnswerSource,
   type StoredUpload,
 } from "@visa-master/core";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -50,6 +53,23 @@ export const submissionService = {
     const parsed = parseIntake(application.answers ?? {});
     if (!parsed.ok) throw new ValidationFailure(parsed.issues);
 
+    // An answer proposed from a document is the applicant's only once they
+    // have confirmed it. Until then it is a placeholder, and nothing is sent.
+    const { data: sources, error: sourcesError } = await supabase
+      .from("answer_sources")
+      .select("path, source, confirmed_at")
+      .eq("application_id", application.id)
+      .returns<AnswerSource[]>();
+    if (sourcesError) {
+      console.error("submit: could not read answer sources", { code: sourcesError.code });
+      throw new ServiceError("intake.review.submitFailed", 502);
+    }
+    const placeholders = placeholderIssues(application.answers ?? {}, sources ?? []);
+    if (placeholders.length > 0) throw new ValidationFailure(placeholders);
+
+    // What the checklist and the job read: only the answers that are asked.
+    const answers = askedAnswers(application.answers ?? {});
+
     // The documents are half the pack. Enqueueing without them would spend ten
     // minutes of model time to produce something a reviewer must reject.
     const { data: uploads } = await supabase
@@ -58,7 +78,7 @@ export const submissionService = {
       .eq("application_id", application.id)
       .returns<StoredUpload[]>();
 
-    const documents = documentCompleteness(application.answers ?? {}, uploads ?? []);
+    const documents = documentCompleteness(answers, uploads ?? []);
     if (!documents.complete) {
       throw new ServiceError("intake.review.documentsMissing", 422, {
         missingDocuments: documents.missing,
@@ -91,7 +111,7 @@ export const submissionService = {
           intakeContract: { version: INTAKE_VERSION, checksum: INTAKE_CHECKSUM },
           // The applicant's documents, by reference. Never a storage path: a
           // path begins with the owner's user id. The conductor resolves ids.
-          documents: documentsForJob(application.answers ?? {}, uploads ?? []),
+          documents: documentsForJob(answers, uploads ?? []),
         },
         // Beta wall-clock cap; the clock starts at lease, never in the queue.
         deadline_seconds: 3600,
