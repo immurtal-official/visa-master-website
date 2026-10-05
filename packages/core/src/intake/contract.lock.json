@@ -1,5 +1,6 @@
 {
   "version": 1,
+  "checksum": "7502e9fd56501b7e57ba400dbdeab1efe3d48048a12382445fd9f2c575c5b880",
   "questions": [
     {
       "path": "applicant.birthDate",

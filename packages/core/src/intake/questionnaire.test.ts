@@ -23,12 +23,18 @@
  *
  * Runs with `pnpm check:intake`, without Docker, in about a second.
  */
+import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import { SCHENGEN_SPAIN_DOCUMENTS } from "../rules/schengen-spain";
 import { comparisonsOf } from "./condition";
-import { contractDifferences, currentContract, type IntakeContract } from "./contract";
+import {
+  canonicalContract,
+  contractDifferences,
+  currentContract,
+  type IntakeContract,
+} from "./contract";
 import { declarationProblems } from "./declaration";
 import {
   FIELD_BEHAVIOUR,
@@ -100,7 +106,7 @@ const questionName = (q: { section: string; id: string }) => `${q.section}/${q.i
 
 const lockedContract = JSON.parse(
   readFileSync(fileURLToPath(new URL("./contract.lock.json", import.meta.url)), "utf8"),
-) as IntakeContract & { version: number };
+) as IntakeContract & { version: number; checksum: string };
 
 describe("questionnaire gate", () => {
   // 0 — before anything else: the file itself is written so it can be read.
@@ -112,6 +118,26 @@ describe("questionnaire gate", () => {
   //     the documents, the checklist and the conductor read.
   it("没有改动作业契约", () => {
     expectNoProblems(contractDifferences(lockedContract, currentContract()));
+  });
+
+  // The lock is written by `pnpm intake:lock` and by nothing else. Its
+  // checksum is what an application and a job record, so a lock edited by
+  // hand would let two different contracts claim the same identity.
+  it("contract.lock.json 没有被手动改过", () => {
+    const problems: string[] = [];
+    const checksum = createHash("sha256").update(canonicalContract(lockedContract)).digest("hex");
+    if (!Number.isInteger(lockedContract.version) || lockedContract.version < 1) {
+      problems.push(
+        `contract.lock.json 里的 version 应该是正整数，现在是 ${JSON.stringify(lockedContract.version)}。`,
+      );
+    }
+    if (lockedContract.checksum !== checksum) {
+      problems.push(
+        "packages/core/src/intake/contract.lock.json 的内容和它记录的校验和对不上，看起来是被手动改过。\n" +
+          "这个文件只能由工程师运行 `pnpm intake:lock` 生成，请撤销对它的手动修改。",
+      );
+    }
+    expectNoProblems(problems);
   });
 
   // 1 — the most common mistake: a question added, its wording not.

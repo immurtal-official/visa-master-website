@@ -90,6 +90,26 @@ export function currentContract(): IntakeContract {
   return { questions, checks };
 }
 
+/**
+ * The contract as one canonical string — keys sorted at every level — so that
+ * its checksum depends on what it says and never on how it was written out.
+ * Hashing it needs node:crypto, which this module stays clear of because the
+ * browser imports it; the lock script and the gate do the hashing.
+ */
+export function canonicalContract(contract: IntakeContract): string {
+  const sortKeys = (value: unknown): unknown =>
+    Array.isArray(value)
+      ? value.map(sortKeys)
+      : typeof value === "object" && value !== null
+        ? Object.fromEntries(
+            Object.keys(value)
+              .sort()
+              .map((key) => [key, sortKeys((value as Record<string, unknown>)[key])]),
+          )
+        : value;
+  return JSON.stringify(sortKeys({ questions: contract.questions, checks: contract.checks }));
+}
+
 /** A comparable rendering of one contract question, for the messages. */
 function describe(question: ContractQuestion): string {
   if (question.kind === "choice") {

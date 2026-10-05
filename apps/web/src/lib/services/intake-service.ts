@@ -1,4 +1,11 @@
-import { INTAKE_SECTIONS, nextQuestion, parseQuestion } from "@visa-master/core";
+import {
+  INTAKE_CHECKSUM,
+  INTAKE_SECTIONS,
+  INTAKE_VERSION,
+  nextQuestion,
+  parseQuestion,
+} from "@visa-master/core";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { requireUser } from "./auth-service";
 import { ServiceError, ValidationFailure } from "./errors";
 
@@ -63,19 +70,28 @@ export const intakeService = {
     const parsed = parseQuestion(question.path, value);
     if (!parsed.ok) throw new ValidationFailure(parsed.issues);
 
-    const { supabase } = await requireUser();
+    const { userId, supabase } = await requireUser();
 
     const { data: application, error: readError } = await supabase
       .from("applications")
-      .select("answers, draft_answers")
+      .select("status, answers, draft_answers")
       .eq("id", applicationId)
-      .maybeSingle<{ answers: Record<string, unknown>; draft_answers: DraftAnswers }>();
+      .maybeSingle<{
+        status: string;
+        answers: Record<string, unknown>;
+        draft_answers: DraftAnswers;
+      }>();
 
     if (readError) {
       console.error("intake.saveAnswer: could not read", { code: readError.code });
       throw new ServiceError("intake.saveFailed", 502);
     }
     if (!application) throw new ServiceError("errors.notFound.title", 404);
+    // A sent application's answers are frozen in its job; changing them here
+    // would leave the record saying something the pack was never made from.
+    if (application.status !== "draft") {
+      throw new ServiceError("intake.review.alreadySubmitted", 409);
+    }
 
     const answers = { ...(application.answers ?? {}) };
     setAnswer(answers, question.path, parsed.data);
@@ -95,11 +111,34 @@ export const intakeService = {
         // The resume point is where they are going, not where they were:
         // coming back should continue the form, not re-ask what was answered.
         last_step: after ? `${after.sectionId}/${after.questionId}` : null,
+        // The contract these answers were given under, as of this answer.
+        intake_version: INTAKE_VERSION,
+        intake_checksum: INTAKE_CHECKSUM,
       })
       .eq("id", applicationId);
 
     if (error) {
       console.error("intake.saveAnswer: could not save", { code: error.code });
+      throw new ServiceError("intake.saveFailed", 502);
+    }
+
+    // Typed by the applicant, which is its own confirmation — and which
+    // replaces any proposal read off a document for the same question. Written
+    // with the server's authority: this is the row the submission gate trusts.
+    const { error: sourceError } = await createAdminClient().from("answer_sources").upsert({
+      application_id: applicationId,
+      user_id: userId,
+      path: question.path,
+      source: "applicant",
+      document_field_id: null,
+      confirmed_at: new Date().toISOString(),
+      intake_version: INTAKE_VERSION,
+    });
+
+    if (sourceError) {
+      // The answer is saved; its source is not. Saying so is better than a
+      // silent gap: pressing Continue again writes both.
+      console.error("intake.saveAnswer: could not record the source", { code: sourceError.code });
       throw new ServiceError("intake.saveFailed", 502);
     }
 

@@ -1,4 +1,9 @@
-import { documentCompleteness, parseIntake } from "@visa-master/core";
+import {
+  INTAKE_CHECKSUM,
+  INTAKE_VERSION,
+  documentCompleteness,
+  parseIntake,
+} from "@visa-master/core";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireUser } from "./auth-service";
 import { ServiceError, ValidationFailure } from "./errors";
@@ -79,6 +84,9 @@ export const submissionService = {
             employment: application.employment,
           },
           intake: parsed.data,
+          // Which contract the intake was validated against, so a pack can be
+          // traced to the exact set of core questions that produced it.
+          intakeContract: { version: INTAKE_VERSION, checksum: INTAKE_CHECKSUM },
         },
         // Beta wall-clock cap; the clock starts at lease, never in the queue.
         deadline_seconds: 3600,

@@ -1,4 +1,4 @@
-import { checkRoute, parseRouteCheck } from "@visa-master/core";
+import { INTAKE_CHECKSUM, INTAKE_VERSION, checkRoute, parseRouteCheck } from "@visa-master/core";
 import { requireUser } from "./auth-service";
 import { ServiceError, ValidationFailure } from "./errors";
 
@@ -101,6 +101,8 @@ export const applicationService = {
         destination: parsed.data.destination,
         purpose: parsed.data.purpose,
         employment: parsed.data.employment,
+        intake_version: INTAKE_VERSION,
+        intake_checksum: INTAKE_CHECKSUM,
       })
       .select("id")
       .single<{ id: string }>();
