@@ -1,0 +1,14 @@
+{
+  "name": "@visa-master/api",
+  "version": "0.0.0",
+  "private": true,
+  "description": "The FastAPI backend. Python, not TypeScript: this file exists so turbo's lint/typecheck/test reach it, and every script runs inside apps/api/.venv.",
+  "scripts": {
+    "venv": "uv venv --python 3.12 .venv && uv pip install --python .venv -r requirements-dev.txt",
+    "dev": "bash scripts/py.sh uvicorn app.main:app --reload --port 8000",
+    "lint": "bash scripts/py.sh ruff check .",
+    "typecheck": "bash scripts/py.sh python -m compileall -q app scripts api",
+    "test": "bash scripts/py.sh pytest -q",
+    "openapi": "bash scripts/py.sh python scripts/export_openapi.py"
+  }
+}

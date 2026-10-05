@@ -1,35 +1,45 @@
-# apps/api — where the backend goes if it leaves Next.js
+# apps/api — the backend
 
-**Empty on purpose.** The backend is not here today, and moving it here is not
-planned work. This directory exists so the layout says where it would go, and
-so nobody mistakes its absence for an oversight.
+FastAPI, Python 3.12. Every `/api/v1/**` endpoint lives here once it has moved
+out of Next.js ([ADR-005](../../discussion/ADR-005-fastapi-backend-service.md));
+until then the web still serves the rest. The web, the mobile app and any later
+client are all clients of this one contract.
 
-## Where the backend is now
+## Running it
 
-| Layer | Path | Runs on |
+```bash
+pnpm --filter @visa-master/api venv     # once: .venv with Python 3.12 (needs uv)
+cp apps/api/.env.example apps/api/.env  # then fill in from `pnpm db:status`
+pnpm --filter @visa-master/api dev      # http://127.0.0.1:8000/api/v1/health
+```
+
+`pnpm turbo lint typecheck test` reaches this package like any other: lint is
+`ruff`, typecheck compiles every module, test is `pytest`. The database tests
+run against the local Supabase stack (`pnpm db:start`) and are reported as
+skipped when it is not up.
+
+## How a request is handled
+
+| Layer | Where | Does |
 |---|---|---|
-| HTTP handlers for `/api/v1/**` | `apps/web/src/app/api/v1/` | Vercel, with the web app |
-| Business logic — the service layer | `apps/web/src/lib/services/` | the same deployment |
-| Rules, schemas, message keys | `packages/core` | imported by both |
-| Postgres, auth, storage, row-level security | `packages/db` → Supabase | Supabase |
-| The agent plane: claiming jobs, running containers | `apps/conductor` + `infra/` | the VM, once it exists |
+| Router | `app/routers/` | Parses the request, calls one service, returns its result. |
+| Service | `app/services/` | The business logic. |
+| Rules | `packages/core`, exported as data, plus `app/rules/` | What counts as valid, complete, asked — written once in `packages/core` (ADR-005). |
+| Caller | `app/auth.py`, `app/deps.py` | `Authorization: Bearer <Supabase access token>`, verified against the project's JWKS; the account must still exist. Cookies are not credentials here. |
+| Database | `app/db.py` | `as_user(caller)` runs the transaction as `authenticated` with the caller's claims, so row-level security and the column grants still apply; `as_service()` is the product's own authority, asked for by name. |
 
-That is [ADR-004](../../discussion/ADR-004-api-first-control-plane.md): Next.js
-is the front end *and* the request/response backend, under a hard API-first
-discipline. Route handlers are thin adapters that call one service each, the web
-UI reaches data only through `/api/v1`, and there are no Server Actions. One
-deployment is cheaper to run and simpler to reason about, and nothing in the
-current load asks for two.
+Failures keep the wire format every client already reads:
+`422 {"issues": [{"path", "key", "params"?}]}` for rule failures and
+`{"error": {"key", ...}}` for everything else (`app/errors.py`).
 
-## What would move it
+## The contract
 
-The discipline exists so that extraction is a re-homing, not a rewrite: move
-`lib/services/` here behind the same paths and the same wire format, and every
-client — web, `apps/app`, a future mini program — keeps working unchanged.
+`openapi.json` is generated and committed: `pnpm --filter @visa-master/api openapi`
+rewrites it, and the test suite fails when it is out of date.
 
-A second client is **not** by itself a reason. The mobile app consumes the
-contract as it stands. A reason would be something the Vercel runtime cannot
-do: a request that outgrows the function time limit, a dependency that needs a
-long-lived process, or a hosting requirement — such as serving the API from
-mainland China — that Vercel cannot meet. When one of those is real, it gets an
-ADR amending ADR-004 first, and this README is replaced by the service.
+## Deploying
+
+Its own Vercel project with the root directory `apps/api`; Vercel's Python
+runtime serves `api/index.py`. Environment: `DATABASE_URL` (direct or session
+pooler, as a role that can `SET ROLE authenticated`), `SUPABASE_URL`,
+`SUPABASE_PUBLISHABLE_KEY`, `SUPABASE_SECRET_KEY`, `ENVIRONMENT=production`.

@@ -27,6 +27,8 @@ importers:
         specifier: ^2.10.9
         version: 2.10.9
 
+  apps/api: {}
+
   apps/conductor:
     dependencies:
       '@supabase/supabase-js':

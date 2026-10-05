@@ -1,0 +1,32 @@
+[project]
+name = "visa-master-api"
+version = "0.1.0"
+description = "Visa Master API: the backend every client of /api/v1 talks to (ADR-005)."
+# Pinned to 3.12: Vercel's runtime and the local venv must agree.
+requires-python = ">=3.12,<3.13"
+dynamic = ["dependencies"]
+
+[tool.setuptools.dynamic]
+dependencies = { file = ["requirements.txt"] }
+
+# Vercel's Python builder installs this directory as a package. Only the
+# application package belongs in it: `api/index.py` is the function entrypoint,
+# and scripts and tests are not deployed.
+[tool.setuptools.packages.find]
+include = ["app*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]
+ignore = [
+    "B008", # Depends() in defaults is the FastAPI idiom
+]
