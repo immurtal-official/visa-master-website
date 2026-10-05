@@ -69,6 +69,7 @@ export {
 
 export {
   QUESTIONNAIRE,
+  answerPath,
   type Keyboard,
   type QuestionDefinition,
   type QuestionnaireDefinition,

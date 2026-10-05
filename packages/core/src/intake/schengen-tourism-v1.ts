@@ -3,6 +3,7 @@ import { toResult, type ValidationResult } from "../validation/issue";
 import {
   OPTION_GROUPS,
   QUESTIONNAIRE,
+  answerPath,
   type Keyboard,
   type OptionGroup,
   type QuestionDefinition,
@@ -42,21 +43,41 @@ const questionSections: QuestionSection[] = (QUESTIONNAIRE.sections as SectionDe
 
 /** Every question with its section and its answer path, in form order. */
 const entries = questionSections.flatMap((section) =>
-  section.questions.map((question) => ({
+  (section.questions ?? []).map((question) => ({
     section,
     question,
-    path: `${section.id}.${question.id}`,
+    path: answerPath(section.id, question),
   })),
 );
 
-/** The rule a question's answer must meet when the whole form is checked. */
-function ruleOf(question: QuestionDefinition): z.ZodType {
-  return question.kind === "choice" ? z.enum(OPTION_GROUPS[question.options]) : question.rule;
+function isSchema(value: unknown): value is z.ZodType {
+  return typeof (value as { safeParse?: unknown } | null)?.safeParse === "function";
+}
+
+/**
+ * The rule a question's answer must meet, or undefined when the declaration
+ * does not give a usable one.
+ *
+ * Deliberately forgiving: a choice naming an option set that does not exist,
+ * or a question with no rule, must not stop this module loading — then every
+ * test would fail with a stack trace, and the gate could not say in plain
+ * words which question is wrong. Such a question gets no rule here, the gate
+ * reports it, and the whole-form check refuses any answer to it.
+ */
+function ruleOf(question: QuestionDefinition): z.ZodType | undefined {
+  if (question.kind === "choice") {
+    const options = (OPTION_GROUPS as Record<string, readonly string[]>)[question.options];
+    return options && options.length > 0 ? z.enum(options as [string, ...string[]]) : undefined;
+  }
+  return isSchema(question.rule) ? question.rule : undefined;
 }
 
 /** The rule applied when the question is answered on its own page. */
-function aloneRuleOf(question: QuestionDefinition): z.ZodType {
-  return question.kind === "choice" ? ruleOf(question) : (question.alone ?? question.rule);
+function aloneRuleOf(question: QuestionDefinition): z.ZodType | undefined {
+  if (question.kind !== "choice" && question.alone !== undefined) {
+    return isSchema(question.alone) ? question.alone : undefined;
+  }
+  return ruleOf(question);
 }
 
 export const FIELD_BEHAVIOUR: Record<string, FieldBehaviour> = Object.fromEntries(
@@ -91,35 +112,70 @@ export const QUESTION_OPTIONS: Record<string, readonly string[]> = Object.fromEn
  * wait.
  */
 export const QUESTION_SCHEMAS: Record<string, z.ZodType> = Object.fromEntries(
-  entries.map(({ question, path }) => [path, aloneRuleOf(question)]),
+  entries.flatMap(({ question, path }) => {
+    const rule = aloneRuleOf(question);
+    return rule ? [[path, rule] as const] : [];
+  }),
 );
 
-/** One section's answers, with the rules that relate them. */
-function sectionSchema(section: QuestionSection) {
-  const shape = z.object(
-    Object.fromEntries(section.questions.map((question) => [question.id, ruleOf(question)])),
+const coreQuestions = (section: QuestionSection) =>
+  (section.questions ?? []).filter((question) => !question.extra);
+const extraQuestions = (section: QuestionSection) =>
+  (section.questions ?? []).filter((question) => question.extra);
+
+/** A set of questions as an object schema, keyed by question id. */
+function objectOf(questions: QuestionDefinition[]) {
+  return z.object(
+    Object.fromEntries(questions.map((question) => [question.id, ruleOf(question) ?? z.never()])),
   );
+}
+
+/**
+ * One section's core answers, with the rules that relate them.
+ *
+ * Extra questions are not part of it: they are stored under `extra`, and a
+ * section-level rule is engineering code about the core answers.
+ */
+function sectionSchema(section: QuestionSection) {
+  const shape = objectOf(coreQuestions(section));
   return section.check ? shape.superRefine(section.check) : shape;
 }
 
-function sectionById(id: string): QuestionSection {
+/** A core section's schema by id; one that has been removed accepts nothing. */
+function sectionSchemaById(id: string) {
   const section = questionSections.find((s) => s.id === id);
-  if (!section) throw new Error(`questionnaire has no section "${id}"`);
-  return section;
+  return section ? sectionSchema(section) : z.never();
 }
 
-export const applicantSchema = sectionSchema(sectionById("applicant"));
-export const passportSchema = sectionSchema(sectionById("passport"));
-export const residenceSchema = sectionSchema(sectionById("residence"));
-export const employmentSchema = sectionSchema(sectionById("employment"));
-export const travelSchema = sectionSchema(sectionById("travel"));
-export const companionsSchema = sectionSchema(sectionById("companions"));
-export const historySchema = sectionSchema(sectionById("history"));
+export const applicantSchema = sectionSchemaById("applicant");
+export const passportSchema = sectionSchemaById("passport");
+export const residenceSchema = sectionSchemaById("residence");
+export const employmentSchema = sectionSchemaById("employment");
+export const travelSchema = sectionSchemaById("travel");
+export const companionsSchema = sectionSchemaById("companions");
+export const historySchema = sectionSchemaById("history");
 
-/** The whole intake. */
-const wholeForm = z.object(
-  Object.fromEntries(questionSections.map((section) => [section.id, sectionSchema(section)])),
-);
+/**
+ * The whole intake: each section's core answers under its id, and every
+ * extra answer under `extra.<section>`.
+ */
+const extraSections = questionSections.filter((section) => extraQuestions(section).length > 0);
+const wholeForm = z.object({
+  ...Object.fromEntries(
+    questionSections
+      .filter((section) => coreQuestions(section).length > 0)
+      .map((section) => [section.id, sectionSchema(section)]),
+  ),
+  ...(extraSections.length > 0
+    ? {
+        extra: z.object(
+          Object.fromEntries(
+            extraSections.map((section) => [section.id, objectOf(extraQuestions(section))]),
+          ),
+        ),
+      }
+    : {}),
+});
 export const intakeSchengenTourismV1 = QUESTIONNAIRE.check
   ? wholeForm.superRefine(QUESTIONNAIRE.check)
   : wholeForm;

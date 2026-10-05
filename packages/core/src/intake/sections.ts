@@ -1,4 +1,4 @@
-import { QUESTIONNAIRE, type SectionDefinition } from "./questionnaire";
+import { QUESTIONNAIRE, answerPath, type SectionDefinition } from "./questionnaire";
 
 /**
  * The intake, as a list of sections and the questions inside them.
@@ -18,7 +18,7 @@ import { QUESTIONNAIRE, type SectionDefinition } from "./questionnaire";
 export interface IntakeQuestion {
   /** Stable id. Used in the URL and stored as the resume point. */
   id: string;
-  /** Dot-path into `applications.answers`: `<section>.<question>`. */
+  /** Dot-path into `applications.answers`: `<section>.<question>`, or `extra.…` */
   path: string;
 }
 
@@ -44,7 +44,7 @@ export const INTAKE_SECTIONS: IntakeSection[] = (QUESTIONNAIRE.sections as Secti
           kind: "questions",
           questions: section.questions.map((question) => ({
             id: question.id,
-            path: `${section.id}.${question.id}`,
+            path: answerPath(section.id, question),
           })),
           available: section.available ?? true,
         },
