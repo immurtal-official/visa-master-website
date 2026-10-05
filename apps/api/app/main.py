@@ -22,6 +22,11 @@ from app.supabase import Supabase
 
 logger = logging.getLogger(__name__)
 
+# Serverless runtimes capture stderr; give the service's own warnings a handler
+# so they reach it, without overriding one a host has already installed.
+if not logging.getLogger().handlers:
+    logging.basicConfig(level=logging.INFO, format="%(levelname)s %(name)s %(message)s")
+
 API_PREFIX = "/api/v1"
 
 

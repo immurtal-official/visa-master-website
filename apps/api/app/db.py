@@ -76,7 +76,10 @@ class Database:
         # Never raises: a missing or unreachable database must not stop the
         # service booting. /health reports it, and every endpoint that needs
         # the database answers 503 instead of guessing.
-        if self._pool is not None or not settings.database_url:
+        if self._pool is not None:
+            return
+        if not settings.database_url:
+            logger.warning("db.not_configured: DATABASE_URL is not set")
             return
         async with self._connecting:
             if self._pool is None:
@@ -97,8 +100,9 @@ class Database:
                 # database; the next request tries again.
                 timeout=settings.db_connect_timeout_seconds,
             )
-        except Exception:
-            logger.exception("db.connect_failed")
+        except Exception as error:
+            # The kind of failure, never the DSN: it carries the password.
+            logger.error("db.connect_failed: %s", type(error).__name__)
             self._pool = None
 
     async def close(self) -> None:
@@ -112,7 +116,8 @@ class Database:
         try:
             async with self._pool.acquire() as connection:
                 return await connection.fetchval("select 1") == 1
-        except Exception:
+        except Exception as error:
+            logger.warning("db.ping_failed: %s", type(error).__name__)
             return False
 
     def _require_pool(self) -> asyncpg.Pool:
