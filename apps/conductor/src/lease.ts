@@ -29,12 +29,14 @@ export interface JobRow extends ExecutorJobRow {
 export async function claimNextJob(
   pool: Pool,
   { leaseOwner, leaseSeconds }: { leaseOwner: string; leaseSeconds: number },
+  /** Claim this job and no other, if it is queued — for running one job by hand. */
+  only?: string,
 ): Promise<JobRow | null> {
   const { rows } = await pool.query<JobRow>(
     `
     with next as (
       select id from public.jobs
-      where state = 'queued'
+      where state = 'queued' and ($3::uuid is null or id = $3::uuid)
       order by priority, created_at
       for update skip locked
       limit 1
@@ -52,7 +54,7 @@ export async function claimNextJob(
               j.attempt, j.max_attempts, j.input, j.deadline_seconds, j.started_at,
               j.max_tokens_total, j.max_cost_usd
     `,
-    [leaseOwner, leaseSeconds],
+    [leaseOwner, leaseSeconds, only ?? null],
   );
 
   return rows[0] ?? null;

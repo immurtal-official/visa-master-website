@@ -15,6 +15,7 @@ import {
 } from "./lease";
 import { readQaVerdict } from "./qa";
 import { routeToExecutor, type ExecutorRegistry } from "./router";
+import { RESULT_WRITERS } from "./writeback";
 
 export interface RunOutcome {
   jobId: string;
@@ -169,7 +170,30 @@ export async function runJob(
           return { jobId: job.id, state: requeued ? "queued" : "failed" };
         }
 
-        await markSucceeded(pool, job.id, config.leaseOwner, collected);
+        // A step whose output is data is done only once that data is written
+        // back. The output itself is not kept on the job row — for an
+        // extraction it is a passport number — only what was done with it.
+        const writer = RESULT_WRITERS[job.task_type];
+        let result: unknown = collected;
+        if (writer) {
+          try {
+            const { output: _output, ...rest } = collected;
+            result = { ...rest, writeBack: await writer(pool, job, collected) };
+          } catch (error) {
+            const { requeued } = await failJob(
+              pool,
+              job.id,
+              config.leaseOwner,
+              "validation_failed",
+              error instanceof Error && error.name === "WriteBackRefused"
+                ? error.message
+                : `the result could not be written back (${errorName(error)})`,
+            );
+            return { jobId: job.id, state: requeued ? "queued" : "failed" };
+          }
+        }
+
+        await markSucceeded(pool, job.id, config.leaseOwner, result);
         return { jobId: job.id, state: "succeeded" };
       }
 

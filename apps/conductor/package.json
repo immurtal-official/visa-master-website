@@ -8,6 +8,7 @@
     "start": "tsx --env-file-if-exists=.env.local src/index.ts",
     "start:container": "tsx src/index.ts",
     "enqueue:placeholder": "node --env-file-if-exists=.env.local scripts/enqueue-placeholder-job.mjs",
+    "run:job": "tsx --env-file-if-exists=.env.local scripts/run-job.ts",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "lint": "echo \"no lint config for @visa-master/conductor yet\""
@@ -21,6 +22,7 @@
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.112.2",
+    "@visa-master/core": "workspace:*",
     "@visa-master/executors": "workspace:*",
     "pg": "^8.13.0"
   }
