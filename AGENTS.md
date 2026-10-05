@@ -61,7 +61,9 @@ The web UI is **one client** of `/api/v1/**`. Concretely:
 
 ## Verification
 
-The bar before any commit: `pnpm turbo lint typecheck test`, `pnpm --filter
+The bar before any commit: `pnpm turbo lint typecheck test` (which includes
+`apps/api`; create its Python environment once with `pnpm --filter
+@visa-master/api venv`), `pnpm --filter
 web build`, `pnpm db:test`, and the Playwright suite (`pnpm --filter web
 e2e`, needs Docker + `pnpm db:start`). Failures are fixed, not skipped;
 tests scope their cleanup to their own data.

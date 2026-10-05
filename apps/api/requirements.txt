@@ -1,0 +1,17 @@
+# Runtime dependencies, pinned. Python 3.12 — the version Vercel runs
+# (.python-version) and every developer machine runs. Do not float these: a
+# silent minor bump on a serverless build is a debugging session nobody asked
+# for. The same pins as nihao-pet/platform's apps/api, which runs them in
+# production.
+fastapi==0.142.2
+starlette==1.7.0
+uvicorn[standard]==0.54.0
+pydantic==2.13.5
+pydantic-settings==2.15.0
+asyncpg==0.31.0
+httpx==0.28.1
+# Verifies Supabase access tokens against the project's JWKS. The [crypto]
+# extra supplies RS256/ES256; without it PyJWT can only do HMAC, the family
+# this service refuses outside local development.
+PyJWT[crypto]==2.15.1
+python-dotenv==1.2.4
