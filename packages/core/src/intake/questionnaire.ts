@@ -1,4 +1,5 @@
 import { z } from "zod";
+import type { Condition } from "./condition";
 import {
   amountInYuan,
   dateString,
@@ -56,9 +57,16 @@ import {
  *   keyboard  Optional. How a phone keyboard should behave for the field.
  *   extra     true for a question nothing downstream depends on (see above).
  *   example   A valid answer. Required for an extra question.
+ *   showIf    Optional. Ask the question only when an earlier choice question
+ *             has a given answer — `{ answer: "companions.whoPays", is:
+ *             "family" }`, the same conditions the document checklist uses
+ *             (condition.ts). A question not asked does not count towards
+ *             finishing, and any answer it had is left out of the submission.
  *
- * A section can also declare `check`: a rule relating two of its answers,
- * which runs when the whole form is checked.
+ * A section can also declare `check`, a rule relating two of its answers
+ * which runs when the whole form is checked (and only when every core question
+ * in the section is asked), and `showIf`, to ask the whole section only when a
+ * condition holds.
  */
 
 /** How keyboards should behave for a field, derived from what it holds. */
@@ -97,6 +105,8 @@ interface QuestionCommon {
   extra?: true;
   /** A valid answer: checked against the rule, and typed in by the e2e tests. */
   example?: string;
+  /** Ask only when this holds of the answers to earlier questions. */
+  showIf?: Condition;
 }
 
 export type QuestionDefinition =
@@ -119,6 +129,8 @@ export type SectionDefinition =
       check?: CrossCheck;
       /** False while the section has not been built. */
       available?: boolean;
+      /** Ask the section at all only when this holds of earlier answers. */
+      showIf?: Condition;
     }
   | {
       /** A reading of everything answered, and the one place the whole form is checked. */

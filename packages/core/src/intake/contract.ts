@@ -6,6 +6,7 @@ import {
   type SectionDefinition,
 } from "./questionnaire";
 import { ruleName } from "./rules";
+import type { Condition } from "./condition";
 
 /**
  * The intake contract: the part of the questionnaire something downstream
@@ -32,6 +33,11 @@ export interface ContractQuestion {
   alone?: string;
   /** For a choice: the option set and the values it offers, in order. */
   options?: { group: string; values: string[] };
+  /**
+   * When it is asked, if not always: its section's condition and its own. A
+   * downstream reader has to know a core answer can be absent.
+   */
+  askedWhen?: Condition;
 }
 
 export interface IntakeContract {
@@ -45,14 +51,26 @@ export const UNNAMED_RULE = "(not a named rule)";
 
 type QuestionSection = Extract<SectionDefinition, { questions: QuestionDefinition[] }>;
 
-function contractQuestion(sectionId: string, question: QuestionDefinition): ContractQuestion {
-  const path = answerPath(sectionId, question);
+function askedWhen(section: QuestionSection, question: QuestionDefinition): Condition | undefined {
+  const conditions = [section.showIf, question.showIf].filter((c): c is Condition => Boolean(c));
+  if (conditions.length === 0) return undefined;
+  return conditions.length === 1 ? conditions[0] : { all: conditions };
+}
+
+function contractQuestion(
+  section: QuestionSection,
+  question: QuestionDefinition,
+): ContractQuestion {
+  const path = answerPath(section.id, question);
+  const when = askedWhen(section, question);
+  const asked = when ? { askedWhen: when } : {};
   if (question.kind === "choice") {
     const values = (OPTION_GROUPS as Record<string, readonly string[]>)[question.options];
     return {
       path,
       kind: "choice",
       options: { group: String(question.options), values: [...(values ?? [])] },
+      ...asked,
     };
   }
   return {
@@ -60,6 +78,7 @@ function contractQuestion(sectionId: string, question: QuestionDefinition): Cont
     kind: question.kind ?? "text",
     rule: ruleName(question.rule) ?? UNNAMED_RULE,
     ...(question.alone !== undefined ? { alone: ruleName(question.alone) ?? UNNAMED_RULE } : {}),
+    ...asked,
   };
 }
 
@@ -73,7 +92,7 @@ export function currentContract(): IntakeContract {
     .flatMap((section) =>
       (section.questions ?? [])
         .filter((question) => !question.extra)
-        .map((question) => contractQuestion(section.id, question)),
+        .map((question) => contractQuestion(section, question)),
     )
     // Order is not part of the contract, so it is not allowed to look like it.
     .sort((a, b) => a.path.localeCompare(b.path));
@@ -112,11 +131,12 @@ export function canonicalContract(contract: IntakeContract): string {
 
 /** A comparable rendering of one contract question, for the messages. */
 function describe(question: ContractQuestion): string {
+  const when = question.askedWhen ? `，仅在 ${JSON.stringify(question.askedWhen)} 时询问` : "";
   if (question.kind === "choice") {
-    return `选择题，选项组 ${question.options!.group}：${question.options!.values.join(" / ")}`;
+    return `选择题，选项组 ${question.options!.group}：${question.options!.values.join(" / ")}${when}`;
   }
   const kind = question.kind === "date" ? "日期题" : "文字题";
-  return `${kind}，规则 ${question.rule}${question.alone ? `，单独作答时 ${question.alone}` : ""}`;
+  return `${kind}，规则 ${question.rule}${question.alone ? `，单独作答时 ${question.alone}` : ""}${when}`;
 }
 
 const pretty = (path: string) => path.replace(".", "/");

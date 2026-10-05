@@ -48,7 +48,7 @@ vi.mock("./questionnaire", async (importOriginal) => {
   };
 });
 
-const { INTAKE_SECTIONS, intakeProgress } = await import("./sections");
+const { INTAKE_SECTIONS, askedPath, intakeProgress } = await import("./sections");
 const { FIELD_BEHAVIOUR, QUESTION_SCHEMAS, parseIntake, parseQuestion } =
   await import("./schengen-tourism-v1");
 const { currentContract } = await import("./contract");
@@ -96,25 +96,33 @@ describe("extra questions", () => {
   });
 
   it("count towards finishing the form", () => {
-    const all = INTAKE_SECTIONS.flatMap((section) => section.questions);
-    const extras = all.filter((question) => question.path.startsWith("extra."));
-    expect(extras.length).toBeGreaterThanOrEqual(2);
-    expect(intakeProgress(CORE)).toEqual({
-      answered: all.length - extras.length,
-      total: all.length,
-    });
+    const asked = askedPath(CORE).map((question) => question.path);
+    expect(asked).toContain("extra.travel.probeHotel");
+    expect(asked).toContain("extra.probeSection.probeChoice");
+    const progress = intakeProgress(CORE);
+    expect(progress.total - progress.answered).toBe(
+      asked.filter((path) => path.startsWith("extra.")).length,
+    );
   });
 
   it("must be answered before submission, and travel to the job under extra", () => {
     expect(parseIntake(CORE).ok).toBe(false);
 
-    // Every extra question answered with its own declared example.
+    // Every asked extra question answered with its own declared example.
+    const examples = new Map<string, string>(
+      (QUESTIONNAIRE.sections as SectionDefinition[]).flatMap((section) =>
+        "questions" in section
+          ? section.questions
+              .filter((q) => q.extra)
+              .map((q) => [`extra.${section.id}.${q.id}`, q.example!] as const)
+          : [],
+      ),
+    );
     const extra: Record<string, Record<string, string>> = {};
-    for (const section of QUESTIONNAIRE.sections as SectionDefinition[]) {
-      if (!("questions" in section)) continue;
-      for (const question of section.questions.filter((q) => q.extra)) {
-        (extra[section.id] ??= {})[question.id] = question.example!;
-      }
+    for (const { path } of askedPath(CORE)) {
+      if (!path.startsWith("extra.")) continue;
+      const [, section, id] = path.split(".");
+      (extra[section!] ??= {})[id!] = examples.get(path)!;
     }
     expect(extra.travel?.probeHotel).toBe("Hotel Sol");
     expect(extra.probeSection?.probeChoice).toBe("yes");

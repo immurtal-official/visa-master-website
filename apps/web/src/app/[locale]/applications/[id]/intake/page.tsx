@@ -1,7 +1,13 @@
 import type { Locale } from "next-intl";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { notFound, redirect } from "next/navigation";
-import { INTAKE_SECTIONS, intakeProgress, resumePoint, sectionState } from "@visa-master/core";
+import {
+  INTAKE_SECTIONS,
+  askedQuestions,
+  intakeProgress,
+  resumePoint,
+  sectionState,
+} from "@visa-master/core";
 import { LinkButton } from "@/components/ui/link-button";
 import { Card } from "@/components/ui/card";
 import { Link, getPathname } from "@/i18n/navigation";
@@ -79,8 +85,10 @@ export default async function IntakeHubPage({
       >
         {INTAKE_SECTIONS.map((section) => {
           const state = sectionState(section, answers);
-          const open = state !== "unavailable";
-          const first = section.questions[0];
+          // Closed when it is not built yet, or when the answers so far mean
+          // there is nothing in it to answer; either way the card says why.
+          const open = state !== "unavailable" && state !== "notNeeded";
+          const first = askedQuestions(section, answers)[0];
 
           const body = (
             <Card
@@ -119,7 +127,7 @@ export default async function IntakeHubPage({
                     color: "var(--text-muted)",
                   }}
                 >
-                  {t("unavailableHint")}
+                  {t(state === "notNeeded" ? "notNeededHint" : "unavailableHint")}
                 </p>
               )}
             </Card>

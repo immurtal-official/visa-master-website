@@ -30,6 +30,13 @@ export interface ApplicationDetail extends ApplicationSummary {
   submitted_job_id: string | null;
 }
 
+/** Where an answer came from, for showing which ones still need confirming. */
+export interface AnswerSourceView {
+  path: string;
+  source: "applicant" | "document";
+  confirmed_at: string | null;
+}
+
 export const applicationService = {
   async list(): Promise<ApplicationSummary[]> {
     const { supabase } = await requireUser();
@@ -47,9 +54,11 @@ export const applicationService = {
     return data ?? [];
   },
 
-  async get(
-    id: string,
-  ): Promise<{ application: ApplicationDetail; job: { state: string } | null }> {
+  async get(id: string): Promise<{
+    application: ApplicationDetail;
+    job: { state: string } | null;
+    answerSources: AnswerSourceView[];
+  }> {
     const { supabase } = await requireUser();
 
     const { data: application, error } = await supabase
@@ -74,7 +83,13 @@ export const applicationService = {
       .eq("id", application.submitted_job_id ?? "")
       .maybeSingle<{ state: string }>();
 
-    return { application, job: job ?? null };
+    const { data: answerSources } = await supabase
+      .from("answer_sources")
+      .select("path, source, confirmed_at")
+      .eq("application_id", application.id)
+      .returns<AnswerSourceView[]>();
+
+    return { application, job: job ?? null, answerSources: answerSources ?? [] };
   },
 
   /**

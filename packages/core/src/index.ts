@@ -55,8 +55,15 @@ export {
   type UnsupportedReason,
 } from "./routes/route-gate";
 
+export { isPlaceholder, placeholderIssues, type AnswerSource } from "./intake/provenance";
+
 export {
   INTAKE_SECTIONS,
+  askedAnswers,
+  askedPath,
+  askedQuestions,
+  findAskedQuestion,
+  isAsked,
   intakeProgress,
   nextQuestion,
   readAnswer,

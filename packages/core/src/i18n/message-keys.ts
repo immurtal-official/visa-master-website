@@ -27,6 +27,7 @@ export const MESSAGE_KEYS = {
   "validation.date.past": [],
   "validation.amount.invalid": [],
   "validation.travel.returnBeforeDeparture": [],
+  "validation.answer.unconfirmed": [],
 } as const satisfies Record<string, readonly string[]>;
 
 export type MessageKey = keyof typeof MESSAGE_KEYS;

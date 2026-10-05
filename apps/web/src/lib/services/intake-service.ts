@@ -1,6 +1,7 @@
 import {
   INTAKE_CHECKSUM,
   INTAKE_SECTIONS,
+  findAskedQuestion,
   INTAKE_VERSION,
   nextQuestion,
   parseQuestion,
@@ -92,6 +93,11 @@ export const intakeService = {
     if (application.status !== "draft") {
       throw new ServiceError("intake.review.alreadySubmitted", 409);
     }
+    // A question the earlier answers have closed off is not there to answer —
+    // the same answer as for a question that does not exist.
+    if (!findAskedQuestion(sectionId, questionId, application.answers ?? {})) {
+      throw new ServiceError("errors.notFound.title", 404);
+    }
 
     const answers = { ...(application.answers ?? {}) };
     setAnswer(answers, question.path, parsed.data);
@@ -101,7 +107,8 @@ export const intakeService = {
     const draftAnswers = { ...(application.draft_answers ?? {}) };
     delete draftAnswers[question.path];
 
-    const after = nextQuestion(sectionId, questionId);
+    // Decided on the answers including this one: it may be what opens a branch.
+    const after = nextQuestion(sectionId, questionId, answers);
 
     const { error } = await supabase
       .from("applications")
@@ -172,9 +179,13 @@ export const intakeService = {
 
     const { data: application, error: readError } = await supabase
       .from("applications")
-      .select("status, draft_answers")
+      .select("status, answers, draft_answers")
       .eq("id", applicationId)
-      .maybeSingle<{ status: string; draft_answers: DraftAnswers }>();
+      .maybeSingle<{
+        status: string;
+        answers: Record<string, unknown>;
+        draft_answers: DraftAnswers;
+      }>();
 
     if (readError) {
       console.error("intake.saveDraft: could not read", { code: readError.code });
@@ -184,6 +195,9 @@ export const intakeService = {
     // Once an application is sent there is nothing left to be in the middle of
     // typing, and its answers are frozen in the job payload either way.
     if (application.status !== "draft") throw new ServiceError("errors.notFound.title", 404);
+    if (!findAskedQuestion(sectionId, questionId, application.answers ?? {})) {
+      throw new ServiceError("errors.notFound.title", 404);
+    }
 
     const draftAnswers = { ...(application.draft_answers ?? {}) };
     // An empty box is not a draft — it is the absence of one, and keeping it

@@ -1,4 +1,8 @@
+import { hasAnswer, readAnswer } from "./answers";
+import { conditionHolds, type Condition } from "./condition";
 import { QUESTIONNAIRE, answerPath, type SectionDefinition } from "./questionnaire";
+
+export { readAnswer };
 
 /**
  * The intake, as a list of sections and the questions inside them.
@@ -20,6 +24,8 @@ export interface IntakeQuestion {
   id: string;
   /** Dot-path into `applications.answers`: `<section>.<question>`, or `extra.…` */
   path: string;
+  /** Asked only when this holds of the answers so far. */
+  showIf?: Condition;
 }
 
 export interface IntakeSection {
@@ -33,6 +39,8 @@ export interface IntakeSection {
   questions: IntakeQuestion[];
   /** False while the section has not been built. */
   available: boolean;
+  /** Asked at all only when this holds of the answers so far. */
+  showIf?: Condition;
 }
 
 export const INTAKE_SECTIONS: IntakeSection[] = (QUESTIONNAIRE.sections as SectionDefinition[]).map(
@@ -45,23 +53,58 @@ export const INTAKE_SECTIONS: IntakeSection[] = (QUESTIONNAIRE.sections as Secti
           questions: section.questions.map((question) => ({
             id: question.id,
             path: answerPath(section.id, question),
+            ...(question.showIf ? { showIf: question.showIf } : {}),
           })),
           available: section.available ?? true,
+          ...(section.showIf ? { showIf: section.showIf } : {}),
         },
 );
 
-export type SectionState = "done" | "inProgress" | "todo" | "unavailable";
+/**
+ * "notNeeded": every question in the section is conditional, and none of the
+ * conditions holds for these answers — there is nothing in it to answer.
+ */
+export type SectionState = "done" | "inProgress" | "todo" | "unavailable" | "notNeeded";
 
-export function readAnswer(answers: unknown, path: string): unknown {
-  return path.split(".").reduce<unknown>((value, key) => {
-    if (typeof value !== "object" || value === null) return undefined;
-    return (value as Record<string, unknown>)[key];
-  }, answers);
+/**
+ * Whether a question is asked, given the answers so far.
+ *
+ * A question is asked when its section is available, its section's `showIf`
+ * holds, and its own does. A question that is not asked does not count towards
+ * finishing, is skipped when moving on, and its answer — kept if it was given
+ * before a controlling answer changed — is left out of the submission.
+ */
+export function isAsked(
+  section: IntakeSection,
+  question: IntakeQuestion,
+  answers: unknown,
+): boolean {
+  if (!section.available || section.kind !== "questions") return false;
+  if (section.showIf && !conditionHolds(section.showIf, answers)) return false;
+  return !question.showIf || conditionHolds(question.showIf, answers);
 }
 
-function isAnswered(answers: unknown, question: IntakeQuestion): boolean {
-  const value = readAnswer(answers, question.path);
-  return value !== undefined && value !== null && value !== "";
+/** The questions of a section that are asked, in order. */
+export function askedQuestions(section: IntakeSection, answers: unknown): IntakeQuestion[] {
+  return section.questions.filter((question) => isAsked(section, question, answers));
+}
+
+/** Every asked question across the intake, in order, with its section. */
+export function askedPath(answers: unknown): (IntakeQuestion & { sectionId: string })[] {
+  return INTAKE_SECTIONS.flatMap((section) =>
+    askedQuestions(section, answers).map((question) => ({ sectionId: section.id, ...question })),
+  );
+}
+
+/** Whether this question exists and is asked, given the answers. */
+export function findAskedQuestion(
+  sectionId: string,
+  questionId: string,
+  answers: unknown,
+): IntakeQuestion | undefined {
+  const section = INTAKE_SECTIONS.find((s) => s.id === sectionId);
+  const question = section?.questions.find((q) => q.id === questionId);
+  return section && question && isAsked(section, question, answers) ? question : undefined;
 }
 
 export function sectionState(section: IntakeSection, answers: unknown): SectionState {
@@ -73,17 +116,19 @@ export function sectionState(section: IntakeSection, answers: unknown): SectionS
     return rest.answered === rest.total ? "done" : "todo";
   }
 
-  const answered = section.questions.filter((question) => isAnswered(answers, question)).length;
+  const asked = askedQuestions(section, answers);
+  if (asked.length === 0) return "notNeeded";
+  const answered = asked.filter((question) => hasAnswer(answers, question.path)).length;
   if (answered === 0) return "todo";
-  return answered === section.questions.length ? "done" : "inProgress";
+  return answered === asked.length ? "done" : "inProgress";
 }
 
 /** How far through the whole intake someone is, for the progress line. */
 export function intakeProgress(answers: unknown): { answered: number; total: number } {
-  const questions = INTAKE_SECTIONS.filter((s) => s.available).flatMap((s) => s.questions);
+  const asked = askedPath(answers);
   return {
-    answered: questions.filter((question) => isAnswered(answers, question)).length,
-    total: questions.length,
+    answered: asked.filter((question) => hasAnswer(answers, question.path)).length,
+    total: asked.length,
   };
 }
 
@@ -91,8 +136,9 @@ export function intakeProgress(answers: unknown): { answered: number; total: num
  * The question to open when someone returns.
  *
  * Their stored position wins, because it is where they actually were —
- * including a question they had opened and not answered. Only when there is no
- * stored position does this fall back to the first unanswered one.
+ * including a question they had opened and not answered — as long as that
+ * question is still asked. Otherwise this falls back to the first unanswered
+ * question that is.
  */
 export function resumePoint(
   answers: unknown,
@@ -100,34 +146,56 @@ export function resumePoint(
 ): { sectionId: string; questionId: string } | null {
   if (lastStep) {
     const [sectionId, questionId] = lastStep.split("/");
-    const section = INTAKE_SECTIONS.find((s) => s.id === sectionId && s.available);
-    if (section?.questions.some((q) => q.id === questionId)) {
+    if (findAskedQuestion(sectionId ?? "", questionId ?? "", answers)) {
       return { sectionId: sectionId!, questionId: questionId! };
     }
   }
 
-  for (const section of INTAKE_SECTIONS) {
-    if (!section.available) continue;
-    for (const question of section.questions) {
-      if (!isAnswered(answers, question)) {
-        return { sectionId: section.id, questionId: question.id };
-      }
-    }
-  }
-
-  return null;
+  const first = askedPath(answers).find((question) => !hasAnswer(answers, question.path));
+  return first ? { sectionId: first.sectionId, questionId: first.id } : null;
 }
 
-/** The next question after this one, across section boundaries. */
+/**
+ * The next question after this one, across section boundaries, given the
+ * answers including the one just given — which is what decides whether a
+ * branch that depends on it opens.
+ */
 export function nextQuestion(
   sectionId: string,
   questionId: string,
+  answers: unknown,
 ): { sectionId: string; questionId: string } | null {
-  const available = INTAKE_SECTIONS.filter((s) => s.available);
-  const flat = available.flatMap((s) => s.questions.map((q) => ({ sectionId: s.id, ...q })));
-  const index = flat.findIndex((q) => q.sectionId === sectionId && q.id === questionId);
-  if (index < 0 || index + 1 >= flat.length) return null;
+  // Every question in form order, so the position of the current one is
+  // known even when it is not itself asked any more.
+  const all = INTAKE_SECTIONS.flatMap((section) =>
+    section.questions.map((question) => ({ section, question })),
+  );
+  const index = all.findIndex(
+    ({ section, question }) => section.id === sectionId && question.id === questionId,
+  );
+  if (index < 0) return null;
 
-  const next = flat[index + 1]!;
-  return { sectionId: next.sectionId, questionId: next.id };
+  const next = all
+    .slice(index + 1)
+    .find(({ section, question }) => isAsked(section, question, answers));
+  return next ? { sectionId: next.section.id, questionId: next.question.id } : null;
+}
+
+/**
+ * The answers with every question that is not asked removed — what the
+ * checklist and the job should read. An answer left from a branch the
+ * applicant has since closed stays stored, in case they reopen it, but counts
+ * for nothing.
+ */
+export function askedAnswers(answers: unknown): Record<string, unknown> {
+  const result: Record<string, unknown> = {};
+  for (const { path } of askedPath(answers)) {
+    if (!hasAnswer(answers, path)) continue;
+    const keys = path.split(".");
+    const last = keys.pop()!;
+    let node = result;
+    for (const key of keys) node = (node[key] ??= {}) as Record<string, unknown>;
+    node[last] = readAnswer(answers, path);
+  }
+  return result;
 }

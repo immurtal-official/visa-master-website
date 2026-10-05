@@ -9,6 +9,7 @@ import {
   type QuestionDefinition,
   type SectionDefinition,
 } from "./questionnaire";
+import { askedPath } from "./sections";
 
 /**
  * Everything the rest of the system reads about the intake, derived from the
@@ -155,30 +156,59 @@ export const travelSchema = sectionSchemaById("travel");
 export const companionsSchema = sectionSchemaById("companions");
 export const historySchema = sectionSchemaById("history");
 
+type IsAsked = (section: QuestionSection, question: QuestionDefinition) => boolean;
+
 /**
- * The whole intake: each section's core answers under its id, and every
- * extra answer under `extra.<section>`.
+ * The whole intake, as asked of one particular set of answers: each section's
+ * asked core answers under its id, and every asked extra answer under
+ * `extra.<section>`.
+ *
+ * A question that is not asked is neither required nor passed through — an
+ * answer left over from a branch the applicant has since closed never reaches
+ * the job. A section's own cross-field rule runs only when all of its core
+ * questions are asked, since it reads every one of them.
  */
-const extraSections = questionSections.filter((section) => extraQuestions(section).length > 0);
-const wholeForm = z.object({
-  ...Object.fromEntries(
-    questionSections
-      .filter((section) => coreQuestions(section).length > 0)
-      .map((section) => [section.id, sectionSchema(section)]),
-  ),
-  ...(extraSections.length > 0
-    ? {
-        extra: z.object(
-          Object.fromEntries(
-            extraSections.map((section) => [section.id, objectOf(extraQuestions(section))]),
+function formSchema(asked: IsAsked) {
+  const coreBySection = questionSections
+    .map((section) => ({
+      section,
+      all: coreQuestions(section),
+      asked: coreQuestions(section).filter((question) => asked(section, question)),
+    }))
+    .filter(({ asked }) => asked.length > 0);
+
+  const extraBySection = questionSections
+    .map((section) => ({
+      section,
+      asked: extraQuestions(section).filter((question) => asked(section, question)),
+    }))
+    .filter(({ asked }) => asked.length > 0);
+
+  const form = z.object({
+    ...Object.fromEntries(
+      coreBySection.map(({ section, all, asked }) => {
+        const shape = objectOf(asked);
+        return [
+          section.id,
+          section.check && asked.length === all.length ? shape.superRefine(section.check) : shape,
+        ];
+      }),
+    ),
+    ...(extraBySection.length > 0
+      ? {
+          extra: z.object(
+            Object.fromEntries(
+              extraBySection.map(({ section, asked }) => [section.id, objectOf(asked)]),
+            ),
           ),
-        ),
-      }
-    : {}),
-});
-export const intakeSchengenTourismV1 = QUESTIONNAIRE.check
-  ? wholeForm.superRefine(QUESTIONNAIRE.check)
-  : wholeForm;
+        }
+      : {}),
+  });
+  return QUESTIONNAIRE.check ? form.superRefine(QUESTIONNAIRE.check) : form;
+}
+
+/** The whole intake with every question asked. */
+export const intakeSchengenTourismV1 = formSchema(() => true);
 
 /** The answers, as the whole-form check returns them: section → question → value. */
 export type IntakeSchengenTourismV1 = Record<string, Record<string, unknown>>;
@@ -213,5 +243,7 @@ export function parsePassport(input: unknown) {
  * that would not pass them.
  */
 export function parseIntake(input: unknown) {
-  return toResult(intakeSchengenTourismV1.safeParse(input), input);
+  const asked = new Set(askedPath(input).map((question) => question.path));
+  const schema = formSchema((section, question) => asked.has(answerPath(section.id, question)));
+  return toResult(schema.safeParse(input), input);
 }

@@ -191,6 +191,9 @@
     },
     "travel": {
       "returnBeforeDeparture": "回国日期不能早于出发日期，请检查这两个日期。"
+    },
+    "answer": {
+      "unconfirmed": "有答案是从你上传的材料里读出来的，还需要你确认。请打开下面标着「待确认」的题目，核对后按「继续」。"
     }
   },
   "intake": {
@@ -207,7 +210,8 @@
       "done": "已完成",
       "inProgress": "填写中",
       "todo": "待填写",
-      "unavailable": "还没开放"
+      "unavailable": "还没开放",
+      "notNeeded": "不需要填写"
     },
     "unavailableHint": "这一节我们还没做好。已经填的内容都保存着。",
     "section": {
@@ -304,7 +308,13 @@
       "incompleteBody": "下面这些地方需要先处理，然后才能提交。",
       "submitFailed": "提交没有成功。请再试一次。",
       "alreadySubmitted": "这份申请已经提交过了。",
-      "documentsMissing": "还有必需的材料没有上传，先把材料补齐再提交。"
+      "documentsMissing": "还有必需的材料没有上传，先把材料补齐再提交。",
+      "toConfirm": "待确认"
+    },
+    "notNeededHint": "根据你前面的回答，这一节不需要填写。",
+    "fromDocument": {
+      "title": "这个答案是从你上传的材料里读出来的",
+      "body": "请核对一遍。没有问题就按「继续」；有出入就直接改，再按「继续」。"
     }
   },
   "documents": {
