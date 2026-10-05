@@ -215,6 +215,15 @@ test("the whole journey, as a headless client: create, answer, gate, submit, onl
   ).trim();
   expect(Number(jobs)).toBe(1);
 
+  // A sent application's answers are frozen: they are what the job was made from.
+  const late = await request.post(`/api/v1/applications/${id}/answers`, {
+    data: { sectionId: first!.sectionId, questionId: first!.id, value: answerFor(first!.path) },
+  });
+  expect(late.status()).toBe(409);
+  expect(((await late.json()) as { error: { key: string } }).error.key).toBe(
+    "intake.review.alreadySubmitted",
+  );
+
   // And the detail view now reports the job's own state.
   const detail = await request.get(`/api/v1/applications/${id}`);
   const body = (await detail.json()) as { application: { status: string }; job: { state: string } };

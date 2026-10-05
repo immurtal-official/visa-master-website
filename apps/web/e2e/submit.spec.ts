@@ -1,7 +1,8 @@
 import { execFileSync } from "node:child_process";
 import { expect, test } from "@playwright/test";
+import { INTAKE_CHECKSUM, INTAKE_VERSION } from "@visa-master/core";
 import en from "../messages/en.json" with { type: "json" };
-import { answerEveryQuestion, allAnsweredText } from "./support/intake";
+import { answerEveryQuestion, allAnsweredText, QUESTIONS } from "./support/intake";
 import { clearInbox, readSignInCode, uniqueEmail } from "./support/mailpit";
 
 /**
@@ -139,4 +140,21 @@ test("a complete application is sent and leaves a queued job", async ({ page }) 
      join auth.users u on u.id = j.user_id where u.email = '${email}'`,
   ).trim();
   expect(idempotency).toMatch(/^produce_pack:application:/);
+
+  // The job names the contract it was validated against.
+  const contract = query(
+    `select input->'intakeContract'->>'version' || '|' || (input->'intakeContract'->>'checksum')
+     from public.jobs j join auth.users u on u.id = j.user_id where u.email = '${email}'`,
+  ).trim();
+  expect(contract).toBe(`${INTAKE_VERSION}|${INTAKE_CHECKSUM}`);
+
+  // Every answer was typed, so every answer's source says so, confirmed.
+  const sources = query(
+    `select count(*) filter (where s.source = 'applicant' and s.confirmed_at is not null)
+            || '|' || count(*) || '|' || min(a.intake_version)
+     from public.answer_sources s
+     join public.applications a on a.id = s.application_id
+     join auth.users u on u.id = a.user_id where u.email = '${email}'`,
+  ).trim();
+  expect(sources).toBe(`${QUESTIONS.length}|${QUESTIONS.length}|${INTAKE_VERSION}`);
 });
