@@ -172,18 +172,18 @@ are silent.
 |---|---|---|---|
 | 1 | Survive a reload: `applications.draft_answers` + debounced draft saves | 1 day | done (PR #12) |
 | 2 | Questionnaire gate in vitest / turbo `test` | half a day | done (PR #16) |
-| 3 | One declarative questionnaire instead of three tables; zod derived from it | 2–3 days | in review (PR #19) |
-| 4 | Unlock the partner: an `extra.*` namespace, errors written for non-engineers | 1 day | in review (PR #20) |
-| 5 | Document checklist `appliesWhen` as declarations, not string comparisons | half a day | in review (PR #21) |
-| 6 | Migration: `document_fields` / `answer_sources` / `intake_version` / checksum | 1–2 days | in review (PR #22) |
-| 7 | `jobs.input` carries upload references (ids only, never paths) | half a day | in review (PR #23) |
-| 8 | Branching `showIf`, and a gate on placeholder answers | 3–4 days | in review (PR #24) |
-| 9 | Extraction write-back, driven by hand-made fixtures | 1–2 days | in review |
+| 3 | One declarative questionnaire instead of three tables; zod derived from it | 2–3 days | done (PR #19) |
+| 4 | Unlock the partner: an `extra.*` namespace, errors written for non-engineers | 1 day | done (PR #20) |
+| 5 | Document checklist `appliesWhen` as declarations, not string comparisons | half a day | done (PR #21) |
+| 6 | Migration: `document_fields` / `answer_sources` / `intake_version` / checksum | 1–2 days | done (PR #22) |
+| 7 | `jobs.input` carries upload references (ids only, never paths) | half a day | done (PR #23) |
+| 8 | Branching `showIf`, and a gate on placeholder answers | 3–4 days | done (PR #24) |
+| 9 | Extraction write-back, driven by hand-made fixtures | 1–2 days | done (PRs #25, #26) |
 | 10 | Real extraction | — | blocked on the LLM gateway |
 
-PRs #19–#24 are stacked, each on the one before: merge them in order, retargeting
-each to `main` once its base has merged. The partner's guide is
-`packages/core/src/intake/HOW-TO-EDIT.zh.md`.
+Stages 1–9 are on `main`. The partner's guide is
+`packages/core/src/intake/HOW-TO-EDIT.zh.md`. Stage 10 swaps the fixture reader for a model
+call through the gateway; nothing downstream of the reader changes.
 
 Order matters in three places. **2 before 3**: the gate passing before and after the merge is
 what shows the merge did not change the copy contract. **6 before 8**: branching changes what
@@ -275,31 +275,13 @@ backups and pauses after seven idle days.
 These are real, unfixed, and worth knowing before the first paying pack. None blocks the
 current milestone.
 
-**Client grants depend on the platform's default ACL (fix in review, PR #18).** The migrations
-assumed new public tables give `anon`/`authenticated` no DML; the current Supabase image gives
-them `arwdDxtm`. Against it, a signed-in client can set its own upload to `stored` and write
-the submission columns on its own application — pgTAP `004 #6` and `006 #6` fail on `main`
-against that image. PR #18 restates every client grant and closes the default ACL; the hosted
-project needs it pushed, and should be checked for the same exposure.
+**Client grants on the hosted project.** The migrations assumed new public tables give
+`anon`/`authenticated` no DML; current Supabase images give them `arwdDxtm`, which let a
+signed-in client set its own upload to `stored` and write the submission columns on its own
+application. PR #18 (`20261005134359_client_grants_baseline`) restates every client grant and
+closes the default ACL, and `008_client_grants.sql` asserts it. Fixed on `main` and locally;
+the hosted project has it only once the migrations are pushed there.
 
-In the questionnaire layer — each verified, and each scheduled against a stage above, with the
-PR that addresses it:
-
-- **An empty section reads as a second review section.** `sectionState` decides "this is the
-  review" by `questions.length === 0`. The gate now fails on an empty non-review section, but
-  the heuristic itself remains (stage 3; PR #19 marks the review section explicitly).
-- **Document conditions compare bare strings.** `appliesWhen` in `schengen-spain.ts` reads a
-  hand-written `IntakeAnswersShape`, tied to neither the questionnaire nor the option
-  constants; renaming an option id silently drops the sponsor-proof requirement (stage 5; PR #21 makes the conditions data the
-  gate checks).
-- **A submitted application's answers can still be edited.** `saveAnswer` has no status
-  guard (PR #22 adds it).
-- **Four e2e files hard-code question order, count and control type** — `submit.spec.ts`
-  (twenty hand-ordered calls and the literal `"20 of 20 questions answered"`),
-  `api-contract.spec.ts`, `documents.spec.ts`. Adding a question fails all of them, and
-  `documents.spec.ts` reports a missing document when the real cause is an unanswered
-  question. Changing wording fails none: they read the question text from `en.json`. (PR #20
-  derives order, count and controls from the questionnaire.)
 - **A new column on `applications` needs its own column grant.** Inserts and updates there are
   granted per column, and Postgres does not extend a grant to a column added later; the symptom
   is a 42501 on first write. `20260910022332_intake_draft_answers.sql` is the worked example.

@@ -37,10 +37,21 @@ beforeEach(async () => {
   userId = rows[0]!.id;
 });
 
+/**
+ * This suite's jobs sort ahead of anything else in the queue.
+ *
+ * The local database is shared with the other suites and with the end-to-end
+ * runs, and several tests here are about the queue itself — which job comes
+ * first, two conductors at once — so they claim from the whole queue. At the
+ * lowest priority there is, the jobs claimed are this suite's own, and nobody
+ * else's job is ever leased by a test.
+ */
+const FIRST = -32768;
+
 async function enqueue(overrides: Record<string, unknown> = {}): Promise<string> {
   const { rows } = await pool.query<{ id: string }>(
-    `insert into public.jobs (user_id, task_type, executor_kind, input, max_attempts, deadline_seconds)
-     values ($1, 'produce_pack', 'hermes', '{"route":"test"}'::jsonb, $2, $3)
+    `insert into public.jobs (user_id, task_type, executor_kind, input, max_attempts, deadline_seconds, priority)
+     values ($1, 'produce_pack', 'hermes', '{"route":"test"}'::jsonb, $2, $3, ${FIRST})
      returning id`,
     [userId, overrides.max_attempts ?? 2, overrides.deadline_seconds ?? 1200],
   );
@@ -74,18 +85,21 @@ describe("claiming work", () => {
     expect(after.attempt).toBe(1);
   });
 
-  it("returns nothing when the queue is empty", async () => {
-    expect(await claimNextJob(pool, OWNER)).toBeNull();
+  it("returns nothing when there is nothing to claim", async () => {
+    // A job that does not exist, rather than an empty queue: the queue is shared.
+    expect(await claimNextJob(pool, OWNER, "00000000-0000-4000-8000-000000000000")).toBeNull();
   });
 
   it("never hands the same job to two conductors", async () => {
-    await enqueue();
+    const jobId = await enqueue();
 
     // Both statements race for one row. Without SKIP LOCKED the second would
-    // block and then claim the same job; with it, the second steps over.
+    // block and then claim the same job; with it, the second steps over. Both
+    // are pointed at this job, so the one that loses finds nothing rather than
+    // going on to somebody else's.
     const [first, second] = await Promise.all([
-      claimNextJob(pool, { ...OWNER, leaseOwner: "one" }),
-      claimNextJob(pool, { ...OWNER, leaseOwner: "two" }),
+      claimNextJob(pool, { ...OWNER, leaseOwner: "one" }, jobId),
+      claimNextJob(pool, { ...OWNER, leaseOwner: "two" }, jobId),
     ]);
 
     const claimed = [first, second].filter(Boolean);

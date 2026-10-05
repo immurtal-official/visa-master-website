@@ -211,8 +211,10 @@ export async function runOnce(
   registry: ExecutorRegistry,
   config: ConductorConfig,
   documents: DocumentStore | null = null,
+  /** Run this job and no other — for running one by hand, and for tests sharing a queue. */
+  only?: string,
 ): Promise<RunOutcome | null> {
-  const job = await claimNextJob(pool, config);
+  const job = await claimNextJob(pool, config, only);
   if (!job) return null;
   return runJob(pool, job, registry, config, documents);
 }
