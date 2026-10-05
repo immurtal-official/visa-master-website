@@ -1,0 +1,132 @@
+{
+  "version": 1,
+  "questions": [
+    {
+      "path": "applicant.birthDate",
+      "kind": "date",
+      "rule": "pastDate"
+    },
+    {
+      "path": "applicant.name",
+      "kind": "text",
+      "rule": "text(1,60)"
+    },
+    {
+      "path": "applicant.phone",
+      "kind": "text",
+      "rule": "mobilePhone"
+    },
+    {
+      "path": "applicant.pinyin",
+      "kind": "text",
+      "rule": "pinyin"
+    },
+    {
+      "path": "companions.travellingWith",
+      "kind": "choice",
+      "options": {
+        "group": "travellingWith",
+        "values": ["alone", "family", "friends", "colleagues"]
+      }
+    },
+    {
+      "path": "companions.whoPays",
+      "kind": "choice",
+      "options": {
+        "group": "whoPays",
+        "values": ["self", "family", "employer"]
+      }
+    },
+    {
+      "path": "employment.employer",
+      "kind": "text",
+      "rule": "text(1,120)"
+    },
+    {
+      "path": "employment.monthlyIncome",
+      "kind": "text",
+      "rule": "amountInYuan"
+    },
+    {
+      "path": "employment.position",
+      "kind": "text",
+      "rule": "text(1,80)"
+    },
+    {
+      "path": "employment.startDate",
+      "kind": "date",
+      "rule": "pastDate"
+    },
+    {
+      "path": "history.refused",
+      "kind": "choice",
+      "options": {
+        "group": "yesNoUnsure",
+        "values": ["yes", "no", "unsure"]
+      }
+    },
+    {
+      "path": "history.schengenBefore",
+      "kind": "choice",
+      "options": {
+        "group": "yesNoUnsure",
+        "values": ["yes", "no", "unsure"]
+      }
+    },
+    {
+      "path": "passport.expiresAt",
+      "kind": "date",
+      "rule": "dateString",
+      "alone": "passportExpiryAlone"
+    },
+    {
+      "path": "passport.issuedAt",
+      "kind": "date",
+      "rule": "dateString"
+    },
+    {
+      "path": "passport.number",
+      "kind": "text",
+      "rule": "passportNumber"
+    },
+    {
+      "path": "residence.address",
+      "kind": "text",
+      "rule": "text(4,200)"
+    },
+    {
+      "path": "residence.city",
+      "kind": "text",
+      "rule": "text(1,40)"
+    },
+    {
+      "path": "travel.cities",
+      "kind": "text",
+      "rule": "text(2,200)"
+    },
+    {
+      "path": "travel.departureDate",
+      "kind": "date",
+      "rule": "dateString"
+    },
+    {
+      "path": "travel.returnDate",
+      "kind": "date",
+      "rule": "dateString"
+    }
+  ],
+  "checks": [
+    {
+      "scope": "form",
+      "check": "passportOutlivesTripCheck"
+    },
+    {
+      "scope": "passport",
+      "check": "passportDatesCheck"
+    },
+    {
+      "scope": "travel",
+      "check": "travelDatesCheck"
+    }
+  ]
+}

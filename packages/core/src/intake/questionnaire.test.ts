@@ -11,6 +11,11 @@
  * failure, worded for whoever is editing the questionnaire rather than for an
  * engineer.
  *
+ * Two checks come first and are not about wording: that questionnaire.ts is
+ * written in a shape the rest of the system can read, and that no edit has
+ * reached the intake contract (contract.ts, contract.lock.json) — the core
+ * questions something downstream depends on.
+ *
  * Scope is the three namespaces the questionnaire owns: `intake.question.*`,
  * `intake.option.*` and `documents.item.*`. A catalogue-wide orphan check is
  * not possible: keys elsewhere are built from template strings, and no static
@@ -22,6 +27,8 @@ import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import { SCHENGEN_SPAIN_DOCUMENTS } from "../rules/schengen-spain";
+import { contractDifferences, currentContract, type IntakeContract } from "./contract";
+import { declarationProblems } from "./declaration";
 import {
   FIELD_BEHAVIOUR,
   OPTION_GROUPS,
@@ -90,7 +97,22 @@ const questions = INTAKE_SECTIONS.flatMap((section) =>
 );
 const questionName = (q: { section: string; id: string }) => `${q.section}/${q.id}`;
 
+const lockedContract = JSON.parse(
+  readFileSync(fileURLToPath(new URL("./contract.lock.json", import.meta.url)), "utf8"),
+) as IntakeContract & { version: number };
+
 describe("questionnaire gate", () => {
+  // 0 — before anything else: the file itself is written so it can be read.
+  it("questionnaire.ts 的写法正确", () => {
+    expectNoProblems(declarationProblems());
+  });
+
+  // 0 — what an edit to the questionnaire may not reach: the core questions
+  //     the documents, the checklist and the conductor read.
+  it("没有改动作业契约", () => {
+    expectNoProblems(contractDifferences(lockedContract, currentContract()));
+  });
+
   // 1 — the most common mistake: a question added, its wording not.
   it("每道题在两种语言里都有题面文案", () => {
     const problems: string[] = [];

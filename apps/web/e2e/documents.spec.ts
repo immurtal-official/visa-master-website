@@ -1,6 +1,7 @@
 import { execFileSync } from "node:child_process";
 import { expect, test, type Page } from "@playwright/test";
 import en from "../messages/en.json" with { type: "json" };
+import { completeAnswers } from "./support/intake";
 import { clearInbox, readSignInCode, uniqueEmail } from "./support/mailpit";
 
 /**
@@ -123,25 +124,9 @@ test("an application cannot be sent with documents missing", async ({ page }) =>
   // Fill the form without uploading anything, by writing the answers the way
   // the form would; the point here is the gate, not the typing.
   query(
-    `update public.applications set answers = '${JSON.stringify({
-      applicant: {
-        name: "陈静",
-        pinyin: "CHEN JING",
-        birthDate: "1990-04-12",
-        phone: "13800000000",
-      },
-      passport: { number: "E12345678", issuedAt: "2020-06-01", expiresAt: "2030-06-01" },
-      residence: { city: "成都", address: "天府大道 1 号 2 单元 301" },
-      employment: {
-        employer: "某某科技",
-        position: "架构师",
-        startDate: "2020-03-01",
-        monthlyIncome: "6000",
-      },
-      travel: { departureDate: "2027-01-10", returnDate: "2027-01-30", cities: "Madrid" },
-      companions: { travellingWith: "alone", whoPays: "self" },
-      history: { schengenBefore: "no", refused: "no" },
-    })}'::jsonb where id = '${id}'`,
+    `update public.applications set answers = '${JSON.stringify(
+      completeAnswers(),
+    )}'::jsonb where id = '${id}'`,
   );
 
   await page.goto(`/en/applications/${id}/intake/review`);

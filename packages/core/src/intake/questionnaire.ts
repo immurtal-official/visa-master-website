@@ -23,6 +23,22 @@ import {
  * question's wording lives in apps/web/messages/{zh-CN,en}.json under
  * `intake.question.<section>.<question>`, written separately in each language.
  * `pnpm check:intake` says, in plain words, anything that does not line up.
+ * HOW-TO-EDIT.zh.md walks through it step by step.
+ *
+ * Two kinds of question live here, and the difference is who reads the answer:
+ *
+ *   Core questions (no `extra`) feed the job contract — the documents the
+ *   pack produces, the checklist, the conductor's input. Their ids, kinds,
+ *   rules and options are recorded in contract.lock.json, and changing one is
+ *   an engineering change: the gate refuses it until the lock is updated
+ *   with it. Their order and their wording are free.
+ *
+ *   Extra questions (`extra: true`) are answered and stored like any other,
+ *   under `extra.<section>.<id>`, and travel to the job as supplementary
+ *   material that nothing downstream depends on. They can be added, changed,
+ *   reordered and removed freely, in any section, including a new one. An
+ *   extra question must give an `example`: a valid answer, which the gate
+ *   checks against its rule and the end-to-end tests type in.
  *
  * What a question can declare:
  *
@@ -38,6 +54,8 @@ import {
  *             answered on its own page — for a check that does not need any
  *             other answer and is worth knowing about straight away.
  *   keyboard  Optional. How a phone keyboard should behave for the field.
+ *   extra     true for a question nothing downstream depends on (see above).
+ *   example   A valid answer. Required for an extra question.
  *
  * A section can also declare `check`: a rule relating two of its answers,
  * which runs when the whole form is checked.
@@ -73,19 +91,25 @@ export const OPTION_GROUPS = {
 
 export type OptionGroup = keyof typeof OPTION_GROUPS;
 
+interface QuestionCommon {
+  id: string;
+  /** Answered and stored like any other, but outside the job contract. */
+  extra?: true;
+  /** A valid answer: checked against the rule, and typed in by the e2e tests. */
+  example?: string;
+}
+
 export type QuestionDefinition =
-  | {
-      id: string;
+  | (QuestionCommon & {
       kind?: "text" | "date";
       rule: z.ZodType;
       alone?: z.ZodType;
       keyboard?: Keyboard;
-    }
-  | {
-      id: string;
+    })
+  | (QuestionCommon & {
       kind: "choice";
       options: OptionGroup;
-    };
+    });
 
 export type SectionDefinition =
   | {
@@ -101,6 +125,15 @@ export type SectionDefinition =
       id: string;
       kind: "review";
     };
+
+/**
+ * Where a question's answer is stored in `applications.answers`, and what the
+ * job receives it under: `<section>.<id>`, or `extra.<section>.<id>` for an
+ * extra question.
+ */
+export function answerPath(sectionId: string, question: { id: string; extra?: true }): string {
+  return question.extra ? `extra.${sectionId}.${question.id}` : `${sectionId}.${question.id}`;
+}
 
 export interface QuestionnaireDefinition {
   sections: SectionDefinition[];
