@@ -1,0 +1,107 @@
+# The agent plane, on the VM.
+#
+# Same topology as compose.local.yml — the egress boundary is identical by
+# design, so what the tests prove locally is what runs in production — plus the
+# two things a host nobody logs into needs: the conductor as a supervised
+# service, and configuration that arrives from files on disk rather than from
+# somebody's shell.
+#
+# Deploy is deliberately unremarkable:
+#
+#   scp -r <repo> vm:/opt/visa-master/src
+#   ssh vm 'mkdir -p /opt/visa-master/scratch'
+#   # put conductor.env in place, mode 0600, owned by root
+#   ssh vm 'cd /opt/visa-master/src && docker build -t visa-master-placeholder-job:latest infra/placeholder-job'
+#   ssh vm 'cd /opt/visa-master/src && docker compose -f infra/compose.vm.yml up -d --build'
+#
+# THE JOB IMAGE IS BUILT SEPARATELY, above, and that is not an oversight: job
+# containers are started by the conductor through the host daemon, one per
+# attempt and destroyed after, so they are not compose services and `up
+# --build` will not build them. Whatever HERMES_IMAGE names must already exist
+# on the host or every run fails at `docker run` with "image not found".
+#
+# NOTHING PUBLISHES A PORT, and that is the security posture rather than an
+# oversight: the VM makes outbound connections only — it polls the jobs table
+# over TLS and uploads artifacts — so there is no inbound surface to attack and
+# no firewall rule to get wrong. Do not add `ports:` to anything here.
+name: visa-master-agent-plane
+
+networks:
+  egress-internal:
+    name: vm-egress-internal
+    internal: true
+  egress-external:
+    name: vm-egress-external
+
+services:
+  squid:
+    image: ubuntu/squid:latest
+    container_name: vm-squid
+    restart: unless-stopped
+    networks:
+      egress-internal:
+        aliases: [proxy]
+      egress-external: {}
+    volumes:
+      - ./squid/squid.conf:/etc/squid/squid.conf:ro
+      - ./squid/allowlist.txt:/etc/squid/allowlist.txt:ro
+
+  conductor:
+    build:
+      # The repository root: the conductor is a workspace package and its
+      # dependency on @visa-master/executors is a workspace link.
+      context: ..
+      dockerfile: apps/conductor/Dockerfile
+    image: visa-master-conductor:latest
+    container_name: vm-conductor
+    restart: unless-stopped
+    depends_on: [squid]
+    # The trusted plane. It is on the external network because it talks to
+    # Postgres and to object storage directly, and it is deliberately NOT on
+    # egress-internal: it has no reason to reach a job container, and job
+    # containers have no reason to reach it.
+    networks:
+      egress-external: {}
+    env_file:
+      # Mode 0600, root-owned, never in the repository. Every variable the
+      # conductor reads is listed in apps/conductor/.env.example; these five
+      # are the ones without which it does the wrong thing quietly:
+      #
+      #   DATABASE_URL         the Supavisor pooler URL — the direct endpoint
+      #                        is IPv6-only
+      #   SUPABASE_URL         }  index.ts builds the artifact store only when
+      #   SUPABASE_SECRET_KEY  }  BOTH are set. With either missing it logs one
+      #                           warning and then every finished pack is left
+      #                           in the scratch that destroy() erases — jobs
+      #                           still reach awaiting_review, with nothing to
+      #                           review.
+      #   HERMES_IMAGE         must already exist on this host (see above)
+      #   HERMES_JOB_COMMAND   its presence is what selects the docker executor
+      #                        over the fake one
+      - /etc/visa-master/conductor.env
+    environment:
+      # THE SCRATCH PATH MUST BE IDENTICAL INSIDE AND OUT, and this is the
+      # subtle part of running the conductor in a container at all. The
+      # executor calls `docker run -v <scratchDir>:/opt/data/job` against the
+      # HOST's daemon, so <scratchDir> is resolved by the host, not by this
+      # container's filesystem. scratchDirFor() builds that path from
+      # os.tmpdir(), so TMPDIR is what makes the two agree. Get this wrong and
+      # nothing errors: the job container simply receives an empty directory
+      # and the run fails for a reason that looks like the agent's fault.
+      TMPDIR: /opt/visa-master/scratch
+    volumes:
+      # The host's daemon. The conductor is the trusted half of the system and
+      # starting containers is its job; this is the reach that makes it
+      # possible, not a privilege leak. Nothing else here gets the socket.
+      - /var/run/docker.sock:/var/run/docker.sock
+      # Bound at the same path on both sides — see TMPDIR above.
+      - /opt/visa-master/scratch:/opt/visa-master/scratch
+
+  # The LLM gateway is deliberately absent, exactly as it is in
+  # compose.local.yml. It lands with the provider credential (week 3's critical
+  # path): a version-pinned LiteLLM container, dual-homed like Squid so job
+  # containers reach it over the internal network, holding the provider keys in
+  # /etc/visa-master/gateway.env — after which Squid's allowlist reduces to the
+  # gateway itself and a job container's only route to a model is through
+  # something we meter. Adding it before the key exists would be a service that
+  # advertises inference it cannot perform.
