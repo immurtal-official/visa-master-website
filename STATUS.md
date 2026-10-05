@@ -1,7 +1,8 @@
 # Status — where the build stands
 
-**As of:** 2026-10-05 · everything described here is on `main`, through PR #31 (#32 merged a branch
-already contained in `main` and changed nothing). Weeks 1–2 arrived in PR #4;
+**As of:** 2026-10-05 · everything described here is on `main`, through PR #34 (#32 merged a branch
+already contained in `main` and changed nothing). **The hosted site is down for sign-in and
+every API call** — see [Staging deployment](#staging-deployment). Weeks 1–2 arrived in PR #4;
 the API-first work — six commits, `22cbfe1` through `fa36fbd` — missed that crossing, because
 PR #5 merged into a base that had already been merged, and followed in PR #6.
 Companion documents: [doc/archive/EXECUTION-PLAN-week1-2.md](doc/archive/EXECUTION-PLAN-week1-2.md) (the plan weeks 1–2
@@ -246,12 +247,31 @@ included). Two things worth knowing about it:
   422, on the first request of a run, under the Next.js handlers PR #31 removed. The same
   journey now runs through the forwarder and the FastAPI backend, and has passed every run.
 
-## Staging deployment (control plane only, before the backend moved)
+## Staging deployment
 
-The trusted half of the system is now hosted, at **https://app.wdnx.world**. What that
-covers, and what it does not:
+The trusted half of the system is hosted at **https://app.wdnx.world**, and since PR #31
+reached it **that half does not work**:
 
-- **Vercel** carries `apps/web`. The project's Root Directory is `apps/web`, so the
+- **Every `/api/v1` call answers `503 {"error":{"key":"errors.request"}}`, sign-in included**
+  (checked against the live site on 2026-10-05). The Vercel project now deploys `main` on every
+  merge, so #31 to #34 each went to production automatically. The web forwards `/api/v1` to
+  `API_URL`, the project has no `API_URL`, and no backend project exists: the forwarder is
+  calling its default, `127.0.0.1:8000`, inside Vercel's function, where nothing listens.
+  Pages that need no API — the landing page, the route check form — still render.
+- **The fix is the backend's deployment**, in this order: push the `visa_api` migration and
+  set its password; create the `apps/api` Vercel project with its environment; set `API_URL`
+  on the web project; redeploy the web (an environment change applies only to the next
+  build). Until then the alternative is to promote the last production deployment from
+  before #31 back to production — and to keep it there by not merging to `main`, which would
+  deploy over it.
+- Whether the `visa_api` migration (#34) has been pushed to the hosted database is not
+  verified.
+
+What the deployment consists of:
+
+- **Vercel** carries `apps/web` (project `visa-master-website`, team MUSICO). It is connected
+  to the GitHub repository: `main` deploys to production on every merge and every branch gets
+  a preview. The project's Root Directory is `apps/web`, so the
   workspace installs from the repository root and Next is found where it actually lives;
   build command and output directory are left to auto-detection for the reason recorded in
   `vercel.json`'s commit. The domain is a first-party one rather than `*.vercel.app`,
@@ -276,12 +296,8 @@ works under Vercel's proxy headers, and `/api/v1/applications` returned an RLS-f
 result. The `profiles` row follows from the `on_auth_user_created` trigger, whose failure
 would have aborted the signup itself.
 
-**That verification predates ADR-005.** It exercised the Next.js backend that PR #31 removed.
-`main` now needs `apps/api` running somewhere: the web forwards every `/api/v1` call to
-`API_URL`, so a web deploy of `main` before the backend is deployed and `API_URL` is set
-answers every call with `503 errors.request` — sign-in included. Deploys are manual (see Not
-done yet), so the live site is whatever was last deployed by hand; deploy the backend first,
-then the web.
+**That verification predates ADR-005**: it exercised the Next.js backend that PR #31 removed,
+and it is what is broken now.
 
 What is **not** deployed: the backend (`apps/api`) and the whole agent plane. No conductor, no Hetzner VM, no egress
 proxy, no job containers. A pack cannot be produced by anything running in the cloud today,
@@ -292,9 +308,9 @@ and submitting an application there enqueues a job that nothing will claim.
 The full journey runs locally end to end: sign up → route check → create application →
 20-question intake → upload documents → review → submit → conductor claims the job → status
 reaches "being reviewed by a person", with the web, the FastAPI backend and the
-conductor as three processes. Hosted, the backend is not deployed yet, so a web deploy of
-`main` cannot serve even sign-in until it is; everything from the conductor rightwards has
-nowhere to execute either. Spend so far is
+conductor as three processes. Hosted, nothing past the landing page works today: the web is
+deployed from `main` but the backend is not deployed at all, so sign-in fails with a 503;
+everything from the conductor rightwards has nowhere to execute either. Spend so far is
 zero — Vercel Hobby and Supabase Free — which is also why the staging database has no
 backups and pauses after seven idle days.
 
@@ -366,12 +382,9 @@ Elsewhere:
   directory `apps/api`), its environment (`DATABASE_URL` as the `visa_api` login role through the
   Supabase pooler, after setting its password once with `alter role visa_api with password
   '…'` — the migration deliberately sets none; `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY`,
-  `ENVIRONMENT=production`), a domain, and `API_URL` set on the web project. Until then the
-  hosted web cannot reach a backend. The web project no longer needs `SUPABASE_SECRET_KEY`.
-- **Deploy on push**: Vercel could not connect the GitHub repository — the account lacks
-  write access to `immurtal-official/visa-master-website` — so every deploy is a manual
-  `vercel deploy --prod` and pull requests get no preview. Granting that access and running
-  `vercel git connect` is the whole fix.
+  `ENVIRONMENT=production`), a domain, and `API_URL` set on the web project, then a redeploy
+  of the web. **This is what the hosted site is down for** (see Staging deployment). The web
+  project still carries `SUPABASE_SECRET_KEY`, which nothing reads any more; remove it.
 - **CN-entity-gated items** (tracked, not blocking): ICP filing, WeChat Pay, +86 SMS, any
   WeChat Mini Program — all hang off the same prerequisite.
 
