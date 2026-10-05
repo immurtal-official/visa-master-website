@@ -142,3 +142,32 @@ async def test_the_login_role_cannot_become_an_administrator(db) -> None:
             with pytest.raises(asyncpg.InsufficientPrivilegeError):
                 async with connection.transaction():
                     await connection.execute(f"set local role {role}")
+
+
+async def test_the_pool_opens_on_the_first_request_without_a_lifespan() -> None:
+    """Vercel's Python runtime never sends lifespan events; the first request opens the pool."""
+    import httpx
+
+    from app.main import create_app
+
+    try:
+        probe = await asyncpg.connect(API_DSN, timeout=5)
+    except Exception:
+        pytest.skip("no database to connect to — start the local stack (pnpm db:start)")
+    await probe.close()
+
+    database = Database()
+    application = create_app(
+        Settings(_env_file=None, database_url=API_DSN, environment="test"), database=database
+    )
+    # ASGITransport, like Vercel, does not run the lifespan.
+    async with httpx.AsyncClient(
+        transport=httpx.ASGITransport(app=application), base_url="http://api.test"
+    ) as client:
+        assert not database.is_connected
+        health = (await client.get("/api/v1/health")).json()
+    try:
+        assert health["db"] is True
+        assert database.is_connected
+    finally:
+        await database.close()

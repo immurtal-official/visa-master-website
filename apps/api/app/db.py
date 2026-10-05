@@ -20,6 +20,7 @@ connection never carries one request's identity into the next.
 
 from __future__ import annotations
 
+import asyncio
 import json
 import logging
 from collections.abc import AsyncIterator
@@ -64,6 +65,8 @@ class Database:
 
     def __init__(self) -> None:
         self._pool: asyncpg.Pool | None = None
+        # Two requests arriving before the pool exists must not open two.
+        self._connecting = asyncio.Lock()
 
     @property
     def is_connected(self) -> bool:
@@ -73,8 +76,16 @@ class Database:
         # Never raises: a missing or unreachable database must not stop the
         # service booting. /health reports it, and every endpoint that needs
         # the database answers 503 instead of guessing.
-        if self._pool is not None or not settings.database_url:
+        if self._pool is not None:
             return
+        if not settings.database_url:
+            logger.warning("db.not_configured: DATABASE_URL is not set")
+            return
+        async with self._connecting:
+            if self._pool is None:
+                await self._open(settings)
+
+    async def _open(self, settings: Settings) -> None:
         try:
             self._pool = await asyncpg.create_pool(
                 dsn=settings.database_url,
@@ -85,9 +96,13 @@ class Database:
                 # statements across transactions.
                 statement_cache_size=0,
                 init=_init_connection,
+                # A serverless request should fail, not hang, on an unreachable
+                # database; the next request tries again.
+                timeout=settings.db_connect_timeout_seconds,
             )
-        except Exception:
-            logger.exception("db.connect_failed")
+        except Exception as error:
+            # The kind of failure, never the DSN: it carries the password.
+            logger.error("db.connect_failed: %s", type(error).__name__)
             self._pool = None
 
     async def close(self) -> None:
@@ -101,7 +116,8 @@ class Database:
         try:
             async with self._pool.acquire() as connection:
                 return await connection.fetchval("select 1") == 1
-        except Exception:
+        except Exception as error:
+            logger.warning("db.ping_failed: %s", type(error).__name__)
             return False
 
     def _require_pool(self) -> asyncpg.Pool:

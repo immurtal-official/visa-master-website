@@ -22,6 +22,11 @@ from app.supabase import Supabase
 
 logger = logging.getLogger(__name__)
 
+# Serverless runtimes capture stderr; give the service's own warnings a handler
+# so they reach it, without overriding one a host has already installed.
+if not logging.getLogger().handlers:
+    logging.basicConfig(level=logging.INFO, format="%(levelname)s %(name)s %(message)s")
+
 API_PREFIX = "/api/v1"
 
 
@@ -47,7 +52,9 @@ def create_app(settings: Settings | None = None, database: Database | None = Non
         openapi_url=None if settings.is_production else f"{API_PREFIX}/openapi.json",
         lifespan=lifespan,
     )
-    # Also outside the lifespan: some serverless adapters skip lifespan events.
+    # Also outside the lifespan: Vercel's Python runtime does not run lifespan
+    # events, so state is set here and the pool is opened by the first request
+    # that arrives without one (below).
     application.state.settings = settings
     application.state.db = database
     application.state.jwks = JwksCache(settings)
@@ -61,6 +68,14 @@ def create_app(settings: Settings | None = None, database: Database | None = Non
         allow_headers=["Content-Type", "Authorization"],
         max_age=600,
     )
+
+    @application.middleware("http")
+    async def connect_on_first_request(request: Request, call_next):
+        # Idempotent and locked: a no-op once the pool exists, a retry while
+        # the database is unreachable, and nothing at all without a DSN.
+        if not database.is_connected:
+            await database.connect(settings)
+        return await call_next(request)
 
     for router in (health.router, auth.router, routes.router, applications.router):
         application.include_router(router, prefix=API_PREFIX)
