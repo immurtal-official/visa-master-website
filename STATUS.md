@@ -1,6 +1,7 @@
 # Status — where the build stands
 
-**As of:** 2026-08-21 · everything described here is on `main`. Weeks 1–2 arrived in PR #4;
+**As of:** 2026-09-04 · everything described here is on `main`, except the deployment
+section, which is on `chore/deploy-staging`. Weeks 1–2 arrived in PR #4;
 the API-first work — six commits, `22cbfe1` through `fa36fbd` — missed that crossing, because
 PR #5 merged into a base that had already been merged, and followed in PR #6.
 Companion documents: [doc/archive/EXECUTION-PLAN-week1-2.md](doc/archive/EXECUTION-PLAN-week1-2.md) (the plan weeks 1–2
@@ -134,13 +135,47 @@ Playwright 40 passed with none flaky. Two things that run is worth knowing for:
   retries disabled passed 18 of 18, and the run above was clean. Still unexplained, and worth
   explaining before the contract is anyone else's to depend on.
 
+## Staging deployment (control plane only)
+
+The trusted half of the system is now hosted, at **https://app.wdnx.world**. What that
+covers, and what it does not:
+
+- **Vercel** carries `apps/web`. The project's Root Directory is `apps/web`, so the
+  workspace installs from the repository root and Next is found where it actually lives;
+  build command and output directory are left to auto-detection for the reason recorded in
+  `vercel.json`'s commit. The domain is a first-party one rather than `*.vercel.app`,
+  which is what [architecture v0.4](doc/architecture-v0.4-en.md) §B.4 asks for on the
+  China-reachability grounds recorded there.
+- **Supabase** (project `rmsdyqmuztydicfintbs`, `us-west-2`, Free plan) carries Postgres,
+  Auth and Storage. All eight migrations are applied, and both private buckets were created
+  by them rather than by hand — the `storage.buckets` inserts run unmodified against a
+  hosted project.
+- **The hosted project's auth configuration lives in `config.toml`**, in a
+  `[remotes.staging]` block pushed with `supabase config push`, not in the dashboard. That
+  is what keeps the OTP template, `enable_confirmations = false`, and the rate limits
+  reviewable next to the code that depends on them.
+- **Resend** sends the mail, over SMTP, from `no-reply@wdnx.world` on a verified domain.
+  Supabase's built-in SMTP allows two emails an hour, which is not a sign-in flow.
+
+**Sign-in is verified end to end against this deployment**: a real address, a code that
+arrived, a session, and the dashboard rendering behind row-level security. That exercises
+more than auth — the dashboard reads through `lib/api/server.ts`, so the loopback API hop
+works under Vercel's proxy headers, and `/api/v1/applications` returned an RLS-filtered
+result. The `profiles` row follows from the `on_auth_user_created` trigger, whose failure
+would have aborted the signup itself.
+
+What is **not** deployed: the whole agent plane. No conductor, no Hetzner VM, no egress
+proxy, no job containers. A pack cannot be produced by anything running in the cloud today,
+and submitting an application there enqueues a job that nothing will claim.
+
 ## Where we are
 
 The full journey runs locally end to end: sign up → route check → create application →
 20-question intake → upload documents → review → submit → conductor claims the job → status
-reaches "being reviewed by a person". Local-first by decision: no hosted Supabase, no
-Vercel project, nothing running in any cloud, zero spend so far. The source is pushed and
-`main` carries all of it; nothing is deployed anywhere.
+reaches "being reviewed by a person". Hosted, only the front half of that runs: sign-in
+works, and everything from the conductor rightwards has nowhere to execute. Spend so far is
+zero — Vercel Hobby and Supabase Free — which is also why the staging database has no
+backups and pauses after seven idle days.
 
 ## Known gaps in what is built
 
@@ -182,9 +217,19 @@ current milestone.
   that would make the metering columns mean something.
 - **CI/CD, hardening, observability** (week 6) — there is no `.github/` at all; container
   hardening has four flags and no non-root user, read-only rootfs, or dropped capabilities.
+  Note what the Vercel build is and is not: it runs the app's own `build` script, so the
+  catalogue gate runs on every deploy, but the hardcoded-string lint rule does not — that
+  one reaches a build only through turbo, whose `build` depends on `lint`. Half a gate is
+  worth knowing about precisely because it looks like a whole one.
 - **Notifications, retention enforcement, restore drill** (week 7); **payments** (week 8).
-- **Deployment**: hosted Supabase (staging), Vercel project, domain; then the Hetzner VM,
-  `infra/compose.vm.yml`, and the systemd units. Blockers are accounts and spend, not code.
+- **Deployment**: the control plane is up (see above); the agent plane is not. Still owed
+  are the Hetzner VM, `infra/compose.vm.yml`, and the systemd units — and, before anyone
+  outside the team uses it, Vercel Pro (Hobby is non-commercial) and Supabase Pro (Free has
+  no backups and pauses when idle). Blockers are accounts and spend, not code.
+- **Deploy on push**: Vercel could not connect the GitHub repository — the account lacks
+  write access to `immurtal-official/visa-master-website` — so every deploy is a manual
+  `vercel deploy --prod` and pull requests get no preview. Granting that access and running
+  `vercel git connect` is the whole fix.
 - **CN-entity-gated items** (tracked, not blocking): ICP filing, WeChat Pay, +86 SMS, any
   WeChat Mini Program — all hang off the same prerequisite.
 

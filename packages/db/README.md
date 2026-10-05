@@ -73,9 +73,26 @@ update public.profiles set role = 'operator' where user_id = '<uuid>';
 
 ## Hosted projects
 
-Not set up yet, and deliberately so: the project stays local until the test
-suite is green and the local build has been checked by hand. When that changes,
-the steps are `supabase link --project-ref <ref>` then `supabase db push` from
-this directory, plus setting the same OTP email template in the dashboard
-(Auth → Email templates → Magic Link), since the hosted project does not read
-`config.toml`.
+Staging is `rmsdyqmuztydicfintbs`, linked from this directory. All migrations
+are applied there, including the two that create the private buckets — the
+`storage.buckets` inserts need no special handling against a hosted project.
+
+Schema goes up with `supabase db push`. Configuration goes up separately, with
+`supabase config push`, which reads the `[remotes.staging]` block at the end of
+`config.toml` — so the OTP template, the confirmation setting and the rate
+limits are pushed from here rather than clicked into the dashboard. The block
+restates the rate limits on purpose: the ones above it are raised so the
+end-to-end suite can sign a few dozen throwaway users in from one address, and
+inheriting those onto a public deployment would leave it with no limits worth
+the name.
+
+Two things the hosted project will not do on its own:
+
+- **It refuses a custom email template until custom SMTP is configured.** The
+  SMTP block is therefore a precondition for the template, not a separate nicety.
+- **Its built-in SMTP allows two emails an hour**, which is not a sign-in flow.
+  Staging sends through Resend; the API key is read from the environment at push
+  time (`RESEND_API_KEY`) and is not in this repository.
+
+Pushing config prints a diff and asks before applying. Read it — it is the only
+place where a local-development value on its way to production is visible.

@@ -334,9 +334,12 @@ only thing allowed to decide a job's outcome.
 
 ## 6. Running it locally
 
-Everything runs on one machine. There is no hosted Supabase project, no Vercel
-project and no VM — that is a decision, not an omission, and it is why a fresh
-checkout can be made to work in about ten minutes.
+Everything runs on one machine, and nothing below needs the deployment to
+exist — that is why a fresh checkout can be made to work in about ten minutes.
+The control plane is also deployed (Vercel + a hosted Supabase project, see
+[STATUS.md](STATUS.md)), but development does not go through it: the local
+stack has its own database, its own auth, and Mailpit instead of real mail.
+There is still no VM, so the agent plane runs only here.
 
 ### What you need
 

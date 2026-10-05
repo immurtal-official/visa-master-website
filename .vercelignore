@@ -1,0 +1,8 @@
+# Vercel uploads the repo root (the project's Root Directory is apps/web).
+# Keep the upload to what the build actually needs.
+node_modules
+.next
+.turbo
+design/prototypes
+doc/archive
+discussion
