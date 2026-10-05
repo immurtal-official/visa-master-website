@@ -4,7 +4,7 @@ These are the rules most likely to be broken by accident. Each links to its
 full decision record; none of them is open for quiet re-litigation — amend the
 record first (ADRs are amended by new ADRs, never edited in place).
 
-## API-first (ADR-004 — [discussion/ADR-004-api-first-control-plane.md](discussion/ADR-004-api-first-control-plane.md))
+## API-first (ADR-004, amended by ADR-005 — [discussion/ADR-004-api-first-control-plane.md](discussion/ADR-004-api-first-control-plane.md), [discussion/ADR-005-fastapi-backend-service.md](discussion/ADR-005-fastapi-backend-service.md))
 
 The web UI is **one client** of `/api/v1/**`. Concretely:
 
@@ -15,12 +15,18 @@ The web UI is **one client** of `/api/v1/**`. Concretely:
    fetch through the API (`lib/api/server.ts`). Client Components call
    `/api/v1/**` (`lib/api/client.ts`).
 4. Route handlers are thin HTTP adapters: parse, call **one** service, map the
-   result. Business logic lives in `apps/web/src/lib/services/`.
+   result. The backend is moving to its own service (ADR-005): new endpoints go
+   in `apps/api` (FastAPI) — routers in `app/routers/`, business logic in
+   `app/services/`. Until an endpoint has moved, its logic stays in
+   `apps/web/src/lib/services/`; do not add new logic there.
 5. The wire protocol carries **catalogue keys, never sentences**:
    `422 {issues:[{path,key,params?}]}` for rule failures, `{error:{key}}` for
    everything else. Each client resolves keys against its own locale.
-6. Web, mobile app, and WeChat Mini Program share this one contract. A future
-   backend extraction re-homes `lib/services/` behind the same paths.
+6. Web, mobile app, and WeChat Mini Program share this one contract. The API
+   accepts Bearer tokens only; the web forwards its cookie session as one.
+7. `packages/core` is the only place a rule is written. The Python backend reads
+   its exported data and re-implements only the named rules, which must match the
+   committed conformance vectors (ADR-005). Never hand-edit the exported files.
 
 ## Validation and i18n ([design/guidelines/internationalization-en.md](design/guidelines/internationalization-en.md) §3, §8)
 

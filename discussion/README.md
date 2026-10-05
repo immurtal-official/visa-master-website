@@ -12,7 +12,8 @@ amends. Read them in order.
 |---|---|---|
 | [ADR-002](ADR-002-Agent-Framework-Evaluation.md) | A custom workflow engine over an agent framework | Amended by ADR-003 |
 | [ADR-003](ADR-003-hermes-as-pluggable-executor-in-v1.md) ([zh](ADR-003-hermes-as-pluggable-executor-in-v1-zh.md)) | Hermes ships in V1 anyway, as a pluggable executor behind one adapter contract, to be replaced once a thin custom agent reaches quality parity | In force; the migration trigger is written down and has not fired |
-| [ADR-004](ADR-004-api-first-control-plane.md) | The control plane is API-first: the web UI is one client of `/api/v1`, with no private channel | In force; implemented, and compressed into [`AGENTS.md`](../AGENTS.md) |
+| [ADR-004](ADR-004-api-first-control-plane.md) | The control plane is API-first: the web UI is one client of `/api/v1`, with no private channel | In force; rules 7–9 amended by ADR-005 |
+| [ADR-005](ADR-005-fastapi-backend-service.md) ([zh](ADR-005-fastapi-backend-service-zh.md)) | The backend becomes its own service, FastAPI in `apps/api`; `packages/core` stays the one source of rules, exported as data and checked by conformance vectors | In force; migration in progress |
 
 There is no standalone ADR-001: the series begins at 002, because the earliest
 decisions were recorded inside the architecture documents instead. Do not
