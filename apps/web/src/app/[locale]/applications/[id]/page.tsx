@@ -146,7 +146,7 @@ export default async function ApplicationPage({
 
           <Card padding="var(--space-5)">
             <dl style={{ margin: 0, display: "grid", gap: "var(--space-3)" }}>
-              {INTAKE_SECTIONS.filter((section) => section.questions.length > 0).flatMap(
+              {INTAKE_SECTIONS.filter((section) => section.kind === "questions").flatMap(
                 (section) =>
                   section.questions.map((question) => {
                     const value = readAnswer(answers, question.path);

@@ -68,6 +68,14 @@ export {
 } from "./intake/sections";
 
 export {
+  QUESTIONNAIRE,
+  type Keyboard,
+  type QuestionDefinition,
+  type QuestionnaireDefinition,
+  type SectionDefinition,
+} from "./intake/questionnaire";
+
+export {
   FIELD_BEHAVIOUR,
   PASSPORT_VALIDITY_MONTHS,
   applicantSchema,
