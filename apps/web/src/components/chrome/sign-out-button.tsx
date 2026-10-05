@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { api } from "@/lib/api/client";
-import { useRouter } from "@/i18n/navigation";
+import { useSessionNavigation } from "@/i18n/use-session-navigation";
 import { Button } from "@/components/ui/button";
 import { Callout } from "@/components/ui/callout";
 
@@ -16,7 +16,7 @@ import { Callout } from "@/components/ui/callout";
  */
 export function SignOutButton() {
   const t = useTranslations();
-  const router = useRouter();
+  const leaveTo = useSessionNavigation();
   const [pending, setPending] = useState(false);
   const [failed, setFailed] = useState(false);
 
@@ -24,12 +24,13 @@ export function SignOutButton() {
     setPending(true);
     setFailed(false);
     const result = await api("/api/v1/auth/signout", { method: "POST" });
-    setPending(false);
 
     if (result.ok) {
-      router.push("/login");
-      router.refresh();
+      // A full load: pages the router remembers from the signed-in session
+      // must not be shown, or replayed, once it has ended.
+      leaveTo("/login");
     } else {
+      setPending(false);
       setFailed(true);
     }
   }

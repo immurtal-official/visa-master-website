@@ -52,6 +52,30 @@ for (const { prefix, messages } of LOCALES) {
   });
 }
 
+test("signing out and back in, in the same tab, lands on the dashboard", async ({ page }) => {
+  // The tab that signs out has just been sent from the dashboard to the
+  // sign-in page. Signing in again must not replay that: the page is the same
+  // document throughout, as it is for anyone who signs out and changes their
+  // mind, or hands the computer to someone else.
+  const signIn = async (email: string) => {
+    await clearInbox(email);
+    await page.getByLabel(en.auth.login.emailLabel).fill(email);
+    await page.getByRole("button", { name: en.auth.login.submit }).click();
+    await page.getByLabel(en.auth.otp.codeLabel).fill(await readSignInCode(email));
+    await page.getByRole("button", { name: en.auth.otp.submit }).click();
+    await expect(page).toHaveURL(/\/en\/dashboard/);
+    await expect(page.getByText(fill(en.dashboard.signedInAs, { email }))).toBeVisible();
+  };
+
+  await page.goto("/en/login");
+  await signIn(uniqueEmail("again-first"));
+
+  await page.getByRole("button", { name: en.auth.signOut }).click();
+  await expect(page).toHaveURL(/\/en\/login/);
+
+  await signIn(uniqueEmail("again-second"));
+});
+
 test("a signed-out visitor cannot reach the dashboard", async ({ page }) => {
   await page.goto("/zh/dashboard");
   await expect(page).toHaveURL(/\/zh\/login/);
