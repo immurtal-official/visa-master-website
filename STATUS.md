@@ -1,12 +1,13 @@
 # Status — where the build stands
 
-**As of:** 2026-09-04 · everything described here is on `main`, except the deployment
-section, which is on `chore/deploy-staging`. Weeks 1–2 arrived in PR #4;
+**As of:** 2026-10-05 · everything described here is on `main`, through PR #16. Weeks 1–2 arrived in PR #4;
 the API-first work — six commits, `22cbfe1` through `fa36fbd` — missed that crossing, because
 PR #5 merged into a base that had already been merged, and followed in PR #6.
 Companion documents: [doc/archive/EXECUTION-PLAN-week1-2.md](doc/archive/EXECUTION-PLAN-week1-2.md) (the plan weeks 1–2
 executed), [doc/platform-and-dev-plan-v2-en.md](doc/platform-and-dev-plan-v2-en.md) (the active
 eight-week plan — v1 is superseded), [AGENTS.md](AGENTS.md) (the constraints this is built under).
+The questionnaire rework has its own stage table below, under
+[The questionnaire layer](#the-questionnaire-layer).
 
 ---
 
@@ -104,6 +105,61 @@ eight-week plan — v1 is superseded), [AGENTS.md](AGENTS.md) (the constraints t
   record; [ADR-004](discussion/ADR-004-api-first-control-plane.md) is the decision itself, in
   ten numbered points, and the v2 plan carries the revision.
 
+### Agent plane packaged to run (PR #14)
+
+- `apps/conductor/Dockerfile` builds the conductor from the repository root; it carries the
+  docker CLI, not the daemon, and `.dockerignore` keeps `.env.local` out of every layer.
+- `infra/placeholder-job` is a busybox image that produces a pack-shaped nothing through the
+  executor's exact contract, so the loop from a queued job to an artifact in the private bucket
+  can be closed without a model.
+- `infra/compose.vm.yml` is the local egress topology plus the conductor as a supervised
+  service, publishing no port. Not yet done, as `infra/README.md` records: no job has gone
+  end to end against the hosted database, and no VM exists.
+
+### Layout for the mobile app and a future API service (PR #15)
+
+`apps/app` (React Native + Expo, a client of `/api/v1`) and `apps/api` (empty on purpose:
+ADR-004 keeps the backend in Next.js) hold only READMEs. Neither has a `package.json`, so
+neither is a workspace yet.
+
+### Questionnaire gate (PR #16)
+
+`packages/core/src/intake/questionnaire.test.ts` fails when the questionnaire's tables and its
+wording disagree — a question without copy in either catalogue, copy left behind by a removed
+question, an option without a label, a document without its name or reason, a question without
+a rule or a field behaviour, repeated ids, an empty section. Failures are written for whoever
+is editing the questionnaire, not for an engineer. It runs in turbo `test` and on its own as
+`pnpm check:intake`, without Docker. The option set each choice question uses is now declared
+(`QUESTION_OPTION_GROUP`) rather than guessed from the end of its path.
+
+## The questionnaire layer
+
+The goal: a non-technical partner edits the intake on his own branch — wording, order, steps,
+questions, branching, the document checklist — and whatever he breaks stays inside the
+questionnaire layer, never reaching the job contract, the conductor, row-level security or the
+queue. **There is no `/admin` editor; that is decided.** The obstacle is not capability but
+that one question lives in five to seven files across two packages, and the common mistakes
+are silent.
+
+| Stage | What | Estimate | State |
+|---|---|---|---|
+| 1 | Survive a reload: `applications.draft_answers` + debounced draft saves | 1 day | done (PR #12) |
+| 2 | Questionnaire gate in vitest / turbo `test` | half a day | done (PR #16) |
+| 3 | One declarative questionnaire instead of three tables; zod derived from it | 2–3 days | in progress |
+| 4 | Unlock the partner: an `extra.*` namespace, errors written for non-engineers | 1 day | to do |
+| 5 | Document checklist `appliesWhen` as declarations, not string comparisons | half a day | to do |
+| 6 | Migration: `document_fields` / `answer_sources` / `intake_version` / checksum | 1–2 days | to do |
+| 7 | `jobs.input` carries upload references (ids only, never paths) | half a day | to do |
+| 8 | Branching `showIf`, and a gate on placeholder answers | 3–4 days | to do |
+| 9 | Extraction write-back, driven by hand-made fixtures | 1–2 days | to do |
+| 10 | Real extraction | — | blocked on the LLM gateway |
+
+Order matters in three places. **2 before 3**: the gate passing before and after the merge is
+what shows the merge did not change the copy contract. **6 before 8**: branching changes what
+one questionnaire is, so applications need to record which version they were answered against
+first. **9 before 10**: the write-back path is proven with fixtures, so the gateway only changes
+where the values come from.
+
 ## What the checked-in default actually runs
 
 The docker executor is selected only when `HERMES_JOB_COMMAND` is set; unset — which is how
@@ -117,7 +173,7 @@ not the proxy: no credential reaches the container and nothing inside it knows w
 | Layer | What it is | Needs |
 |---|---|---|
 | Playwright end-to-end, 10 spec files, **40 cases at runtime** (37 `test()` calls, 3 of them looped over both locales) | real sign-in via the Mailpit API, real uploads into the bucket, full journey to a queued job, plus the headless API contract | Docker + the local Supabase stack; Playwright starts both dev servers |
-| `packages/core` unit tests, **49** | schemas, the route gate, the Schengen-Spain document rules | nothing — the only layer that runs without Docker |
+| `packages/core` unit tests, **59** | schemas, the route gate, the Schengen-Spain document rules, the questionnaire gate | nothing — the only layer that runs without Docker (`pnpm check:intake`) |
 | `apps/conductor` tests, **47** | lease and run-loop races against real Postgres; the QA gate's verdicts as a pure table; the docker executor and the egress denials against real containers | local Postgres; 10 of them also need Docker, and 5 of those the `visa-master-hermes` image |
 | pgTAP, 7 files, **52 assertions** | row-level security and privilege grants, one file per migration except `job_lease_owner`, which adds a column and has none | the local stack (`pnpm db:test`) |
 
@@ -187,6 +243,27 @@ backups and pauses after seven idle days.
 
 These are real, unfixed, and worth knowing before the first paying pack. None blocks the
 current milestone.
+
+In the questionnaire layer — each verified, and each scheduled against a stage above:
+
+- **An empty section reads as a second review section.** `sectionState` decides "this is the
+  review" by `questions.length === 0`. The gate now fails on an empty non-review section, but
+  the heuristic itself remains (stage 3).
+- **Document conditions compare bare strings.** `appliesWhen` in `schengen-spain.ts` reads a
+  hand-written `IntakeAnswersShape`, tied to neither the questionnaire nor the option
+  constants; renaming an option id silently drops the sponsor-proof requirement (stage 5).
+- **A submitted application's answers can still be edited.** `saveAnswer` has no status
+  guard.
+- **Four e2e files hard-code question order, count and control type** — `submit.spec.ts`
+  (twenty hand-ordered calls and the literal `"20 of 20 questions answered"`),
+  `api-contract.spec.ts`, `documents.spec.ts`. Adding a question fails all of them, and
+  `documents.spec.ts` reports a missing document when the real cause is an unanswered
+  question. Changing wording fails none: they read the question text from `en.json`.
+- **A new column on `applications` needs its own column grant.** Inserts and updates there are
+  granted per column, and Postgres does not extend a grant to a column added later; the symptom
+  is a 42501 on first write. `20260910022332_intake_draft_answers.sql` is the worked example.
+
+Elsewhere:
 
 - **The egress tripwire is cleartext-only.** Rule 3 denies POST/PUT/PATCH/DELETE off the
   allowlist, but Squid cannot see a method inside a `CONNECT` tunnel, and tunnels to any
