@@ -25,6 +25,35 @@ describe("which documents a route asks for", () => {
   });
 });
 
+describe("the conditions, across every combination that decides them", () => {
+  // What the hand-written comparisons decided, stated as a table, so that
+  // writing the conditions as data is shown to decide exactly the same.
+  const PAYERS = ["self", "family", "employer", undefined, "somebody"];
+  const BEFORE = ["yes", "no", "unsure", undefined];
+
+  for (const whoPays of PAYERS) {
+    for (const schengenBefore of BEFORE) {
+      it(`whoPays=${whoPays}, schengenBefore=${schengenBefore}`, () => {
+        const ids = documentsFor({ companions: { whoPays }, history: { schengenBefore } }).map(
+          (document) => document.id,
+        );
+        expect(ids.includes("sponsorProof")).toBe(whoPays === "family" || whoPays === "employer");
+        expect(ids.includes("previousVisas")).toBe(schengenBefore === "yes");
+        // Everything unconditional is asked for regardless.
+        for (const document of SCHENGEN_SPAIN_DOCUMENTS.filter((d) => !d.appliesWhen)) {
+          expect(ids).toContain(document.id);
+        }
+      });
+    }
+  }
+
+  it("treats missing or malformed answers as not holding", () => {
+    for (const answers of [undefined, null, {}, "x", { companions: "employer" }]) {
+      expect(documentsFor(answers).map((d) => d.id)).not.toContain("sponsorProof");
+    }
+  });
+});
+
 describe("what is still outstanding", () => {
   const mandatory = SCHENGEN_SPAIN_DOCUMENTS.filter(
     (document) => document.necessity === "required",

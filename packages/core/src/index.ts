@@ -103,6 +103,8 @@ export {
   type IntakeSchengenTourismV1,
 } from "./intake/schengen-tourism-v1";
 
+export { conditionHolds, type Condition } from "./intake/condition";
+
 export {
   SCHENGEN_SPAIN_DOCUMENTS,
   documentCompleteness,

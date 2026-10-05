@@ -10,7 +10,15 @@
  *
  * Route: a resident of the Chengdu consular district, Spanish Schengen visa,
  * personal tourism, applicant in employment.
+ *
+ * Adding a document: an entry here, and its name and its reason in both
+ * catalogues under `documents.item.<id>` and `documents.item.<id>Why`. A
+ * document asked for only in some circumstances says so with `appliesWhen`, a
+ * condition on core answers (see intake/condition.ts); `pnpm check:intake`
+ * checks every condition against the questionnaire.
  */
+
+import { conditionHolds, type Condition } from "../intake/condition";
 
 export type DocumentNecessity = "required" | "recommended" | "conditional";
 
@@ -19,14 +27,8 @@ export interface RequiredDocument {
   necessity: DocumentNecessity;
   /** More than one page is normal for this document. */
   multiPage: boolean;
-  /** Asked for only when this is true of the application. */
-  appliesWhen?: (answers: IntakeAnswersShape) => boolean;
-}
-
-/** Only the parts of the answers these rules read. */
-export interface IntakeAnswersShape {
-  companions?: { whoPays?: string };
-  history?: { schengenBefore?: string };
+  /** Asked for only when this holds of the application's answers. */
+  appliesWhen?: Condition;
 }
 
 export const SCHENGEN_SPAIN_DOCUMENTS: RequiredDocument[] = [
@@ -52,22 +54,21 @@ export const SCHENGEN_SPAIN_DOCUMENTS: RequiredDocument[] = [
     id: "sponsorProof",
     necessity: "conditional",
     multiPage: true,
-    appliesWhen: (answers) =>
-      answers.companions?.whoPays === "family" || answers.companions?.whoPays === "employer",
+    appliesWhen: { answer: "companions.whoPays", in: ["family", "employer"] },
   },
   // Earlier Schengen visas count as travel history and are worth showing.
   {
     id: "previousVisas",
     necessity: "conditional",
     multiPage: true,
-    appliesWhen: (answers) => answers.history?.schengenBefore === "yes",
+    appliesWhen: { answer: "history.schengenBefore", is: "yes" },
   },
 ];
 
 /** The documents this particular application has to provide. */
-export function documentsFor(answers: IntakeAnswersShape): RequiredDocument[] {
+export function documentsFor(answers: unknown): RequiredDocument[] {
   return SCHENGEN_SPAIN_DOCUMENTS.filter(
-    (document) => !document.appliesWhen || document.appliesWhen(answers),
+    (document) => !document.appliesWhen || conditionHolds(document.appliesWhen, answers),
   );
 }
 
@@ -93,7 +94,7 @@ export interface DocumentCompleteness {
  * is exactly how a missing passport scan reaches a reviewer.
  */
 export function documentCompleteness(
-  answers: IntakeAnswersShape,
+  answers: unknown,
   uploads: UploadedDocument[],
 ): DocumentCompleteness {
   const stored = new Set(

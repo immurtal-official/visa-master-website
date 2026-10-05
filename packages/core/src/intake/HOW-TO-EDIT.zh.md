@@ -1,6 +1,6 @@
 # 如何修改问卷
 
-这份说明写给改问卷的人，不需要懂代码。问卷的全部内容只在三个文件里：
+这份说明写给改问卷和材料清单的人，不需要懂代码。问卷的全部内容只在三个文件里：
 
 | 改什么                             | 文件                                        |
 | ---------------------------------- | ------------------------------------------- |
@@ -106,6 +106,26 @@ pnpm check:intake
 在 `questionnaire.ts` 里删掉那一行，再把两个文案文件里对应的题面和提示语一起删掉。`pnpm check:intake` 会提醒你有没有删干净。
 
 ---
+
+## 改材料清单
+
+材料清单在 `packages/core/src/rules/schengen-spain.ts` 的 `SCHENGEN_SPAIN_DOCUMENTS` 里，一份材料一条：
+
+```ts
+{ id: "sponsorProof", necessity: "conditional", multiPage: true,
+  appliesWhen: { answer: "companions.whoPays", in: ["family", "employer"] } },
+```
+
+- `necessity`：`"required"`（必须交）、`"recommended"`（建议交，不交也能提交）、`"conditional"`（满足条件时才要）。
+- `multiPage`：这份材料通常不止一页时写 `true`。
+- `appliesWhen`：什么情况下才需要这份材料。不写就是每个人都要。写法：
+  - `{ answer: "history.schengenBefore", is: "yes" }`：某道题的答案等于某个选项
+  - `{ answer: "companions.whoPays", in: ["family", "employer"] }`：等于其中任意一个
+  - `{ all: [条件, 条件] }`：都成立；`{ any: [条件, 条件] }`：任意一个成立；`{ not: 条件 }`：不成立
+
+  `answer` 只能是**核心选择题**（「<节 id>.<题 id>」），比较的值必须是它真有的选项。写错了 `pnpm check:intake` 会指出来。
+
+每份材料还要在两个文案文件的 `documents.item` 下各加两条：名称（`<id>`）和为什么要它（`<id>Why`）。
 
 ## 必须注意
 
