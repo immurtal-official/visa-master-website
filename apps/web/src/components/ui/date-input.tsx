@@ -53,6 +53,10 @@ export function DateInput({
       </label>
       <input
         id={`${id}-${part}`}
+        // Named so a half-typed date is still legible to whatever reads the
+        // form. The hidden field below is empty until all three parts are
+        // there, which is right for submitting and useless for autosaving.
+        name={`${name}.${part}`}
         inputMode="numeric"
         autoComplete="off"
         maxLength={max}

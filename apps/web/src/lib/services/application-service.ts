@@ -20,6 +20,12 @@ export interface ApplicationSummary {
 
 export interface ApplicationDetail extends ApplicationSummary {
   answers: Record<string, unknown>;
+  /**
+   * What is being typed but has not been confirmed, keyed by question path.
+   * Never merged into `answers` here: a screen decides which to show, and only
+   * `answers` reaches a submission.
+   */
+  draft_answers: Record<string, string>;
   last_step: string | null;
   submitted_job_id: string | null;
 }
@@ -48,7 +54,9 @@ export const applicationService = {
 
     const { data: application, error } = await supabase
       .from("applications")
-      .select("id, destination, purpose, status, answers, last_step, created_at, submitted_job_id")
+      .select(
+        "id, destination, purpose, status, answers, draft_answers, last_step, created_at, submitted_job_id",
+      )
       .eq("id", id)
       .maybeSingle<ApplicationDetail>();
 

@@ -133,13 +133,18 @@ test("leaving mid-form and signing in again returns to the same question", async
   await expect(page.getByLabel(en.intake.question.applicant.name)).toHaveValue("陈静");
 });
 
-/** The intake URL for a question, for the application this session just made. */
-async function intakeUrl(page: Page, suffix: string): Promise<string> {
+/** Open the intake hub for the application this session just made. */
+async function openIntakeHub(page: Page): Promise<void> {
   await page.goto("/en/dashboard");
   await page.getByRole("heading", { name: /Spain/ }).click();
   // The card opens the application; the form is one step further in.
   await page.getByRole("link", { name: en.application.continueCta, exact: true }).click();
   await expect(page).toHaveURL(/\/intake$/);
+}
+
+/** The intake URL for a question, for the application this session just made. */
+async function intakeUrl(page: Page, suffix: string): Promise<string> {
+  await openIntakeHub(page);
   return `${new URL(page.url()).pathname}/${suffix}`;
 }
 
@@ -148,3 +153,73 @@ async function fillDate(page: Page, year: string, month: string, day: string): P
   await page.getByLabel(en.intake.date.month).fill(month);
   await page.getByLabel(en.intake.date.day).fill(day);
 }
+
+test("what is being typed survives a reload, and is still not an answer", async ({ page }) => {
+  await signIn(page, uniqueEmail("intake-draft"));
+  await createApplication(page);
+
+  const address = "成都市武侯区天府大道北段 1 号 3 单元 502";
+  await page.goto(await intakeUrl(page, "residence/address"));
+
+  // The save is on a pause in typing, so wait for the request rather than for
+  // a duration — a fixed sleep is either flaky or slow, and usually both.
+  const kept = page.waitForResponse(
+    (response) => response.url().includes("/draft-answers") && response.status() === 204,
+  );
+  await page.getByLabel(en.intake.question.residence.address).fill(address);
+  await kept;
+
+  // The case this exists for: the tab reloads, by hand or because an in-app
+  // browser decided to.
+  await page.reload();
+  await expect(page.getByLabel(en.intake.question.residence.address)).toHaveValue(address);
+
+  // And it is still only typing. Nobody pressed Continue, so nothing counts it
+  // as answered and nothing would let it reach a submission.
+  await openIntakeHub(page);
+  await expect(
+    page.getByText(en.intake.progress.replace("{answered}", "0").replace("{total}", "20")),
+  ).toBeVisible();
+});
+
+test("half a date is kept, gaps and all", async ({ page }) => {
+  await signIn(page, uniqueEmail("intake-draft-date"));
+  await createApplication(page);
+
+  await page.goto(await intakeUrl(page, "applicant/birthDate"));
+
+  // A date's hidden field is empty until all three parts are filled, so a year
+  // on its own is exactly the case that used to vanish.
+  const kept = page.waitForResponse(
+    (response) => response.url().includes("/draft-answers") && response.status() === 204,
+  );
+  await page.getByLabel(en.intake.date.year).fill("1990");
+  await kept;
+
+  await page.reload();
+  await expect(page.getByLabel(en.intake.date.year)).toHaveValue("1990");
+  await expect(page.getByLabel(en.intake.date.month)).toHaveValue("");
+});
+
+test("confirming an answer clears the draft it was typed as", async ({ page }) => {
+  await signIn(page, uniqueEmail("intake-draft-clear"));
+  await createApplication(page);
+
+  await page.goto(await intakeUrl(page, "applicant/name"));
+
+  const kept = page.waitForResponse(
+    (response) => response.url().includes("/draft-answers") && response.status() === 204,
+  );
+  await page.getByLabel(en.intake.question.applicant.name).fill("陈静");
+  await kept;
+
+  await page.getByRole("button", { name: en.intake.next }).click();
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText(
+    en.intake.question.applicant.pinyin,
+  );
+
+  // Coming back shows the answer, which is now the only copy of it. A draft
+  // left behind would shadow every later edit made from another device.
+  await page.goto(await intakeUrl(page, "applicant/name"));
+  await expect(page.getByLabel(en.intake.question.applicant.name)).toHaveValue("陈静");
+});

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
 import { useTranslations } from "next-intl";
 import { FIELD_BEHAVIOUR, QUESTION_OPTIONS, type ValidationIssue } from "@visa-master/core";
 import { Button } from "@/components/ui/button";
@@ -17,6 +17,31 @@ interface AnswerState {
   issues?: ValidationIssue[];
   error?: string;
   pending?: boolean;
+}
+
+/**
+ * How long the typing has to stop before it is worth a request. Long enough
+ * that ordinary typing sends nothing, short enough that putting the phone down
+ * mid-word and never coming back still keeps the word.
+ */
+const DRAFT_IDLE_MS = 800;
+
+/**
+ * What is in the field right now, including the states that are not yet an
+ * answer.
+ *
+ * A date's hidden field is empty until year, month and day are all present, so
+ * "2019" on its own would autosave as nothing. The three parts are named, so
+ * read them instead and keep the gaps — `2019--` rehydrates into a year box
+ * with a year in it, which is the whole point.
+ */
+function currentValue(form: HTMLFormElement, isDate: boolean): string {
+  const data = new FormData(form);
+  const complete = String(data.get("value") ?? "");
+  if (complete || !isDate) return complete;
+
+  const parts = (["year", "month", "day"] as const).map((p) => String(data.get(`value.${p}`) ?? ""));
+  return parts.some(Boolean) ? parts.join("-") : "";
 }
 
 /**
@@ -44,8 +69,73 @@ export function QuestionForm({
   const router = useRouter();
   const [state, setState] = useState<AnswerState>({ value: savedValue });
 
+  const behaviour = FIELD_BEHAVIOUR[path] ?? {};
+  const isDate = behaviour.kind === "date";
+
+  const formRef = useRef<HTMLFormElement>(null);
+  const idleTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  /** What the server was last told, so an unchanged field sends nothing. */
+  const lastKept = useRef(savedValue);
+  /** Once the answer is confirmed, the draft is gone and must not come back. */
+  const confirmed = useRef(false);
+
+  const draftPath = `/api/v1/applications/${applicationId}/draft-answers`;
+
+  const keepDraft = useCallback(
+    (value: string) => {
+      if (confirmed.current || value === lastKept.current) return;
+      lastKept.current = value;
+      // Nothing on the page waits for this. A draft that fails to save is
+      // retried by the next pause in typing, and Continue saves properly.
+      void api(draftPath, { method: "POST", body: { sectionId, questionId, value } });
+    },
+    [draftPath, sectionId, questionId],
+  );
+
+  const onInput = useCallback(() => {
+    clearTimeout(idleTimer.current);
+    const form = formRef.current;
+    if (!form) return;
+    idleTimer.current = setTimeout(() => keepDraft(currentValue(form, isDate)), DRAFT_IDLE_MS);
+  }, [isDate, keepDraft]);
+
+  useEffect(() => {
+    // Held here rather than read at cleanup time: by then the form is on its
+    // way out of the tree and the ref may already be empty, which is the one
+    // moment this effect most needs it.
+    const form = formRef.current;
+    if (!form) return;
+
+    // Leaving is the case that matters most and the one fetch handles worst:
+    // a request started while the page is being torn down can be cancelled. A
+    // beacon is handed to the browser to deliver on its own time.
+    function keepOnHide(): void {
+      if (document.visibilityState !== "hidden" || confirmed.current || !form) return;
+      clearTimeout(idleTimer.current);
+      const value = currentValue(form, isDate);
+      if (value === lastKept.current) return;
+      lastKept.current = value;
+      navigator.sendBeacon(
+        draftPath,
+        new Blob([JSON.stringify({ sectionId, questionId, value })], {
+          type: "application/json",
+        }),
+      );
+    }
+
+    document.addEventListener("visibilitychange", keepOnHide);
+    return () => {
+      document.removeEventListener("visibilitychange", keepOnHide);
+      clearTimeout(idleTimer.current);
+      // Moving to another question is still leaving this one, and here the
+      // page survives, so an ordinary request is enough.
+      keepDraft(currentValue(form, isDate));
+    };
+  }, [draftPath, isDate, keepDraft, sectionId, questionId]);
+
   async function save(event: FormEvent<HTMLFormElement>): Promise<void> {
     event.preventDefault();
+    clearTimeout(idleTimer.current);
     const value = String(new FormData(event.currentTarget).get("value") ?? "");
     setState({ value, pending: true });
 
@@ -55,6 +145,8 @@ export function QuestionForm({
     );
 
     if (result.ok && result.data) {
+      // The answer is stored and the server has dropped the draft with it.
+      confirmed.current = true;
       const next = result.data.next;
       router.push(
         next
@@ -76,7 +168,6 @@ export function QuestionForm({
     });
   }
 
-  const behaviour = FIELD_BEHAVIOUR[path] ?? {};
   const value = state.value ?? savedValue;
   const issue = state.issues?.[0];
   const message = issue ? messageFor(t, issue) : undefined;
@@ -88,7 +179,7 @@ export function QuestionForm({
     : undefined;
 
   return (
-    <form onSubmit={(event) => void save(event)}>
+    <form ref={formRef} onInput={onInput} onChange={onInput} onSubmit={(event) => void save(event)}>
       {state.issues && state.issues.length > 0 ? (
         <ErrorSummary
           title={t("errorSummary.title")}
