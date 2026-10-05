@@ -1,0 +1,33 @@
+# What never enters a build context.
+#
+# Docker does not read .gitignore, so nothing above this file protects a build
+# from the working tree. Two specific hazards, both of which have bitten real
+# projects and both of which fail quietly here:
+#
+# 1. `.env.local` is the documented way to run the conductor locally, so a
+#    developer who has ever done that is carrying DATABASE_URL and the
+#    RLS-bypassing SUPABASE_SECRET_KEY in a file sitting next to the
+#    Dockerfile. `COPY apps/conductor apps/conductor` would bake both into a
+#    readable image layer — recoverable with `docker history` long after the
+#    file itself is gone — and the process would then read them at startup for
+#    every variable the real env_file happens not to define.
+#
+# 2. `node_modules` on this machine is a pnpm symlink farm pointing at paths
+#    that do not exist inside the image. Copying it over the freshly installed
+#    tree replaces working dependencies with dangling links.
+**/.env
+**/.env.*
+!**/.env.example
+
+**/node_modules
+.git
+.github
+.turbo
+**/.next
+**/dist
+**/test-results
+**/playwright-report
+
+# Not needed to run anything, and large.
+design/prototypes
+doc/archive
