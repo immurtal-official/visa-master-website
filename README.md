@@ -35,7 +35,7 @@ Two sections of it carry weight beyond description:
 | `doc/archive/` | Superseded documents, with a README naming what replaced each — including `EXECUTION-PLAN-week1-2.md`, the plan weeks 1–2 executed |
 | `discussion/` | The ADR ledger — every record in it is in force, and each is amended by a later ADR rather than edited. The long-form arguments they came out of are in `discussion/explorations/`; see [`discussion/README.md`](discussion/README.md) |
 | `design/` | Product design, binding guidelines (device parity, internationalization, design system selection), the exported design system, and prototypes — see [`design/README.md`](design/README.md) and its ground rule: design output is reference, never production code |
-| `apps/` | `web` — the Next.js front end, its `/api/v1/**` handlers and the service layer behind them; `conductor` — the workflow orchestrator and its executors |
+| `apps/` | `web` — the Next.js front end, its `/api/v1/**` handlers and the service layer behind them; `conductor` — the workflow orchestrator and its executors; `app` — the React Native / Expo mobile client, not started; `api` — empty, where the backend would go if it ever leaves Next.js (see its README) |
 | `packages/` | `core` — shared zod schemas, deterministic route rules, i18n message keys; `db` — migrations and pgTAP tests; `executors` — the adapter contract only, no implementations |
 | `infra/` | The agent plane as compose: the internal network and the Squid egress config. Systemd units and deploy scripts land with the VM |
 | `scripts/` | Repo-level build gates — today, the i18n catalogue check — and `doc-reader/`, which generates the documents' tables of contents, their diagrams, and their HTML readers |

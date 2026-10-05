@@ -64,6 +64,8 @@ Four properties are worth knowing before you read any file:
 apps/
   web/          Next.js 16 App Router: pages, /api/v1 handlers, services
   conductor/    the workflow state machine and its container executors
+  app/          the Expo mobile client — README only, not started yet
+  api/          README only: the backend lives in web/ (ADR-004)
 packages/
   core/         the rules both sides import — schemas, route gate, message keys
   db/           migrations, pgTAP tests, Supabase local config
@@ -83,7 +85,8 @@ says by what. Note that v0.3 sits in `doc/` even though v0.4 exists — v0.4
 supersedes its framing and not its §5.2 egress rules, which
 `infra/squid/squid.conf` implements. Version number is not the axis.
 
-Five workspaces (`pnpm-workspace.yaml` is `apps/*` and `packages/*`), one
+Five workspaces (`pnpm-workspace.yaml` is `apps/*` and `packages/*`; `app/` and
+`api/` have no `package.json` yet, so pnpm does not count them), one
 Turborepo task graph, no build step for internal packages — they export raw
 TypeScript and Next transpiles `@visa-master/core` directly.
 
