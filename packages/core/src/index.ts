@@ -105,6 +105,8 @@ export {
 
 export { conditionHolds, type Condition } from "./intake/condition";
 
+export { INTAKE_CHECKSUM, INTAKE_VERSION } from "./intake/version";
+
 export {
   SCHENGEN_SPAIN_DOCUMENTS,
   documentCompleteness,
