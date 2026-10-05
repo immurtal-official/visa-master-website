@@ -21,15 +21,25 @@ export default async function QuestionPage({
 
   if (!isSupabaseConfigured()) redirect(getPathname({ href: "/login", locale }));
 
-  const result = await apiGet<{ application: { id: string; answers: Record<string, unknown> } }>(
-    `/api/v1/applications/${id}`,
-  );
+  const result = await apiGet<{
+    application: {
+      id: string;
+      answers: Record<string, unknown>;
+      draft_answers: Record<string, string>;
+    };
+  }>(`/api/v1/applications/${id}`);
   if (result.status === 401) redirect(getPathname({ href: "/login", locale }));
   if (result.status === 404 || !result.data) notFound();
 
   const application = result.data.application;
 
   const saved = readAnswer(application.answers ?? {}, question.path);
+  const draft = (application.draft_answers ?? {})[question.path];
+
+  // What was being typed wins over what was last confirmed, because it is the
+  // later of the two — someone who came back to change an answer and reloaded
+  // mid-edit should find their edit, not the value they were replacing.
+  const initialValue = typeof draft === "string" && draft ? draft : saved;
 
   return (
     <main className="vm-container" style={{ paddingBlock: "var(--space-10)" }}>
@@ -38,7 +48,7 @@ export default async function QuestionPage({
         sectionId={sectionId}
         questionId={questionId}
         path={question.path}
-        savedValue={typeof saved === "string" ? saved : ""}
+        savedValue={typeof initialValue === "string" ? initialValue : ""}
       />
     </main>
   );

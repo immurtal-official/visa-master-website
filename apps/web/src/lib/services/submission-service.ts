@@ -97,6 +97,10 @@ export const submissionService = {
         status: "submitted",
         submitted_job_id: job.id,
         submitted_at: new Date().toISOString(),
+        // Nothing is half-typed any more, and the payload is frozen. Keeping
+        // scratch copies of personal data past the moment they are useful is
+        // the opposite of the retention posture.
+        draft_answers: {},
       })
       .eq("id", application.id);
 

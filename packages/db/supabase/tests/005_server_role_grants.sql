@@ -6,7 +6,7 @@
 -- are — a missing grant and a missing policy both look like working code.
 
 begin;
-select plan(12);
+select plan(14);
 
 create extension if not exists pgtap with schema extensions;
 
@@ -58,6 +58,18 @@ select ok(
 select ok(
   not has_column_privilege('authenticated', 'public.applications', 'submitted_job_id', 'insert'),
   'but cannot claim it is already submitted'
+);
+
+-- A column added by a later migration gets no privilege from the grants that
+-- named the columns before it. Autosave writes this one on every keystroke
+-- pause, so a missing grant here is a feature that silently never saves.
+select ok(
+  has_column_privilege('authenticated', 'public.applications', 'draft_answers', 'update'),
+  'a client can autosave what it is still typing'
+);
+select ok(
+  has_column_privilege('authenticated', 'public.applications', 'draft_answers', 'insert'),
+  'and can create an application that already has some'
 );
 
 -- Sequences follow their tables: update on a sequence carries setval.

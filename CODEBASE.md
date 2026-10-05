@@ -111,6 +111,14 @@ next; `last_step` records where the reader is going, so an interrupted session
 resumes at the exact question. (Half the traffic is an in-app browser that gets
 killed when a message arrives. This is designed for that.)
 
+That covers answers already given. The question *in hand* is covered by
+`/api/v1/applications/{id}/draft-answers`, which the form calls on a pause in
+typing and on the tab being hidden. It keeps the raw keystrokes in
+`applications.draft_answers` — unvalidated, possibly half a date — so a reload
+costs nothing. The two paths are deliberately separate: one validates and
+refuses, the other keeps whatever it is given, and `parseIntake` reads only
+`answers`, so a value nobody confirmed cannot reach a submission.
+
 **4. Documents.** `packages/core/src/rules/schengen-spain.ts` decides which
 documents this applicant needs from the answers they gave — somebody whose
 employer is paying is asked for the employer's proof of funds, nobody else is.
@@ -231,7 +239,7 @@ Migrations run in order; each pgTAP file pairs with one of them (except
 - **`services/errors.ts`** — the only two things a service may throw. `ServiceError`'s `extra` is how `route.unsupported.title` ships `{reasons}` and `intake.review.documentsMissing` ships `{missingDocuments}`.
 - **`services/auth-service.ts`** — `requireUser()` is the single authorization chokepoint; it returns a *request-scoped* client, which is why no service writes an ownership filter. Sign-in and sign-up are the same call. A wrong code and an expired code collapse into one 401, because telling them apart tells an attacker the same thing.
 - **`services/application-service.ts`** — list, get, create. `get()` answers 404 for someone else's row: "no such thing" is the honest answer, not "you may not". `create()` re-runs the route gate server-side.
-- **`services/intake-service.ts`** — saves one answer at a dot-path without clobbering the JSONB, validates it with the same schema the whole form uses, and writes `last_step` from `nextQuestion(...)` — the resume point is where the reader is *going*.
+- **`services/intake-service.ts`** — saves one answer at a dot-path without clobbering the JSONB, validates it with the same schema the whole form uses, and writes `last_step` from `nextQuestion(...)` — the resume point is where the reader is *going*. `saveDraft` is its counterpart for typing that is not an answer yet: no validation, no resume point, stored flat by path in `draft_answers` and dropped as soon as the real answer lands.
 - **`services/route-service.ts`** — the pure gate plus the waiting list. Signing in is not required to be counted, and the list cannot be read back by anyone.
 - **`services/upload-service.ts`** — announce / confirm / remove. `storagePath` is `userId/applicationId/uploadId.ext`, so ownership is a prefix the storage policies compare rather than a lookup. `remove` deletes the object first and the row second, because an object with no row is a passport scan nobody will ever delete.
 - **`services/submission-service.ts`** — the most decision-dense file in the app: the completeness gate, the idempotency key, `deadline_seconds: 3600`, and the sanitized `{route, intake}` payload. If the follow-up application update fails it is logged rather than thrown — the job exists, and the idempotency key stops a retry double-billing.
@@ -250,6 +258,7 @@ Migrations run in order; each pgTAP file pairs with one of them (except
 | `/applications` | GET, POST | `applicationService.list` / `.create` | 201 `{application:{id}}`; 422 `{error:{key:"route.unsupported.title", reasons}}` |
 | `/applications/{id}` | GET | `.get` | 200 `{application, job:{state}|null}`; 404 for someone else's row |
 | `/applications/{id}/answers` | POST | `intakeService.saveAnswer` | 200 `{next}`; `null` means the questions are exhausted |
+| `/applications/{id}/draft-answers` | POST | `intakeService.saveDraft` | 204; keeps unvalidated typing, moves no resume point |
 | `/applications/{id}/documents` | GET | `uploadService.listForApplication` | the checklist plus `completeness` |
 | `/applications/{id}/uploads` | POST | `.announce` | 201 `{uploadId, storagePath}` |
 | `/applications/{id}/uploads/{uploadId}` | DELETE | `.remove` | 204, idempotent by design |

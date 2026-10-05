@@ -33,6 +33,12 @@ eight-week plan — v1 is superseded), [AGENTS.md](AGENTS.md) (the constraints t
   waiting list and never create an application.
 - Applications as server-side drafts; 20-question intake across 7 sections, one question per
   page, autosave on every answer, resume at the exact question after sign-out/kill.
+- The question in hand is kept too: typing is saved to `applications.draft_answers` on a pause,
+  on the tab being hidden (by beacon, which a cancelled fetch is not), and on leaving the
+  question — so a reload no longer costs whatever was half-typed, including half a date. Draft
+  values are unvalidated and deliberately invisible to `parseIntake`, so a value nobody pressed
+  Continue on cannot reach a submission; each is cleared as its answer is confirmed, and all of
+  them at submit.
 - Validation emits **message key + params only** (`validation.passport.expiry.tooSoon` +
   `{monthsRequired: 3}`); the screen resolves keys against the active locale. No component
   carries a rule.
