@@ -2,7 +2,9 @@ import {
   INTAKE_CHECKSUM,
   INTAKE_VERSION,
   documentCompleteness,
+  documentsForJob,
   parseIntake,
+  type StoredUpload,
 } from "@visa-master/core";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireUser } from "./auth-service";
@@ -52,9 +54,9 @@ export const submissionService = {
     // minutes of model time to produce something a reviewer must reject.
     const { data: uploads } = await supabase
       .from("uploads")
-      .select("document, status")
+      .select("id, document, page, status, content_type")
       .eq("application_id", application.id)
-      .returns<{ document: string; status: string }[]>();
+      .returns<StoredUpload[]>();
 
     const documents = documentCompleteness(application.answers ?? {}, uploads ?? []);
     if (!documents.complete) {
@@ -87,6 +89,9 @@ export const submissionService = {
           // Which contract the intake was validated against, so a pack can be
           // traced to the exact set of core questions that produced it.
           intakeContract: { version: INTAKE_VERSION, checksum: INTAKE_CHECKSUM },
+          // The applicant's documents, by reference. Never a storage path: a
+          // path begins with the owner's user id. The conductor resolves ids.
+          documents: documentsForJob(application.answers ?? {}, uploads ?? []),
         },
         // Beta wall-clock cap; the clock starts at lease, never in the queue.
         deadline_seconds: 3600,

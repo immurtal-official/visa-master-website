@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { documentCompleteness, documentsFor, SCHENGEN_SPAIN_DOCUMENTS } from "./schengen-spain";
+import {
+  documentCompleteness,
+  documentsFor,
+  documentsForJob,
+  SCHENGEN_SPAIN_DOCUMENTS,
+} from "./schengen-spain";
 
 const PAYS_SELF = { companions: { whoPays: "self" }, history: { schengenBefore: "no" } };
 
@@ -95,5 +100,45 @@ describe("what is still outstanding", () => {
     const result = documentCompleteness(answers, stored(...mandatory));
     expect(result.complete).toBe(false);
     expect(result.missing).toEqual(["sponsorProof"]);
+  });
+});
+
+describe("the documents a job is given", () => {
+  const upload = (id: string, document: string, page: number, status = "stored") => ({
+    id,
+    document,
+    page,
+    status,
+    content_type: "image/jpeg",
+    // What the database row also holds, and the job must never see.
+    storage_path: `11111111-1111-1111-1111-111111111111/app/${document}-${page}.jpg`,
+    user_id: "11111111-1111-1111-1111-111111111111",
+  });
+
+  it("are confirmed uploads only, in checklist order and then page order", () => {
+    const documents = documentsForJob(PAYS_SELF, [
+      upload("u3", "bankStatement", 2),
+      upload("u1", "passportBio", 1),
+      upload("u2", "bankStatement", 1),
+      upload("u4", "photo", 1, "pending"),
+    ]);
+    expect(documents.map((d) => d.uploadId)).toEqual(["u1", "u2", "u3"]);
+  });
+
+  it("leave out documents this application no longer needs", () => {
+    const uploads = [upload("u1", "sponsorProof", 1)];
+    expect(documentsForJob(PAYS_SELF, uploads)).toEqual([]);
+    expect(documentsForJob({ companions: { whoPays: "family" } }, uploads)).toHaveLength(1);
+  });
+
+  it("carry references and nothing that locates or identifies", () => {
+    const [document] = documentsForJob(PAYS_SELF, [upload("u1", "passportBio", 1)]);
+    expect(document).toEqual({
+      uploadId: "u1",
+      document: "passportBio",
+      page: 1,
+      contentType: "image/jpeg",
+    });
+    expect(JSON.stringify(document)).not.toContain("11111111");
   });
 });

@@ -135,6 +135,23 @@ test("a complete application is sent and leaves a queued job", async ({ page }) 
   expect(input).toContain("CHEN JING");
   expect(input).not.toContain(email);
 
+  // The documents travel as references to the confirmed uploads, and nothing
+  // that locates them: a storage path begins with the account's user id.
+  const owner = query(`select id from auth.users where email = '${email}'`).trim();
+  expect(input).not.toContain(owner);
+  expect(input).not.toContain("storage_path");
+  const referenced = query(
+    `select string_agg(d->>'uploadId', ',' order by d->>'uploadId')
+     from public.jobs j, jsonb_array_elements(j.input->'documents') d
+     where j.user_id = '${owner}'`,
+  ).trim();
+  const stored = query(
+    `select string_agg(id::text, ',' order by id::text) from public.uploads
+     where user_id = '${owner}' and status = 'stored'`,
+  ).trim();
+  expect(referenced).toBe(stored);
+  expect(referenced.split(",")).toHaveLength(8);
+
   const idempotency = query(
     `select idempotency_key from public.jobs j
      join auth.users u on u.id = j.user_id where u.email = '${email}'`,

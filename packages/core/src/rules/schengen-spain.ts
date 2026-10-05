@@ -116,3 +116,47 @@ export function documentCompleteness(
 
   return { missing, pending, complete: missing.length === 0 };
 }
+
+/** An upload row as the submission reads it. */
+export interface StoredUpload {
+  id: string;
+  document: string;
+  page: number;
+  status: string;
+  content_type: string;
+}
+
+/** One document page as the job receives it: a reference, never a location. */
+export interface JobDocument {
+  uploadId: string;
+  document: string;
+  page: number;
+  contentType: string;
+}
+
+/**
+ * The documents a job is given, as references.
+ *
+ * Only confirmed uploads, and only for documents this application actually
+ * needs — a sponsor's bank statement uploaded before the applicant changed
+ * who is paying is not part of this pack. Ordered by checklist position and
+ * then page, because the page order of a bank statement is part of what the
+ * consulate reads.
+ *
+ * Each carries the upload's id and nothing that locates it. A storage path
+ * begins with the owner's user id, and the job's input never carries the
+ * account; the conductor, which holds the credential, resolves an id to its
+ * object. The container sees neither.
+ */
+export function documentsForJob(answers: unknown, uploads: StoredUpload[]): JobDocument[] {
+  const needed = documentsFor(answers).map((document) => document.id);
+  return uploads
+    .filter((upload) => upload.status === "stored" && needed.includes(upload.document))
+    .sort((a, b) => needed.indexOf(a.document) - needed.indexOf(b.document) || a.page - b.page)
+    .map((upload) => ({
+      uploadId: upload.id,
+      document: upload.document,
+      page: upload.page,
+      contentType: upload.content_type,
+    }));
+}
