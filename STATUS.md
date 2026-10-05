@@ -116,6 +116,16 @@ The questionnaire rework has its own stage table below, under
   service, publishing no port. Not yet done, as `infra/README.md` records: no job has gone
   end to end against the hosted database, and no VM exists.
 
+### The job's documents reach its scratch
+
+The job's input lists the applicant's documents by upload id (PR #23). Before an executor
+starts, the conductor resolves each id — only an upload that is `stored` and belongs to the
+job's owner — downloads it with its own credential, and writes it to `documents/` in the
+scratch beside a `documents.json` naming which checklist item and page each file is. Every
+document is staged or none is: anything missing fails the attempt as `input_unavailable`
+before a container starts, and the scratch goes with it. Neither the container nor the
+manifest ever holds a storage path, a user id or a key.
+
 ### Layout for the mobile app and a future API service (PR #15)
 
 `apps/app` (React Native + Expo, a client of `/api/v1`) and `apps/api` (empty on purpose:
@@ -300,11 +310,6 @@ Elsewhere:
   as `validation_failed` today.
 
 ## Not done yet
-
-- **The conductor does not stage the applicant's documents.** From PR #23 the job's input lists
-  them by upload id; the conductor still writes only `input.json` into the scratch. It should
-  resolve each id with its own credential and stage the file, so the container sees neither a
-  path nor a key.
 
 - **LLM gateway** — the largest piece of week 3 still missing: the version-pinned LiteLLM
   service, the provider key it holds, Hermes pointed at it, and the Squid allowlist reduced to

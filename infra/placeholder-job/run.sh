@@ -28,6 +28,9 @@ else
   # before the artifact that the finding would be attached to.
   echo "placeholder-job: WARNING no input.json in $JOB_DIR"
 fi
+if [ -f "$JOB_DIR/documents.json" ]; then
+  echo "placeholder-job: $(ls "$JOB_DIR/documents" | wc -l) document file(s) staged"
+fi
 
 sleep "$SLEEP_SECONDS"
 

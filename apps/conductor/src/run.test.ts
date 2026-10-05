@@ -1,5 +1,6 @@
 import { afterAll, beforeEach, describe, expect, it } from "vitest";
-import { access } from "node:fs/promises";
+import { access, readFile } from "node:fs/promises";
+import { join } from "node:path";
 import { Pool } from "pg";
 import { readConfig } from "./config";
 import { createFakeExecutor, scratchDirFor } from "./executors/fake";
@@ -257,6 +258,93 @@ describe("running a job end to end", () => {
     const outcome = await runOnce(pool, registry, config);
     expect(outcome).toEqual({ jobId, state: "failed" });
     expect((await jobState(jobId)).failure_reason).toBe("validation_failed");
+  });
+
+  it("hands the executor a scratch that already holds the job's documents", async () => {
+    const { rows: uploads } = await pool.query<{ id: string; storage_path: string }>(
+      `with app as (
+         insert into public.applications (user_id, residence_area, destination)
+         values ($1, 'sichuan', 'ES') returning id
+       )
+       insert into public.uploads (application_id, user_id, document, page, storage_path, content_type, status)
+       select app.id, $1, 'passportBio', 1, $1::text || '/' || app.id || '/p.jpg', 'image/jpeg', 'stored'
+       from app returning id, storage_path`,
+      [userId],
+    );
+    const upload = uploads[0]!;
+    const { rows } = await pool.query<{ id: string }>(
+      `insert into public.jobs (user_id, task_type, executor_kind, input, deadline_seconds)
+       values ($1, 'produce_pack', 'hermes', $2::jsonb, 1200) returning id`,
+      [
+        userId,
+        JSON.stringify({
+          documents: [
+            { uploadId: upload.id, document: "passportBio", page: 1, contentType: "image/jpeg" },
+          ],
+        }),
+      ],
+    );
+
+    let seen = "";
+    const executor = createFakeExecutor({ runMs: 10 });
+    const registry: ExecutorRegistry = {
+      hermes: {
+        ...executor,
+        start: async (job, ctx) => {
+          seen = await readFile(join(ctx.scratchDir, "documents/passportBio-1.jpg"), "utf8");
+          return executor.start(job, ctx);
+        },
+      },
+    };
+
+    const outcome = await runOnce(pool, registry, config, {
+      get: async (path) => Buffer.from(path === upload.storage_path ? "SCAN" : "WRONG"),
+    });
+    expect(outcome).toEqual({ jobId: rows[0]!.id, state: "succeeded" });
+    expect(seen).toBe("SCAN");
+  });
+
+  it("starts nothing when the documents it names cannot be staged", async () => {
+    const { rows } = await pool.query<{ id: string }>(
+      `insert into public.jobs (user_id, task_type, executor_kind, input, deadline_seconds, max_attempts)
+       values ($1, 'produce_pack', 'hermes', $2::jsonb, 1200, 1)
+       returning id`,
+      [
+        userId,
+        JSON.stringify({
+          documents: [
+            {
+              uploadId: "00000000-0000-4000-8000-000000000000",
+              document: "passportBio",
+              page: 1,
+              contentType: "image/jpeg",
+            },
+          ],
+        }),
+      ],
+    );
+    const jobId = rows[0]!.id;
+    let started = false;
+    const executor = createFakeExecutor({ runMs: 10 });
+    const registry: ExecutorRegistry = {
+      hermes: {
+        ...executor,
+        start: (job, ctx) => {
+          started = true;
+          return executor.start(job, ctx);
+        },
+      },
+    };
+
+    const outcome = await runOnce(pool, registry, config, {
+      get: () => Promise.reject(new Error("never asked")),
+    });
+    expect(outcome).toEqual({ jobId, state: "failed" });
+    expect(started).toBe(false);
+
+    const state = await jobState(jobId);
+    expect(state.failure_reason).toBe("input_unavailable");
+    await expect(access(scratchDirFor(jobId, state.attempt))).rejects.toThrow();
   });
 
   it("does nothing when the queue is empty", async () => {

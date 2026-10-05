@@ -130,7 +130,9 @@ export type FailureCode =
   | "budget_exceeded"
   | "qa_failed"
   | "validation_failed"
-  | "worker_lost";
+  | "worker_lost"
+  /** The documents the job names could not all be staged into its scratch. */
+  | "input_unavailable";
 
 export function isRetryable(code: FailureCode): boolean {
   // Spending the same money twice on the same refusal helps nobody, so a job

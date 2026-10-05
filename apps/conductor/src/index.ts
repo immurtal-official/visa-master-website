@@ -1,6 +1,7 @@
 import { Pool } from "pg";
 import { createSupabaseArtifactStore } from "./artifacts";
 import { readConfig } from "./config";
+import { createSupabaseDocumentStore } from "./documents";
 import { createDockerExecutor } from "./executors/docker";
 import { createFakeExecutor } from "./executors/fake";
 import { runOnce, sleep } from "./run";
@@ -35,6 +36,12 @@ async function main(): Promise<void> {
   if (!store) {
     console.warn("conductor: SUPABASE_URL / SUPABASE_SECRET_KEY unset — artifacts stay local");
   }
+  // The same credential reads the applicant's documents. Without it, a job
+  // that names documents fails as input_unavailable rather than running blind.
+  const documents =
+    config.supabaseUrl && config.supabaseSecretKey
+      ? createSupabaseDocumentStore(config.supabaseUrl, config.supabaseSecretKey)
+      : null;
 
   let hermes;
   if (config.hermes.command) {
@@ -78,7 +85,7 @@ async function main(): Promise<void> {
         lastSweep = Date.now();
       }
 
-      const outcome = await runOnce(pool, registry, config);
+      const outcome = await runOnce(pool, registry, config, documents);
       if (outcome) {
         console.log(`job ${outcome.jobId}: ${outcome.state}`);
         continue;
