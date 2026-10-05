@@ -61,6 +61,25 @@ Failures keep the wire format every client already reads:
 `422 {"issues": [{"path", "key", "params"?}]}` for rule failures and
 `{"error": {"key", ...}}` for everything else (`app/errors.py`).
 
+## The database role
+
+The backend connects as `visa_api`, created by
+`packages/db/supabase/migrations/20261005200000_api_login_role.sql`. As itself it
+can read nothing: it is `noinherit`, so its membership of `anon`, `authenticated`
+and `service_role` grants nothing until `app/db.py` switches to one inside a
+transaction, and it cannot become `postgres` or any other role. The one thing it
+may ask before switching — whether a token's account and session are still live —
+is `api_private.account_is_active`, a function that reads auth.users so the role
+never has to. A leaked `DATABASE_URL` is therefore worth what the three roles are
+worth, not the whole database.
+
+The migration sets no password. Locally `seed.sql` sets `visa-api-local`; on a
+hosted project, set one once and put it in `DATABASE_URL`:
+
+```sql
+alter role visa_api with password '<generated>';
+```
+
 ## The contract
 
 `openapi.json` is generated and committed: `pnpm --filter @visa-master/api openapi`
@@ -69,8 +88,9 @@ rewrites it, and the test suite fails when it is out of date.
 ## Deploying
 
 Its own Vercel project with the root directory `apps/api`; Vercel's Python
-runtime serves `api/index.py`. Environment: `DATABASE_URL` (direct or session
-pooler, as a role that can `SET ROLE authenticated`), `SUPABASE_URL`,
+runtime serves `api/index.py`. Environment: `DATABASE_URL` as the `visa_api` login
+role — never `postgres` — through the Supabase pooler (Vercel has no IPv6, which the
+direct connection needs; the pooler's user is `visa_api.<project-ref>`), `SUPABASE_URL`,
 `SUPABASE_PUBLISHABLE_KEY`, `ENVIRONMENT=production`, and `DOCUMENT_EXTRACTION=on`
 once something can read documents. Then set `API_URL` on the web project to this
 service's URL.

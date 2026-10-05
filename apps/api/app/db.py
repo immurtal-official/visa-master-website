@@ -140,23 +140,14 @@ class Database:
         deleted or banned user's token stays valid until it expires. Nor that
         its session does: a token from a session that was signed out stays
         valid too, so when the token names its session, the session must still
-        exist. Read from auth.users and auth.sessions directly — no round trip
-        to the auth service.
+        exist. Asked of `api_private.account_is_active`, the one question about
+        auth the login role may ask — it cannot read auth.users itself.
         """
         async with self._require_pool().acquire() as connection:
-            row = await connection.fetchrow(
-                """
-                select 1 from auth.users u
-                where u.id = $1::uuid
-                  and u.deleted_at is null
-                  and (u.banned_until is null or u.banned_until <= now())
-                  and ($2::uuid is null or exists (
-                    select 1 from auth.sessions s
-                    where s.id = $2::uuid and s.user_id = u.id
-                      and (s.not_after is null or s.not_after > now())
-                  ))
-                """,
-                user_id,
-                session_id,
+            return bool(
+                await connection.fetchval(
+                    "select api_private.account_is_active($1::uuid, $2::uuid)",
+                    user_id,
+                    session_id,
+                )
             )
-            return row is not None

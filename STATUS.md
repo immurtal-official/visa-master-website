@@ -113,6 +113,12 @@ The questionnaire rework has its own stage table below, under
 - `apps/web/e2e/api-contract.spec.ts` still pins the contract through the web; the Playwright
   config now starts the backend too. `apps/api/tests/test_endpoints.py` exercises every
   endpoint against the real local Postgres. `apps/api/openapi.json` is the committed contract.
+- **Its own database role.** The backend connects as `visa_api`, not `postgres`: `noinherit`, a
+  member of `anon`, `authenticated` and `service_role` only, so it can read and write nothing
+  until it switches, and cannot become an administrator. The one thing it asks before
+  switching — whether a token's account and session are still live — is a `security definer`
+  function in a schema of its own (`api_private.account_is_active`), so it has no access to
+  `auth` at all. The tests connect the app as this role, and pgTAP asserts what it lacks.
 - **Not deployed yet.** Hosting `apps/api` needs its own Vercel project (root directory
   `apps/api`, its own domain) and the web's `API_URL` pointed at it — account work, listed
   under Not done yet.
@@ -216,9 +222,9 @@ not the proxy: no credential reaches the container and nothing inside it knows w
 |---|---|---|
 | Playwright end-to-end, 12 spec files, **45 cases at runtime** | real sign-in via the Mailpit API, real uploads into the bucket, full journey to a queued job, the headless API contract — all through the web's forwarder to the backend. `extraction.spec.ts` runs only with `DOCUMENT_EXTRACTION=on` and is skipped otherwise | Docker + the local Supabase stack + `apps/api/.venv`; Playwright starts the backend and both web dev servers |
 | `packages/core` unit tests, **113** | schemas, the route gate, the document rules, the questionnaire gate, branching, extraction decisions, and the check that the exported rules and conformance vectors are current | nothing — runs without Docker (`pnpm check:intake`) |
-| `apps/api` tests, **91** | token verification and the wire format; 6,910 conformance vectors replayed against the Python rules; every endpoint against real Postgres with Auth and Storage as doubles (`test_endpoints.py`, 35) | the database tests need the local stack and are reported as skipped without it |
+| `apps/api` tests, **93** | token verification and the wire format; 6,910 conformance vectors replayed against the Python rules; every endpoint against real Postgres with Auth and Storage as doubles (`test_endpoints.py`, 35) | the database tests need the local stack and are reported as skipped without it |
 | `apps/conductor` tests, **61** | lease and run-loop races against real Postgres; document staging and extraction write-back; the QA gate's verdicts as a pure table; the docker executor and the egress denials against real containers | local Postgres; the container cases also need Docker, and some the `visa-master-hermes` image |
-| pgTAP, 9 files, **84 assertions** | row-level security and privilege grants, including the client-grant baseline and the provenance tables | the local stack (`pnpm db:test`) |
+| pgTAP, 10 files, **95 assertions** | row-level security and privilege grants, including the client-grant baseline, the provenance tables, and what the backend's login role can and cannot do | the local stack (`pnpm db:test`) |
 
 Plus the two i18n build gates: `pnpm --filter web build` runs the catalogue check directly,
 and the hardcoded-string rule reaches a build only through turbo, whose `build` depends on
@@ -310,13 +316,6 @@ on the hosted project since the push of 2026-10-05.
 
 Elsewhere:
 
-- **The backend connects as a role that can become anyone.** User-scoped requests need
-  `SET ROLE authenticated`, and the documented `DATABASE_URL` is the project's `postgres`
-  role, which can do that and much more. PostgREST's answer is a dedicated login role
-  (`authenticator`: `noinherit`, granted only `anon`, `authenticated` and `service_role`);
-  the backend should connect as one like it before it holds production data. A migration in
-  `packages/db` and a changed `DATABASE_URL`, no code.
-
 - **The egress tripwire is cleartext-only.** Rule 3 denies POST/PUT/PATCH/DELETE off the
   allowlist, but Squid cannot see a method inside a `CONNECT` tunnel, and tunnels to any
   public host on 443 are allowed. The prompt-injection tripwire the runbook is meant to watch
@@ -364,8 +363,9 @@ Elsewhere:
   outside the team uses it, Vercel Pro (Hobby is non-commercial) and Supabase Pro (Free has
   no backups and pauses when idle). Blockers are accounts and spend, not code.
 - **Deploy the backend**: `apps/api` needs its own Vercel project (Python runtime, root
-  directory `apps/api`), its environment (`DATABASE_URL` as a role that can
-  `SET ROLE authenticated`, `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY`,
+  directory `apps/api`), its environment (`DATABASE_URL` as the `visa_api` login role through the
+  Supabase pooler, after setting its password once with `alter role visa_api with password
+  '…'` — the migration deliberately sets none; `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY`,
   `ENVIRONMENT=production`), a domain, and `API_URL` set on the web project. Until then the
   hosted web cannot reach a backend. The web project no longer needs `SUPABASE_SECRET_KEY`.
 - **Deploy on push**: Vercel could not connect the GitHub repository — the account lacks

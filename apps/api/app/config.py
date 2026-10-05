@@ -23,10 +23,10 @@ class Settings(BaseSettings):
     version: str = APP_VERSION
 
     # --- Database -------------------------------------------------------
-    # A direct Postgres DSN. User-scoped requests run as `authenticated` inside
-    # their own transaction (app/db.py), so the connecting role must be able to
-    # SET ROLE to it — Supabase's `postgres` can, as PostgREST's authenticator
-    # does.
+    # A Postgres DSN as `visa_api`, the backend's own login role: `noinherit`,
+    # a member of anon, authenticated and service_role and nothing else, so it
+    # can do nothing until a transaction switches to one of them (app/db.py) —
+    # PostgREST's `authenticator` pattern. Never `postgres`.
     database_url: str | None = None
     db_pool_min_size: int = 0
     db_pool_max_size: int = 4
