@@ -31,6 +31,7 @@ class Settings(BaseSettings):
     db_pool_min_size: int = 0
     db_pool_max_size: int = 4
     db_command_timeout_seconds: float = 10.0
+    db_connect_timeout_seconds: float = 10.0
 
     # --- Supabase -------------------------------------------------------
     supabase_url: str | None = None

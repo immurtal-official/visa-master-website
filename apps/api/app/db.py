@@ -20,6 +20,7 @@ connection never carries one request's identity into the next.
 
 from __future__ import annotations
 
+import asyncio
 import json
 import logging
 from collections.abc import AsyncIterator
@@ -64,6 +65,8 @@ class Database:
 
     def __init__(self) -> None:
         self._pool: asyncpg.Pool | None = None
+        # Two requests arriving before the pool exists must not open two.
+        self._connecting = asyncio.Lock()
 
     @property
     def is_connected(self) -> bool:
@@ -75,6 +78,11 @@ class Database:
         # the database answers 503 instead of guessing.
         if self._pool is not None or not settings.database_url:
             return
+        async with self._connecting:
+            if self._pool is None:
+                await self._open(settings)
+
+    async def _open(self, settings: Settings) -> None:
         try:
             self._pool = await asyncpg.create_pool(
                 dsn=settings.database_url,
@@ -85,6 +93,9 @@ class Database:
                 # statements across transactions.
                 statement_cache_size=0,
                 init=_init_connection,
+                # A serverless request should fail, not hang, on an unreachable
+                # database; the next request tries again.
+                timeout=settings.db_connect_timeout_seconds,
             )
         except Exception:
             logger.exception("db.connect_failed")
