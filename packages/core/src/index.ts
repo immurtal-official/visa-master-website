@@ -115,10 +115,20 @@ export { conditionHolds, type Condition } from "./intake/condition";
 export { INTAKE_CHECKSUM, INTAKE_VERSION } from "./intake/version";
 
 export {
+  decideProposals,
+  extractedFieldSchema,
+  extractionResultSchema,
+  type ExtractedField,
+  type Proposal,
+  type ProposalDecision,
+} from "./intake/extraction";
+
+export {
   SCHENGEN_SPAIN_DOCUMENTS,
   documentCompleteness,
   documentsFor,
   documentsForJob,
+  extractableFields,
   type JobDocument,
   type StoredUpload,
   type DocumentCompleteness,

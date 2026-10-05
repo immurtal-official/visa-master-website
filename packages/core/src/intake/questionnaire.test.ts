@@ -419,6 +419,33 @@ describe("questionnaire gate", () => {
     expectNoProblems(problems);
   });
 
+  // 11 — a document can only fill in answers that exist, are core, and are
+  //      typed rather than chosen.
+  it("材料能自动填写的题都对得上问卷", () => {
+    const problems: string[] = [];
+    const paths = new Set(questions.map((question) => question.path));
+    for (const document of SCHENGEN_SPAIN_DOCUMENTS) {
+      for (const path of document.extracts ?? []) {
+        const where = `${DOCUMENTS_FILE} 里材料「${document.id}」的 extracts`;
+        if (!paths.has(path)) {
+          problems.push(
+            `${where} 写了 "${path}"，但问卷里没有这道题（可能被删掉或改了 id）。\n` +
+              `写法是 "<节 id>.<题 id>"，例如 "passport.number"。`,
+          );
+        } else if (path.startsWith("extra.")) {
+          problems.push(
+            `${where} 写了补充题 "${path}"。从材料里读出的值只能填进核心题，请删掉这一项。`,
+          );
+        } else if (QUESTION_OPTION_GROUP[path]) {
+          problems.push(
+            `${where} 写了选择题 "${path}"。从材料里读出的值只能填进文字题或日期题，请删掉这一项。`,
+          );
+        }
+      }
+    }
+    expectNoProblems(problems);
+  });
+
   // Not one of the nine, but what stops 3 drifting: QUESTION_OPTIONS is what
   // the form renders, so it has to be exactly the declared groups.
   it("QUESTION_OPTIONS 与 QUESTION_OPTION_GROUP 一致", () => {
