@@ -1,0 +1,9 @@
+{
+  "fields": [
+    { "field": "passport.number", "value": "E12345678", "confidence": 0.98, "sourcePage": 1 },
+    { "field": "passport.issuedAt", "value": "2020-06-01", "confidence": 0.95, "sourcePage": 1 },
+    { "field": "passport.expiresAt", "value": "2030-05-31", "confidence": 0.95, "sourcePage": 1 },
+    { "field": "applicant.pinyin", "value": "CHEN JING", "confidence": 0.97, "sourcePage": 1 },
+    { "field": "applicant.birthDate", "value": "1990-04-12", "confidence": 0.96, "sourcePage": 1 }
+  ]
+}

@@ -72,6 +72,12 @@ export interface CollectedRun {
   qaReport: unknown;
   /** Storage paths of the uploaded files, when a store was configured. */
   artifacts?: string[];
+  /**
+   * A step's structured result, for a task whose output is data rather than
+   * a pack — what an extraction read off a document. The conductor validates
+   * it and writes it back; it is never recorded on the job row as it is.
+   */
+  output?: unknown;
 }
 
 export interface Executor {

@@ -1,4 +1,5 @@
 import { hostname } from "node:os";
+import { fileURLToPath } from "node:url";
 
 /**
  * How the conductor is configured.
@@ -26,6 +27,10 @@ export interface ConductorConfig {
   /** Artifact storage; absent means artifacts stay recorded but not uploaded. */
   supabaseUrl?: string;
   supabaseSecretKey?: string;
+
+  /** How documents are read: "fixtures" until the gateway exists, otherwise off. */
+  extraction: "off" | "fixtures";
+  extractionFixturesDir: string;
 
   /** The per-job container. `command` unset means the docker executor is not enabled. */
   hermes: {
@@ -69,6 +74,11 @@ export function readConfig(env: NodeJS.ProcessEnv = process.env): ConductorConfi
 
     supabaseUrl: env.SUPABASE_URL,
     supabaseSecretKey: env.SUPABASE_SECRET_KEY,
+
+    extraction: env.EXTRACTION_EXECUTOR === "fixtures" ? "fixtures" : "off",
+    extractionFixturesDir:
+      env.EXTRACTION_FIXTURES_DIR ??
+      fileURLToPath(new URL("../fixtures/extraction", import.meta.url)),
 
     hermes: {
       image: env.HERMES_IMAGE ?? "visa-master-hermes:latest",

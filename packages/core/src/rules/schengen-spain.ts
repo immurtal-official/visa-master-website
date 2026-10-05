@@ -29,11 +29,29 @@ export interface RequiredDocument {
   multiPage: boolean;
   /** Asked for only when this holds of the application's answers. */
   appliesWhen?: Condition;
+  /**
+   * Answers this document can supply, by answer path. When extraction is on,
+   * a confirmed upload of it is read and these become proposed answers the
+   * applicant confirms. Core text or date questions only — the gate checks.
+   */
+  extracts?: readonly string[];
 }
 
 export const SCHENGEN_SPAIN_DOCUMENTS: RequiredDocument[] = [
   // Identity, and the pages that carry it.
-  { id: "passportBio", necessity: "required", multiPage: false },
+  {
+    id: "passportBio",
+    necessity: "required",
+    multiPage: false,
+    // The data page carries all of these, printed and in the machine-readable lines.
+    extracts: [
+      "passport.number",
+      "passport.issuedAt",
+      "passport.expiresAt",
+      "applicant.pinyin",
+      "applicant.birthDate",
+    ],
+  },
   { id: "photo", necessity: "required", multiPage: false },
   { id: "hukou", necessity: "required", multiPage: true },
 
@@ -159,4 +177,9 @@ export function documentsForJob(answers: unknown, uploads: StoredUpload[]): JobD
       page: upload.page,
       contentType: upload.content_type,
     }));
+}
+
+/** The answers a document can supply when it is read; none for most. */
+export function extractableFields(documentId: string): readonly string[] {
+  return SCHENGEN_SPAIN_DOCUMENTS.find((document) => document.id === documentId)?.extracts ?? [];
 }

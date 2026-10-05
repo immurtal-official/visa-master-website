@@ -126,6 +126,23 @@ document is staged or none is: anything missing fails the attempt as `input_unav
 before a container starts, and the scratch goes with it. Neither the container nor the
 manifest ever holds a storage path, a user id or a key.
 
+### Documents read into proposed answers (stage 9, fixtures in place of a model)
+
+A checklist item declares which answers it can supply (`extracts`: the passport data page
+supplies the number, both dates, the pinyin name and the birth date). With the web app run
+with `DOCUMENT_EXTRACTION=on`, confirming such an upload queues a `doc_field_extraction` job
+carrying the document by reference and the fields to read. The conductor stages the document,
+and — with `EXTRACTION_EXECUTOR=fixtures` — a fixture reader answers from
+`apps/conductor/fixtures/extraction/<item>.json` where the gateway call will go. What the
+reader reports is validated and written back by deterministic code (`decideProposals` in
+packages/core, `writeback.ts` in the conductor), in one transaction holding the application
+row: every requested field is recorded in `document_fields`; a value becomes a proposed answer
+only for a question that is asked, has not been answered by the applicant, passes the
+question's own rule, and only while the application is a draft. Proposals are marked
+document-sourced and unconfirmed, so the stage-8 gate holds the submission until the applicant
+confirms each. The job keeps a count of what was done, never the values read.
+`pnpm --filter @visa-master/conductor run:job <id>` runs one queued job by hand.
+
 ### Layout for the mobile app and a future API service (PR #15)
 
 `apps/app` (React Native + Expo, a client of `/api/v1`) and `apps/api` (empty on purpose:
@@ -161,7 +178,7 @@ are silent.
 | 6 | Migration: `document_fields` / `answer_sources` / `intake_version` / checksum | 1–2 days | in review (PR #22) |
 | 7 | `jobs.input` carries upload references (ids only, never paths) | half a day | in review (PR #23) |
 | 8 | Branching `showIf`, and a gate on placeholder answers | 3–4 days | in review (PR #24) |
-| 9 | Extraction write-back, driven by hand-made fixtures | 1–2 days | to do |
+| 9 | Extraction write-back, driven by hand-made fixtures | 1–2 days | in review |
 | 10 | Real extraction | — | blocked on the LLM gateway |
 
 PRs #19–#24 are stacked, each on the one before: merge them in order, retargeting

@@ -147,6 +147,11 @@ pnpm check:intake
 
   `answer` 只能是**核心选择题**（「<节 id>.<题 id>」），比较的值必须是它真有的选项。写错了 `pnpm check:intake` 会指出来。
 
+- `extracts`（可选）：这份材料上能读出哪些题的答案，例如护照资料页写了
+  `["passport.number", "passport.issuedAt", …]`。开启自动读取后，申请人上传这份材料，
+  系统会把读出的值预先填进这些题，标成「待确认」，由申请人逐一确认。只能写**核心的文字题或日期题**，
+  写错了 `pnpm check:intake` 会指出来。
+
 每份材料还要在两个文案文件的 `documents.item` 下各加两条：名称（`<id>`）和为什么要它（`<id>Why`）。
 
 ## 必须注意

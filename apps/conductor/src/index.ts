@@ -4,6 +4,7 @@ import { readConfig } from "./config";
 import { createSupabaseDocumentStore } from "./documents";
 import { createDockerExecutor } from "./executors/docker";
 import { createFakeExecutor } from "./executors/fake";
+import { createFixtureExtractor } from "./executors/extraction-fixture";
 import { runOnce, sleep } from "./run";
 import { sweep } from "./watchdog";
 import type { ExecutorRegistry } from "./router";
@@ -64,6 +65,16 @@ async function main(): Promise<void> {
   }
 
   const registry: ExecutorRegistry = { hermes };
+
+  // Reading documents. Until the gateway exists the only reader is the
+  // fixture one, and it runs only when asked for; otherwise an extraction job
+  // fails as having no executor, which is the honest answer.
+  if (config.extraction === "fixtures") {
+    registry.llm_gateway = createFixtureExtractor({ fixturesDir: config.extractionFixturesDir });
+    console.warn(
+      `conductor: doc_field_extraction -> fixtures in ${config.extractionFixturesDir} (no model is called)`,
+    );
+  }
 
   let running = true;
   const stop = () => {

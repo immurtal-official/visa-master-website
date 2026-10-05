@@ -2,6 +2,7 @@ import {
   askedAnswers,
   documentCompleteness,
   documentsFor,
+  extractableFields,
   type DocumentCompleteness,
   type RequiredDocument,
 } from "@visa-master/core";
@@ -45,6 +46,58 @@ export interface DocumentsView {
 
 function extensionOf(fileName: string): string {
   return fileName.includes(".") ? fileName.split(".").pop()!.toLowerCase() : "bin";
+}
+
+/**
+ * Ask for a confirmed document to be read, when extraction is switched on and
+ * the document can fill in answers.
+ *
+ * Off unless DOCUMENT_EXTRACTION=on: reading a document will cost a model
+ * call, and with nothing in the conductor to run it a queued job only fails.
+ * The job carries the document by reference and the answer paths it may fill —
+ * never a path or the account. Written with the server's authority, like every
+ * enqueue, and once per upload: a re-upload is a new upload and is read again.
+ *
+ * A failure here is logged and swallowed. Reading is a convenience on top of
+ * an upload that has already succeeded, and the applicant can type every
+ * answer it would have proposed.
+ */
+async function enqueueExtraction(
+  userId: string,
+  upload: { id: string; document: string; page: number; content_type: string },
+): Promise<void> {
+  if (process.env.DOCUMENT_EXTRACTION !== "on") return;
+  const fields = extractableFields(upload.document);
+  if (fields.length === 0) return;
+
+  const { error } = await createAdminClient()
+    .from("jobs")
+    .insert({
+      user_id: userId,
+      task_type: "doc_field_extraction",
+      executor_kind: "llm_gateway",
+      idempotency_key: `doc_field_extraction:upload:${upload.id}`,
+      input: {
+        documents: [
+          {
+            uploadId: upload.id,
+            document: upload.document,
+            page: upload.page,
+            contentType: upload.content_type,
+          },
+        ],
+        fields,
+      },
+      deadline_seconds: 300,
+    });
+
+  // 23505: already asked for — a repeated confirmation is not a second reading.
+  if (error && error.code !== "23505") {
+    console.error("uploads.confirm: could not ask for the document to be read", {
+      uploadId: upload.id,
+      code: error.code,
+    });
+  }
 }
 
 export const uploadService = {
@@ -136,13 +189,20 @@ export const uploadService = {
    * storage — the browser saying the transfer finished is a claim, not a fact.
    */
   async confirm(applicationId: string, uploadId: string): Promise<void> {
-    const { supabase } = await requireUser();
+    const { userId, supabase } = await requireUser();
 
     const { data: upload } = await supabase
       .from("uploads")
-      .select("id, storage_path, application_id")
+      .select("id, storage_path, application_id, document, page, content_type")
       .eq("id", uploadId)
-      .maybeSingle<{ id: string; storage_path: string; application_id: string }>();
+      .maybeSingle<{
+        id: string;
+        storage_path: string;
+        application_id: string;
+        document: string;
+        page: number;
+        content_type: string;
+      }>();
 
     if (!upload || upload.application_id !== applicationId) {
       throw new ServiceError("documents.confirmFailed", 404);
@@ -179,6 +239,8 @@ export const uploadService = {
       console.error("uploads.confirm: could not record", { uploadId, code: error.code });
       throw new ServiceError("documents.confirmFailed", 502);
     }
+
+    await enqueueExtraction(userId, upload);
   },
 
   /**
