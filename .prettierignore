@@ -14,3 +14,8 @@ scripts/doc-reader/shell.css
 scripts/doc-reader/shell.js
 apps/web/src/styles/tokens/
 apps/web/public/
+
+# Written by `pnpm intake:export` and compared byte for byte by the conformance
+# test; reformatting them would read as drift.
+packages/core/conformance/
+apps/api/app/rules/generated/

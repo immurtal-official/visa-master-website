@@ -71,6 +71,10 @@ pnpm check:intake
 
 **3. 运行 `pnpm check:intake`。**
 
+它会先重新生成后端读的两份文件——`apps/api/app/rules/generated/intake.json` 和
+`packages/core/conformance/` 下的 JSON——再检查一遍。**这几份文件要和 `questionnaire.ts`
+一起提交**；漏了的话，自动测试会提示「不是最新的」。它们是生成的，不要手改。
+
 ## 加一道选择题
 
 ```ts
