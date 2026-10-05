@@ -1,8 +1,7 @@
 # Status — where the build stands
 
-**As of:** 2026-10-05 · everything described here is on `main`, through PR #34 (#32 merged a branch
-already contained in `main` and changed nothing). **The hosted site is down for sign-in and
-every API call** — see [Staging deployment](#staging-deployment). Weeks 1–2 arrived in PR #4;
+**As of:** 2026-10-05 · everything described here is on `main`, through PR #38, and the
+control plane is hosted and working again (see [Staging deployment](#staging-deployment)). Weeks 1–2 arrived in PR #4;
 the API-first work — six commits, `22cbfe1` through `fa36fbd` — missed that crossing, because
 PR #5 merged into a base that had already been merged, and followed in PR #6.
 Companion documents: [doc/archive/EXECUTION-PLAN-week1-2.md](doc/archive/EXECUTION-PLAN-week1-2.md) (the plan weeks 1–2
@@ -249,29 +248,33 @@ included). Two things worth knowing about it:
 
 ## Staging deployment
 
-The trusted half of the system is hosted at **https://app.wdnx.world**, and since PR #31
-reached it **that half does not work**:
+The trusted half of the system is hosted at **https://app.wdnx.world**, web and backend,
+and **sign-in works end to end** again — checked on 2026-10-05 with a real Gmail address:
+code received, signed in, signed out and back in within the same tab.
 
-- **Every `/api/v1` call answers `503 {"error":{"key":"errors.request"}}`, sign-in included**
-  (checked against the live site on 2026-10-05). The Vercel project now deploys `main` on every
-  merge, so #31 to #34 each went to production automatically. The web forwards `/api/v1` to
-  `API_URL`, the project has no `API_URL`, and no backend project exists: the forwarder is
-  calling its default, `127.0.0.1:8000`, inside Vercel's function, where nothing listens.
-  Pages that need no API — the landing page, the route check form — still render.
-- **The fix is the backend's deployment**, in this order: push the `visa_api` migration and
-  set its password; create the `apps/api` Vercel project with its environment; set `API_URL`
-  on the web project; redeploy the web (an environment change applies only to the next
-  build). Until then the alternative is to promote the last production deployment from
-  before #31 back to production — and to keep it there by not merging to `main`, which would
-  deploy over it.
-- Whether the `visa_api` migration (#34) has been pushed to the hosted database is not
-  verified.
+It was down from PR #31 until then. The web project deploys `main` on every merge, so #31
+moved the browser's `/api/v1` calls to a backend that was not yet deployed, and every call
+answered `503`. Getting it back took, in order: the `visa_api` migration pushed and its
+password set; the `visa-master-api` project; `apps/api/vercel.json` (#36), because the root
+`vercel.json` made the project build as Next.js and its Python packages were never
+installed; opening the database pool on the first request (#37), because Vercel's Python
+runtime runs no lifespan events; a `DATABASE_URL` the pooler accepts; `API_URL` on the web;
+and a full-page navigation on sign-in and sign-out (#38), because a client-side push right
+after the session changed could leave the reader on the sign-in form, signed in.
 
 What the deployment consists of:
 
-- **Vercel** carries `apps/web` (project `visa-master-website`, team MUSICO). It is connected
-  to the GitHub repository: `main` deploys to production on every merge and every branch gets
-  a preview. The project's Root Directory is `apps/web`, so the
+- **Vercel** (team MUSICO, Pro) carries two projects from this one repository, each
+  deploying `main` to production on every merge and every branch to a preview, and each
+  skipping builds that do not touch its directory:
+  - `visa-master-api` — root directory `apps/api`, FastAPI, functions in `pdx1` (Oregon,
+    beside the database), at `visa-master-api-musico.vercel.app`; `api.wdnx.world` is
+    attached and waits on its CNAME at Cloudflare, which holds the zone. Environment:
+    `DATABASE_URL` (the `visa_api` role through the Supabase transaction pooler, set by the
+    owner), `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY`, `ENVIRONMENT`,
+    `DOCUMENT_EXTRACTION=off`. Vercel Authentication covers its previews only, since the
+    web's server calls production directly; the API does its own Bearer checks.
+  - `visa-master-website` — `apps/web`, with `API_URL` pointing at the backend. The project's Root Directory is `apps/web`, so the
   workspace installs from the repository root and Next is found where it actually lives;
   build command and output directory are left to auto-detection for the reason recorded in
   `vercel.json`'s commit. The domain is a first-party one rather than `*.vercel.app`,
@@ -286,7 +289,11 @@ What the deployment consists of:
   `[remotes.staging]` block pushed with `supabase config push`, not in the dashboard. That
   is what keeps the OTP template, `enable_confirmations = false`, and the rate limits
   reviewable next to the code that depends on them.
-- **Resend** sends the mail, over SMTP, from `no-reply@wdnx.world` on a verified domain.
+- **Resend** sends the mail, over SMTP, from `no-reply@wdnx.world` on a verified domain. The
+  account is the Vercel Marketplace integration on team MUSICO (Free: 3,000 a month, 100 a
+  day), reached from Vercel → Integrations → Resend. Delivery to a university mailbox
+  (umbc.edu) was accepted by its server and then filtered out of sight; Gmail receives it.
+  A DMARC record for `wdnx.world` is the usual next step for institutional mailboxes.
   Supabase's built-in SMTP allows two emails an hour, which is not a sign-in flow.
 
 **Sign-in is verified end to end against this deployment**: a real address, a code that
@@ -308,11 +315,10 @@ and submitting an application there enqueues a job that nothing will claim.
 The full journey runs locally end to end: sign up → route check → create application →
 20-question intake → upload documents → review → submit → conductor claims the job → status
 reaches "being reviewed by a person", with the web, the FastAPI backend and the
-conductor as three processes. Hosted, nothing past the landing page works today: the web is
-deployed from `main` but the backend is not deployed at all, so sign-in fails with a 503;
-everything from the conductor rightwards has nowhere to execute either. Spend so far is
-zero — Vercel Hobby and Supabase Free — which is also why the staging database has no
-backups and pauses after seven idle days.
+conductor as three processes. Hosted, the front half runs — web and backend, sign-in
+through creating and answering an application; everything from the conductor rightwards has
+nowhere to execute. Vercel is on the team's Pro plan; Supabase is still Free, which is why the
+staging database has no backups and pauses after seven idle days.
 
 ## Known gaps in what is built
 
@@ -376,15 +382,11 @@ Elsewhere:
 - **Notifications, retention enforcement, restore drill** (week 7); **payments** (week 8).
 - **Deployment**: the control plane is up (see above); the agent plane is not. Still owed
   are the Hetzner VM, `infra/compose.vm.yml`, and the systemd units — and, before anyone
-  outside the team uses it, Vercel Pro (Hobby is non-commercial) and Supabase Pro (Free has
-  no backups and pauses when idle). Blockers are accounts and spend, not code.
-- **Deploy the backend**: `apps/api` needs its own Vercel project (Python runtime, root
-  directory `apps/api`), its environment (`DATABASE_URL` as the `visa_api` login role through the
-  Supabase pooler, after setting its password once with `alter role visa_api with password
-  '…'` — the migration deliberately sets none; `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY`,
-  `ENVIRONMENT=production`), a domain, and `API_URL` set on the web project, then a redeploy
-  of the web. **This is what the hosted site is down for** (see Staging deployment). The web
-  project still carries `SUPABASE_SECRET_KEY`, which nothing reads any more; remove it.
+  outside the team uses it, Supabase Pro (Free has no backups and pauses when idle). Vercel is
+  already on the team's Pro plan. Blockers are accounts and spend, not code.
+- **Hosting loose ends**: the `api` CNAME for `api.wdnx.world` at Cloudflare, then `API_URL`
+  on the web switched to it; `SUPABASE_SECRET_KEY` removed from the web project, which no
+  longer reads it; a DMARC record for `wdnx.world`.
 - **CN-entity-gated items** (tracked, not blocking): ICP filing, WeChat Pay, +86 SMS, any
   WeChat Mini Program — all hang off the same prerequisite.
 
