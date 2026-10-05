@@ -6,5 +6,11 @@ coverage/
 design/prototypes/
 design/system/
 doc/*.html
+
+# The reader shell, lifted verbatim out of the first generated HTML. Reformatting
+# it would produce a large diff against a file whose only real history is the
+# output it came from — and the output is what gets read.
+scripts/doc-reader/shell.css
+scripts/doc-reader/shell.js
 apps/web/src/styles/tokens/
 apps/web/public/

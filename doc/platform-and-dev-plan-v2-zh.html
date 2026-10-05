@@ -1,0 +1,2421 @@
+<!DOCTYPE html>
+<html lang="zh-Hans" data-theme-mode="auto">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<title>平台选型与开发计划 · v2 · 平台与计划</title>
+<style>
+/* =========================================================================
+   Visa Master doc reader — shell stylesheet
+   Palette: cool "harbour slate" neutrals (hue ~208-212) + a single deep
+   cerulean accent. No webfonts, no external assets, no network.
+   ========================================================================= */
+
+/* ---------- reset ---------- */
+*, *::before, *::after { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body, h1, h2, h3, h4, h5, h6, p, figure, blockquote, dl, dd, ol, ul, pre { margin: 0; }
+ol[class], ul[class] { list-style: none; padding: 0; }
+img, svg, video, canvas { max-width: 100%; }
+button, input, select, textarea { font: inherit; color: inherit; }
+button { background: none; border: 0; padding: 0; cursor: pointer; }
+table { border-collapse: collapse; }
+
+/* ---------- design tokens : LIGHT ---------- */
+:root {
+  color-scheme: light;
+
+  /* neutrals — slate with a cool blue-green bias */
+  --canvas:        #FBFCFD;
+  --canvas-sunken: #F4F7F9;
+  --surface:       #F2F5F8;
+  --surface-2:     #E9EEF3;
+  --surface-3:     #DFE6EC;
+  --border:        #E2E8ED;
+  --border-strong: #C9D3DB;
+  --text:          #16202A;
+  --text-2:        #4A5A68;
+  --text-3:        #6C7C8A;
+  --text-inverse:  #FBFCFD;
+
+  /* accent — deep cerulean, used only for links / active nav / focus */
+  --accent:        #0F6494;
+  --accent-hover:  #0B4E75;
+  --accent-quiet:  #4E90B4;
+  --accent-soft:   #E7F0F6;
+  --accent-line:   #9CC2D8;
+
+  /* diagram panel: always light so theme-unaware mermaid SVG stays readable */
+  --diagram-bg:     #FFFFFF;
+  --diagram-border: #DCE4EA;
+  --diagram-shade:  none;
+
+  --code-bg:       #F5F8FA;
+  --code-bar-bg:   #EDF2F5;
+  --code-text:     #1B2833;
+
+  --shadow-sm: 0 1px 2px rgba(16, 32, 45, .06);
+  --shadow-md: 0 6px 20px -6px rgba(16, 32, 45, .18), 0 2px 6px rgba(16, 32, 45, .06);
+  --focus: var(--accent);
+
+  /* metrics */
+  --topbar-h: 52px;
+  --sidebar-w: 292px;
+  /* target ~72-78 rendered characters per line. The CSS `ch` unit is the
+     width of "0", ~28% wider than the average glyph, so it is paired with a
+     rem cap that holds the real measure steady across font fallbacks. */
+  --measure: min(76ch, 38.5rem);
+  --bleed: 9rem;
+  --radius: 7px;
+  --radius-sm: 5px;
+
+  /* type scale (1.0625rem base, ~1.28 ratio upward) */
+  --fs-h1: 2.125rem;    /* 34px */
+  --fs-h2: 1.625rem;    /* 26px */
+  --fs-h3: 1.25rem;     /* 20px */
+  --fs-h4: 0.9375rem;   /* 15px */
+  --fs-body: 1.0625rem; /* 17px */
+  --fs-sm: 0.875rem;    /* 14px */
+  --fs-xs: 0.8125rem;   /* 13px */
+  --fs-2xs: 0.75rem;    /* 12px */
+
+  --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", "Segoe UI Variable Text",
+               Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif,
+               "Apple Color Emoji", "Segoe UI Emoji";
+  --font-mono: ui-monospace, SFMono-Regular, "SF Mono", "JetBrains Mono", Menlo,
+               Consolas, "Liberation Mono", "Courier New", monospace;
+}
+
+/* ---------- design tokens : DARK (auto, pre-JS / no-JS) ---------- */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --canvas:        #0E1319;
+    --canvas-sunken: #0A0E13;
+    --surface:       #141A21;
+    --surface-2:     #1A222A;
+    --surface-3:     #232D36;
+    --border:        #232C35;
+    --border-strong: #36434E;
+    --text:          #DEE6ED;
+    --text-2:        #A2B0BC;
+    --text-3:        #77848F;
+    --text-inverse:  #0E1319;
+
+    --accent:        #6DB4DE;
+    --accent-hover:  #96CBEC;
+    --accent-quiet:  #4C7C9A;
+    --accent-soft:   #16242E;
+    --accent-line:   #2F5D77;
+
+    --diagram-bg:     #EDF1F4;
+    --diagram-border: #2A343D;
+    --diagram-shade:  brightness(.94);
+
+    --code-bg:       #11171D;
+    --code-bar-bg:   #161D24;
+    --code-text:     #CBD6E0;
+
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, .4);
+    --shadow-md: 0 10px 28px -8px rgba(0, 0, 0, .6), 0 2px 6px rgba(0, 0, 0, .35);
+  }
+}
+
+/* ---------- design tokens : DARK (explicit) ---------- */
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --canvas:        #0E1319;
+  --canvas-sunken: #0A0E13;
+  --surface:       #141A21;
+  --surface-2:     #1A222A;
+  --surface-3:     #232D36;
+  --border:        #232C35;
+  --border-strong: #36434E;
+  --text:          #DEE6ED;
+  --text-2:        #A2B0BC;
+  --text-3:        #77848F;
+  --text-inverse:  #0E1319;
+
+  --accent:        #6DB4DE;
+  --accent-hover:  #96CBEC;
+  --accent-quiet:  #4C7C9A;
+  --accent-soft:   #16242E;
+  --accent-line:   #2F5D77;
+
+  --diagram-bg:     #EDF1F4;
+  --diagram-border: #2A343D;
+  --diagram-shade:  brightness(.94);
+
+  --code-bg:       #11171D;
+  --code-bar-bg:   #161D24;
+  --code-text:     #CBD6E0;
+
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, .4);
+  --shadow-md: 0 10px 28px -8px rgba(0, 0, 0, .6), 0 2px 6px rgba(0, 0, 0, .35);
+}
+:root[data-theme="light"] { color-scheme: light; }
+
+/* ---------- base ---------- */
+html { scroll-behavior: smooth; }
+body {
+  background: var(--canvas);
+  color: var(--text);
+  font-family: var(--font-sans);
+  font-size: var(--fs-body);
+  line-height: 1.72;
+  font-feature-settings: "kern" 1, "liga" 1;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow-wrap: break-word;
+}
+
+a { color: var(--accent); text-decoration: none; }
+a:hover { color: var(--accent-hover); text-decoration: underline; text-underline-offset: 2px; }
+
+:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+  border-radius: 3px;
+}
+:focus:not(:focus-visible) { outline: none; }
+
+::selection { background: var(--accent-line); color: var(--text); }
+
+/* thin, quiet scrollbars where we own the scroll container */
+.sidebar, .tablewrap, .codeblock pre, .diagram { scrollbar-width: thin; scrollbar-color: var(--border-strong) transparent; }
+.sidebar::-webkit-scrollbar, .tablewrap::-webkit-scrollbar,
+.codeblock pre::-webkit-scrollbar, .diagram::-webkit-scrollbar { width: 9px; height: 9px; }
+.sidebar::-webkit-scrollbar-thumb, .tablewrap::-webkit-scrollbar-thumb,
+.codeblock pre::-webkit-scrollbar-thumb, .diagram::-webkit-scrollbar-thumb {
+  background: var(--border-strong); border-radius: 6px; border: 2px solid transparent; background-clip: content-box;
+}
+.sidebar::-webkit-scrollbar-track, .tablewrap::-webkit-scrollbar-track,
+.codeblock pre::-webkit-scrollbar-track, .diagram::-webkit-scrollbar-track { background: transparent; }
+
+/* ---------- skip link ---------- */
+.skip-link {
+  position: fixed;
+  top: 8px; left: 8px;
+  z-index: 200;
+  padding: .5rem .85rem;
+  background: var(--accent);
+  color: #fff;
+  font-size: var(--fs-xs);
+  font-weight: 600;
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-md);
+  transform: translateY(-160%);
+  transition: transform .15s ease;
+}
+.skip-link:focus { transform: none; text-decoration: none; color: #fff; }
+
+/* ---------- top bar ---------- */
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: 70;
+  display: flex;
+  align-items: center;
+  gap: .625rem;
+  height: var(--topbar-h);
+  padding: 0 .75rem 0 .625rem;
+  background: var(--canvas);
+  background: color-mix(in srgb, var(--canvas) 88%, transparent);
+  -webkit-backdrop-filter: saturate(180%) blur(10px);
+  backdrop-filter: saturate(180%) blur(10px);
+  border-bottom: 1px solid var(--border);
+}
+@supports not (backdrop-filter: blur(1px)) { .topbar { background: var(--canvas); } }
+
+.topbar__title {
+  font-size: var(--fs-xs);
+  font-weight: 600;
+  letter-spacing: -.005em;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
+.topbar__badge {
+  flex: none;
+  font-size: var(--fs-2xs);
+  font-weight: 500;
+  line-height: 1;
+  padding: .3rem .5rem;
+  color: var(--text-2);
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+body[data-doc="arch"] .topbar__badge { box-shadow: inset 2px 0 0 var(--accent-line); }
+body[data-doc="plat"] .topbar__badge { box-shadow: inset 2px 0 0 var(--border-strong); }
+
+.topbar__spacer { flex: 1 1 auto; }
+
+.topbar__link {
+  flex: none;
+  font-size: var(--fs-xs);
+  font-weight: 500;
+  color: var(--text-2);
+  padding: .3rem .55rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  white-space: nowrap;
+  max-width: 22ch;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  transition: color .12s ease, border-color .12s ease, background .12s ease;
+}
+.topbar__link:hover { color: var(--accent); border-color: var(--accent-line); text-decoration: none; }
+.topbar__link::after { content: " \2192"; color: var(--text-3); }
+
+.search {
+  flex: 0 1 220px;
+  min-width: 110px;
+  height: 30px;
+  padding: 0 .55rem;
+  font-size: var(--fs-xs);
+  color: var(--text);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  transition: border-color .12s ease, box-shadow .12s ease, background .12s ease;
+  -webkit-appearance: none;
+  appearance: none;
+}
+.search::placeholder { color: var(--text-3); }
+.search:hover { border-color: var(--border-strong); }
+.search:focus {
+  outline: none;
+  background: var(--canvas);
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+.search::-webkit-search-cancel-button { -webkit-appearance: none; }
+
+/* ---------- icon buttons ---------- */
+.icon-btn {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px; height: 30px;
+  border-radius: var(--radius-sm);
+  color: var(--text-2);
+  border: 1px solid transparent;
+  transition: background .12s ease, color .12s ease, border-color .12s ease;
+}
+.icon-btn:hover { background: var(--surface-2); color: var(--text); border-color: var(--border); }
+.icon-btn svg { width: 16px; height: 16px; display: block; }
+
+/* theme icon: only one glyph visible per mode */
+.ico { display: none; }
+:root[data-theme-mode="auto"]  .ico--auto  { display: block; }
+:root[data-theme-mode="light"] .ico--light { display: block; }
+:root[data-theme-mode="dark"]  .ico--dark  { display: block; }
+:root:not([data-theme-mode]) .ico--auto { display: block; }
+
+#nav-toggle { display: none; }
+#nav-toggle .ico--close { display: none; }
+:root.nav-open #nav-toggle .ico--menu { display: none; }
+:root.nav-open #nav-toggle .ico--close { display: block; }
+
+/* ---------- layout ---------- */
+.layout {
+  display: grid;
+  grid-template-columns: var(--sidebar-w) minmax(0, 1fr);
+  align-items: start;
+}
+
+/* ---------- sidebar / TOC ---------- */
+.sidebar {
+  position: sticky;
+  top: var(--topbar-h);
+  height: calc(100vh - var(--topbar-h));
+  height: calc(100dvh - var(--topbar-h));
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 1.25rem .75rem 3rem 1rem;
+  border-right: 1px solid var(--border);
+  background: var(--canvas-sunken);
+}
+
+.toc { font-size: var(--fs-xs); line-height: 1.5; }
+.toc__item { margin: 0; }
+.toc__link {
+  display: block;
+  position: relative;
+  padding: .3rem .5rem .3rem .75rem;
+  color: var(--text-2);
+  border-radius: var(--radius-sm);
+  border-left: 2px solid transparent;
+  transition: color .12s ease, background .12s ease, border-color .12s ease;
+}
+.toc__link:hover { color: var(--text); background: var(--surface-2); text-decoration: none; }
+
+.toc__item--h1 > .toc__link { font-weight: 650; color: var(--text); }
+.toc__item--h2 > .toc__link { font-weight: 600; color: var(--text); }
+.toc__item--h3 > .toc__link { padding-left: 1.5rem; font-weight: 450; }
+.toc__item--h4 > .toc__link {
+  padding-left: 2.25rem;
+  font-size: var(--fs-2xs);
+  color: var(--text-3);
+}
+.toc__item--h2 + .toc__item--h2 > .toc__link,
+.toc__item--h3 + .toc__item--h2 > .toc__link,
+.toc__item--h4 + .toc__item--h2 > .toc__link { margin-top: .9rem; }
+
+.toc__link.is-active {
+  color: var(--accent);
+  background: var(--accent-soft);
+  border-left-color: var(--accent);
+  font-weight: 600;
+}
+.toc__item--h4 > .toc__link.is-active { font-weight: 550; }
+
+.toc__item[hidden] { display: none; }
+.toc__empty {
+  margin: .75rem .5rem;
+  font-size: var(--fs-xs);
+  color: var(--text-3);
+  font-style: italic;
+}
+
+/* ---------- content ---------- */
+.content {
+  min-width: 0;
+  padding: 2.25rem clamp(1.1rem, 3.5vw, 3rem) 8rem;
+}
+
+.prose {
+  display: grid;
+  grid-template-columns:
+    [wide-start] minmax(0, var(--bleed))
+    [text-start] min(var(--measure), 100%)
+    [text-end] minmax(0, var(--bleed))
+    [wide-end];
+  justify-content: center;
+}
+.prose > * { grid-column: text; margin: 0; min-width: 0; }
+.prose > .tablewrap,
+.prose > .diagram,
+.prose > .codeblock { grid-column: wide; }
+
+/* vertical rhythm — grid items do not margin-collapse, so spacing is
+   declared once per adjacency instead of top+bottom on every element. */
+.prose > * + * { margin-top: 1.15rem; }
+.prose > h1 { margin-top: 3.5rem; }
+.prose > h2 { margin-top: 3.25rem; }
+.prose > h3 { margin-top: 2.4rem; }
+.prose > h4 { margin-top: 2rem; }
+.prose > :first-child { margin-top: 0; }
+.prose > h1 + *, .prose > h2 + * { margin-top: 1rem; }
+.prose > h3 + *, .prose > h4 + * { margin-top: .7rem; }
+.prose > .codeblock, .prose > .tablewrap,
+.prose > .diagram, .prose > blockquote { margin-top: 1.6rem; }
+.prose > hr.rule { margin-top: 2.75rem; }
+
+/* ---------- headings ---------- */
+.prose h1, .prose h2, .prose h3, .prose h4, .prose h5, .prose h6 {
+  scroll-margin-top: calc(var(--topbar-h) + 1.25rem);
+  color: var(--text);
+  letter-spacing: -.012em;
+  text-wrap: balance;
+  position: relative;
+}
+.prose h1 { font-size: var(--fs-h1); line-height: 1.18; font-weight: 700; letter-spacing: -.022em; }
+.prose h2 {
+  font-size: var(--fs-h2); line-height: 1.24; font-weight: 650; letter-spacing: -.018em;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--border);
+}
+.prose > hr.rule + h2 { border-top: 0; padding-top: 0; margin-top: 1.25rem; }
+.prose > h1 + h2 { border-top: 0; padding-top: 0; margin-top: 1.75rem; }
+.prose h3 { font-size: var(--fs-h3); line-height: 1.34; font-weight: 620; letter-spacing: -.011em; }
+.prose h4 {
+  font-size: var(--fs-h4);
+  line-height: 1.4;
+  font-weight: 680;
+  letter-spacing: .012em;
+  color: var(--text);
+}
+.prose h4::before {
+  content: "";
+  position: absolute;
+  left: -.85rem;
+  top: .52em;
+  width: 3px; height: 3px;
+  border-radius: 50%;
+  background: var(--accent-quiet);
+}
+.prose h5, .prose h6 { font-size: var(--fs-sm); font-weight: 650; color: var(--text-2); }
+
+.hd__anchor {
+  margin-left: .4em;
+  color: var(--text-3);
+  font-weight: 400;
+  text-decoration: none;
+  opacity: 0;
+  transition: opacity .12s ease, color .12s ease;
+}
+.hd:hover > .hd__anchor,
+.hd__anchor:focus-visible { opacity: 1; }
+.hd__anchor:hover { color: var(--accent); text-decoration: none; }
+@media (hover: none) { .hd__anchor { opacity: .45; } }
+
+/* ---------- body copy ---------- */
+.prose p { color: var(--text); }
+.prose strong { font-weight: 650; color: var(--text); }
+.prose em { font-style: italic; }
+.prose small { font-size: var(--fs-sm); color: var(--text-2); }
+
+.prose ul, .prose ol { padding-left: 1.45rem; }
+.prose ul { list-style: disc; }
+.prose ol { list-style: decimal; }
+.prose li::marker { color: var(--text-3); }
+.prose li + li { margin-top: .3rem; }
+.prose li > ul, .prose li > ol { margin-top: .3rem; margin-bottom: .15rem; }
+.prose dl { display: grid; grid-template-columns: max-content 1fr; gap: .3rem 1rem; }
+.prose dt { font-weight: 650; }
+.prose dd { margin: 0; color: var(--text-2); }
+
+.prose a { text-decoration: underline; text-decoration-color: var(--accent-line); text-underline-offset: 2px; text-decoration-thickness: 1px; }
+.prose a:hover { text-decoration-color: currentColor; }
+
+/* ---------- inline code ---------- */
+.prose code {
+  font-family: var(--font-mono);
+  font-size: .875em;
+  padding: .12em .34em;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--code-text);
+  overflow-wrap: break-word;
+  font-variant-ligatures: none;
+}
+.prose a code { color: inherit; border-color: var(--accent-line); }
+.prose h1 code, .prose h2 code, .prose h3 code, .prose h4 code {
+  font-size: .9em; font-weight: 600; letter-spacing: 0;
+}
+
+/* ---------- code blocks ---------- */
+.codeblock {
+  background: var(--code-bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  box-shadow: var(--shadow-sm);
+}
+.codeblock__bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: .5rem;
+  padding: .3rem .4rem .3rem .75rem;
+  background: var(--code-bar-bg);
+  border-bottom: 1px solid var(--border);
+  min-height: 30px;
+}
+.codeblock__lang {
+  font-family: var(--font-mono);
+  font-size: var(--fs-2xs);
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  color: var(--text-3);
+  user-select: none;
+}
+.codeblock__copy {
+  font-size: var(--fs-2xs);
+  font-weight: 550;
+  line-height: 1;
+  padding: .32rem .5rem;
+  color: var(--text-3);
+  border: 1px solid transparent;
+  border-radius: 4px;
+  transition: color .12s ease, background .12s ease, border-color .12s ease;
+}
+.codeblock:hover .codeblock__copy { color: var(--text-2); border-color: var(--border); }
+.codeblock__copy:hover { color: var(--text); background: var(--surface-2); border-color: var(--border-strong); }
+.codeblock__copy.is-copied { color: var(--accent); border-color: var(--accent-line); background: var(--accent-soft); }
+.codeblock__copy[hidden] { display: none; }
+
+.codeblock pre {
+  margin: 0;
+  padding: .95rem 1.1rem 1.05rem;
+  overflow-x: auto;
+  background: transparent;
+}
+.codeblock pre code {
+  display: block;
+  padding: 0;
+  border: 0;
+  background: none;
+  border-radius: 0;
+  white-space: pre;
+  font-family: var(--font-mono);
+  font-size: var(--fs-xs);
+  line-height: 1.62;
+  color: var(--code-text);
+  tab-size: 2;
+  -moz-tab-size: 2;
+  font-variant-ligatures: none;
+}
+.codeblock[data-lang=""] .codeblock__lang,
+.codeblock:not([data-lang]) .codeblock__lang { visibility: hidden; }
+
+/* optional token colours — inert unless a highlighter emits these classes */
+.hljs-comment, .hljs-quote { color: var(--text-3); font-style: italic; }
+.hljs-keyword, .hljs-selector-tag, .hljs-literal, .hljs-section, .hljs-doctag, .hljs-name { color: var(--accent); }
+.hljs-string, .hljs-attr, .hljs-attribute, .hljs-addition { color: #2E7D5B; }
+.hljs-number, .hljs-symbol, .hljs-bullet, .hljs-meta { color: #9A5B12; }
+.hljs-title, .hljs-type, .hljs-built_in, .hljs-class .hljs-title { color: #7A4CA0; }
+.hljs-variable, .hljs-template-variable, .hljs-deletion { color: #A33A3A; }
+:root[data-theme="dark"] .hljs-string, :root[data-theme="dark"] .hljs-attr,
+:root[data-theme="dark"] .hljs-attribute, :root[data-theme="dark"] .hljs-addition { color: #7FC7A2; }
+:root[data-theme="dark"] .hljs-number, :root[data-theme="dark"] .hljs-symbol,
+:root[data-theme="dark"] .hljs-bullet, :root[data-theme="dark"] .hljs-meta { color: #D9A45B; }
+:root[data-theme="dark"] .hljs-title, :root[data-theme="dark"] .hljs-type,
+:root[data-theme="dark"] .hljs-built_in { color: #C0A0E0; }
+:root[data-theme="dark"] .hljs-variable, :root[data-theme="dark"] .hljs-deletion { color: #E08C8C; }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .hljs-string, :root:not([data-theme="light"]) .hljs-attr,
+  :root:not([data-theme="light"]) .hljs-attribute { color: #7FC7A2; }
+  :root:not([data-theme="light"]) .hljs-number, :root:not([data-theme="light"]) .hljs-meta { color: #D9A45B; }
+  :root:not([data-theme="light"]) .hljs-title, :root:not([data-theme="light"]) .hljs-type,
+  :root:not([data-theme="light"]) .hljs-built_in { color: #C0A0E0; }
+  :root:not([data-theme="light"]) .hljs-variable { color: #E08C8C; }
+}
+
+/* ---------- tables ---------- */
+.tablewrap {
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--canvas);
+  box-shadow: var(--shadow-sm);
+}
+.tablewrap--tall { max-height: min(74vh, 820px); overflow-y: auto; }
+
+.tablewrap table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: var(--fs-sm);
+  line-height: 1.55;
+  font-variant-numeric: tabular-nums;
+}
+.tablewrap th, .tablewrap td {
+  padding: .55rem .8rem;
+  text-align: left;
+  vertical-align: top;
+  min-width: 7rem;
+  white-space: normal;
+  border-bottom: 1px solid var(--border);
+}
+.tablewrap th:first-child, .tablewrap td:first-child { min-width: 9rem; }
+.tablewrap thead th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: var(--surface-2);
+  color: var(--text);
+  font-weight: 650;
+  font-size: var(--fs-xs);
+  letter-spacing: .01em;
+  white-space: nowrap;
+  border-bottom: 1px solid var(--border-strong);
+}
+.tablewrap tbody tr:nth-child(even) {
+  background: var(--surface);
+  background: color-mix(in srgb, var(--surface) 55%, transparent);
+}
+.tablewrap tbody tr:hover { background: var(--accent-soft); }
+.tablewrap tbody tr:last-child td { border-bottom: 0; }
+.tablewrap td code, .tablewrap th code { font-size: .85em; padding: .08em .3em; }
+.tablewrap td strong { font-weight: 650; }
+.tablewrap td[align="right"], .tablewrap th[align="right"] { text-align: right; }
+.tablewrap td[align="center"], .tablewrap th[align="center"] { text-align: center; }
+.tablewrap ul, .tablewrap ol { padding-left: 1.1rem; margin: 0; }
+
+/* ---------- blockquote / note callout ---------- */
+blockquote.note {
+  padding: .95rem 1.1rem .95rem 1.15rem;
+  background: var(--accent-soft);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--accent-line);
+  border-radius: 0 var(--radius) var(--radius) 0;
+  color: var(--text-2);
+  font-size: var(--fs-sm);
+  line-height: 1.68;
+}
+blockquote.note > * + * { margin-top: .6rem; }
+blockquote.note p { color: inherit; }
+blockquote.note strong { color: var(--text); }
+blockquote.note ol, blockquote.note ul { padding-left: 1.35rem; }
+blockquote.note li + li { margin-top: .35rem; }
+blockquote.note code { background: var(--canvas); }
+blockquote.note > :first-child { margin-top: 0; }
+
+/* ---------- horizontal rule ---------- */
+hr.rule {
+  height: 1px;
+  border: 0;
+  background: var(--border);
+}
+
+/* ---------- diagrams ---------- */
+.diagram {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.15rem 1rem;
+  background: var(--diagram-bg);
+  border: 1px solid var(--diagram-border);
+  border-radius: var(--radius);
+  overflow-x: auto;
+  box-shadow: var(--shadow-sm);
+  filter: var(--diagram-shade);
+}
+.diagram { position: relative; }
+.diagram svg {
+  display: block; height: auto;
+  width: 100%; max-width: none;
+  min-width: var(--diagram-min-w, 0px);   /* JS floors this so labels stay >= 9.5px */
+  margin: auto;                            /* centres without the flex-overflow trap */
+}
+/* once content overflows, flex centring makes the left edge unreachable */
+.diagram.is-scrollable { justify-content: flex-start; }
+.diagram.is-zoomable svg { cursor: zoom-in; }
+.diagram__zoom {
+  position: absolute; top: .55rem; right: .55rem; z-index: 2;
+  display: inline-flex; align-items: center; gap: .3rem;
+  padding: .28rem .55rem; border-radius: 6px; cursor: pointer;
+  font-size: var(--fs-2xs); font-weight: 600; line-height: 1;
+  color: #35434F; background: rgba(255,255,255,.9);
+  border: 1px solid rgba(0,0,0,.18);
+  opacity: 0; transition: opacity .14s ease;
+}
+.diagram__zoom svg { width: 12px; height: 12px; min-width: 0; margin: 0; }
+.diagram:hover .diagram__zoom, .diagram__zoom:focus-visible,
+.diagram.is-scrollable .diagram__zoom { opacity: 1; }
+.diagram__hint { display: none; }
+.diagram.is-scrollable .diagram__hint {
+  display: block;
+  position: absolute; left: .55rem; bottom: .5rem; z-index: 2;
+  font-size: var(--fs-2xs); color: #55606B;
+  background: rgba(255,255,255,.9); border-radius: 5px; padding: .15rem .45rem;
+  pointer-events: none;
+}
+
+/* ---------- diagram lightbox ---------- */
+.lightbox[hidden] { display: none; }
+.lightbox {
+  position: fixed; inset: 0; z-index: 90;
+  display: flex; flex-direction: column;
+  background: rgba(9, 13, 18, .82);
+  backdrop-filter: blur(2px);
+}
+.lightbox__bar {
+  flex: 0 0 auto; display: flex; align-items: center; gap: .75rem;
+  padding: .5rem .75rem; background: var(--canvas); border-bottom: 1px solid var(--border);
+}
+.lightbox__title { font-size: var(--fs-xs); font-weight: 600; color: var(--text-2);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.lightbox__tools { margin-left: auto; display: flex; align-items: center; gap: .3rem; }
+.lightbox__pct { font-size: var(--fs-2xs); color: var(--text-3);
+  min-width: 3.4em; text-align: center; font-variant-numeric: tabular-nums; }
+.lightbox__btn {
+  border: 1px solid var(--border-strong); background: var(--surface);
+  color: var(--text); border-radius: 6px; cursor: pointer;
+  font-size: var(--fs-2xs); font-weight: 600; line-height: 1;
+  padding: .38rem .6rem; min-width: 2rem;
+}
+.lightbox__btn:hover { background: var(--surface-2); }
+.lightbox__stage {
+  flex: 1 1 auto; overflow: auto; padding: 1.25rem;
+  background: #fff; display: block;
+}
+.lightbox__stage svg { display: block; margin: 0 auto; height: auto; max-width: none; }
+:root.lb-open, :root.lb-open body { overflow: hidden; }
+.diagram figcaption {
+  margin-top: .6rem;
+  font-size: var(--fs-2xs);
+  color: #55606B;
+  text-align: center;
+}
+.diagram:empty { display: none; }
+
+/* ---------- back to top ---------- */
+.to-top {
+  position: fixed;
+  right: clamp(.9rem, 2.2vw, 1.75rem);
+  bottom: clamp(.9rem, 2.2vw, 1.75rem);
+  z-index: 65;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px; height: 38px;
+  color: var(--text-2);
+  background: var(--canvas);
+  border: 1px solid var(--border-strong);
+  border-radius: 50%;
+  box-shadow: var(--shadow-md);
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(8px) scale(.96);
+  transition: opacity .18s ease, transform .18s ease, visibility .18s, color .12s ease, border-color .12s ease;
+}
+.to-top.is-visible { opacity: 1; visibility: visible; transform: none; }
+.to-top:hover { color: var(--accent); border-color: var(--accent); }
+.to-top svg { width: 16px; height: 16px; }
+
+/* ---------- mobile drawer ---------- */
+.nav-backdrop { display: none; }
+
+@media (max-width: 1279.98px) { :root { --sidebar-w: 262px; --bleed: 5rem; } }
+
+@media (max-width: 1023.98px) {
+  :root { --bleed: 3rem; }
+  #nav-toggle { display: inline-flex; }
+  .layout { grid-template-columns: minmax(0, 1fr); }
+  .sidebar {
+    position: fixed;
+    top: var(--topbar-h);
+    left: 0;
+    bottom: 0;
+    height: auto;
+    width: min(85vw, 320px);
+    z-index: 80;
+    background: var(--canvas);
+    border-right: 1px solid var(--border);
+    box-shadow: var(--shadow-md);
+    transform: translateX(-101%);
+    transition: transform .22s cubic-bezier(.32, .72, 0, 1);
+    visibility: hidden;
+  }
+  :root.nav-open .sidebar { transform: none; visibility: visible; }
+  .nav-backdrop {
+    display: block;
+    position: fixed;
+    inset: var(--topbar-h) 0 0 0;
+    z-index: 75;
+    background: rgba(9, 14, 19, .48);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity .2s ease;
+  }
+  :root.nav-open .nav-backdrop { opacity: 1; pointer-events: auto; }
+
+  /* Scroll lock. Freezing the root removes the scrollport that `position:
+     sticky` depends on, so the bar is pinned with `fixed` for the duration
+     and the flow space it vacates is handed to .layout — no content jump. */
+  :root.nav-open, :root.nav-open body { overflow: hidden; }
+  :root.nav-open .topbar { position: fixed; top: 0; left: 0; right: 0; }
+  :root.nav-open .layout { padding-top: var(--topbar-h); }
+
+  .content { padding-top: 1.75rem; }
+}
+
+@media (max-width: 760px) {
+  :root { --measure: 100%; --bleed: 0rem; }
+  .topbar__badge { display: none; }
+  .content { padding-left: 1.1rem; padding-right: 1.1rem; }
+  .prose h1 { font-size: 1.75rem; }
+  .prose h2 { font-size: 1.375rem; }
+  .prose h3 { font-size: 1.125rem; }
+}
+@media (max-width: 560px) {
+  .topbar__link { display: none; }
+  .search { flex: 1 1 auto; min-width: 90px; }
+  .topbar__title { font-size: var(--fs-2xs); }
+}
+
+/* ---------- motion preferences ---------- */
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after {
+    animation-duration: .001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* ---------- print ---------- */
+/* =========================================================================
+   In-page contents
+   Added after this shell was first extracted from the generated HTML. The
+   sidebar is navigation: it hides behind a button under 1080px and it does not
+   print. This is the document's own table of contents, in the position its
+   Markdown source puts it — read once, to see the shape of the thing.
+   ========================================================================= */
+
+.prose > .contents { grid-column: wide; }
+
+.contents {
+  padding: 1.15rem 1.35rem 1.25rem;
+  background: var(--canvas-sunken);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+/* `.prose h2` gives every h2 a rule above it and 1.5rem of air; inside a panel
+   that reads as a stray line, so this one opts out and shrinks to a label. */
+.prose .contents__title {
+  margin: 0 0 .85rem;
+  padding-top: 0;
+  border-top: 0;
+  font-size: var(--fs-h4);
+  font-weight: 600;
+  line-height: 1.3;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  color: var(--text-3);
+}
+.prose:lang(zh-Hans) .contents__title { letter-spacing: .1em; text-transform: none; }
+
+/* The `.prose` selectors these override are element-qualified, so every rule
+   here has to carry the same weight or the prose list styling wins. */
+.prose .contents__list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  columns: 19rem 2;
+  column-gap: 2.75rem;
+  font-size: var(--fs-sm);
+  line-height: 1.5;
+}
+
+.prose .contents__item { margin: .3rem 0 0; break-inside: avoid; }
+.prose .contents__item::marker { content: none; }
+.prose .contents__item--d1 { margin-top: 1rem; font-weight: 600; }
+.prose .contents__item--d1:first-child { margin-top: 0; }
+.prose .contents__item--d2 { padding-left: .95rem; }
+.prose .contents__item--d3 {
+  padding-left: 2rem;
+  font-size: var(--fs-xs);
+  color: var(--text-3);
+}
+
+.contents__link {
+  color: inherit;
+  text-decoration: none;
+  border-bottom: 1px solid transparent;
+}
+.prose .contents__item--d1 > .contents__link { color: var(--text); }
+.prose .contents__item--d2 > .contents__link { color: var(--text-2); }
+.contents__link:hover { color: var(--accent); border-bottom-color: var(--accent-line); }
+.contents__link:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+@media (max-width: 620px) {
+  .contents { padding: 1rem 1.05rem 1.1rem; }
+  .prose .contents__item--d3 { display: none; }
+}
+
+@media print {
+  :root, :root[data-theme="dark"], :root[data-theme="light"] {
+    color-scheme: light;
+    --canvas: #fff; --canvas-sunken: #fff; --surface: #fff; --surface-2: #f2f2f2;
+    --surface-3: #e8e8e8; --border: #bbb; --border-strong: #888;
+    --text: #000; --text-2: #222; --text-3: #555;
+    --accent: #000; --accent-hover: #000; --accent-quiet: #555;
+    --accent-soft: #f4f4f4; --accent-line: #999;
+    --diagram-bg: #fff; --diagram-border: #bbb; --diagram-shade: none;
+    --code-bg: #fafafa; --code-bar-bg: #f0f0f0; --code-text: #000;
+    --shadow-sm: none; --shadow-md: none;
+    --measure: 100%; --bleed: 0rem; --topbar-h: 0px;
+  }
+  html, body { background: #fff !important; color: #000 !important; }
+  .skip-link, .topbar, .sidebar, .nav-backdrop, .to-top,
+  .codeblock__copy, .hd__anchor, #nav-toggle, #theme-toggle { display: none !important; }
+  .layout { display: block; }
+  .content { padding: 0; }
+  .prose { display: block; max-width: none; }
+  .prose > * { margin: 0 0 .6rem; }
+  body { font-size: 10.5pt; line-height: 1.5; }
+  .prose h1 { font-size: 20pt; margin-top: 0; }
+  .prose h2 { font-size: 15pt; margin-top: 1.4em; border-top: 1px solid #ccc; padding-top: .5em; }
+  .prose h3 { font-size: 12.5pt; margin-top: 1.2em; }
+  .prose h4 { font-size: 10.5pt; margin-top: 1em; }
+  .prose h1, .prose h2, .prose h3, .prose h4 { break-after: avoid; page-break-after: avoid; }
+  .tablewrap, .codeblock, .diagram, figure, blockquote.note, pre, table, tr {
+    break-inside: avoid; page-break-inside: avoid;
+  }
+  .tablewrap { overflow: visible !important; max-height: none !important; box-shadow: none; }
+  .tablewrap thead th { position: static; background: #f2f2f2 !important; }
+  .tablewrap table { font-size: 9pt; }
+  .tablewrap th, .tablewrap td { min-width: 0; }
+  .codeblock pre { overflow: visible; }
+  .codeblock pre code { white-space: pre-wrap; word-break: break-word; font-size: 8.5pt; }
+  .prose a { color: #000 !important; text-decoration: underline; }
+  .prose a[href^="http"]::after,
+  .prose a[href^="mailto:"]::after {
+    content: " (" attr(href) ")";
+    font-size: 8.5pt;
+    color: #444;
+    word-break: break-all;
+  }
+  .diagram { filter: none !important; overflow: visible !important; }
+  .diagram svg { min-width: 0 !important; width: 100% !important; }
+  .diagram__zoom, .diagram__hint, .lightbox { display: none !important; }
+  .contents { background: none; border: 1px solid #ccc; break-inside: avoid; page-break-inside: avoid; }
+  .prose .contents__list { columns: 2; font-size: 9pt; }
+  .contents__link { text-decoration: none !important; }
+  @page { margin: 16mm 14mm; }
+}
+</style>
+<script>
+window.__DOC_UI = {"skip":"跳到正文","nav_toggle":"切换目录","filter":"筛选章节","theme_toggle":"切换配色主题","toc":"目录","contents":"目录","to_top":"回到顶部","permalink":"本节链接","copy":"复制","copied":"已复制","theme_auto":"跟随系统","theme_light":"浅色","theme_dark":"深色","theme_aria":"配色主题：{label}。点击切换。","theme_title":"主题：{label}","toc_empty":"没有匹配“{query}”的章节","table_scrollable":"可横向滚动的表格","lightbox_aria":"放大后的图","zoom_in":"放大","zoom_out":"缩小","zoom_fit":"适应宽度","close_esc":"关闭（Esc）","diagram":"图","diagram_width":"宽 {px}px","enlarge":"放大","enlarge_aria":"放大此图","diagram_hint":"↔ 可横向滚动 · 点击放大"};
+</script>
+<script>
+/* =========================================================================
+   Reader shell behaviour — vanilla, single file, zero network, file:// safe.
+   ========================================================================= */
+(function () {
+  "use strict";
+
+  var root = document.documentElement;
+  var STORE_KEY = "vm-doc-theme";
+  var MODES = ["auto", "light", "dark"];
+
+  /* ---- UI strings ----------------------------------------------------
+     The generator emits window.__DOC_UI for the document's language; every
+     lookup falls back to the English literal, so the shell still reads
+     correctly if the table is missing or incomplete. -------------------- */
+  var UI = window.__DOC_UI || {};
+  function t(key, fallback) {
+    var v = UI[key];
+    return (typeof v === "string" && v) ? v : fallback;
+  }
+  function tf(key, fallback, vars) {
+    return t(key, fallback).replace(/\{(\w+)\}/g, function (m, k) {
+      return Object.prototype.hasOwnProperty.call(vars, k) ? vars[k] : m;
+    });
+  }
+
+  /* ---- storage helpers (file:// can throw on localStorage access) ---- */
+  function readStore(k) { try { return window.localStorage.getItem(k); } catch (e) { return null; } }
+  function writeStore(k, v) { try { window.localStorage.setItem(k, v); } catch (e) {} }
+
+  /* ---- theme: applied immediately, before first paint ---- */
+  var mode = readStore(STORE_KEY);
+  if (MODES.indexOf(mode) === -1) mode = "auto";
+
+  function applyTheme(next) {
+    mode = next;
+    root.setAttribute("data-theme-mode", mode);
+    if (mode === "auto") root.removeAttribute("data-theme");
+    else root.setAttribute("data-theme", mode);
+    var btn = document.getElementById("theme-toggle");
+    if (btn) {
+      var label = t("theme_" + mode, mode === "auto" ? "system" : mode);
+      btn.setAttribute("aria-label", tf("theme_aria", "Colour theme: {label}. Click to change.", { label: label }));
+      btn.title = tf("theme_title", "Theme: {label}", { label: label });
+    }
+  }
+  applyTheme(mode);
+
+  /* ---- everything else once the DOM exists ---- */
+  function ready(fn) {
+    if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", fn);
+    else fn();
+  }
+
+  ready(function () {
+    var body = document.body;
+    var topbar = document.querySelector(".topbar");
+    var sidebar = document.getElementById("sidebar");
+    var main = document.getElementById("main");
+    var searchInput = document.getElementById("toc-search");
+    var navToggle = document.getElementById("nav-toggle");
+    var themeToggle = document.getElementById("theme-toggle");
+    var toTop = document.getElementById("to-top");
+    var content = main ? main.querySelector(".prose") : null;
+
+    var reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
+    var isMobile = window.matchMedia("(max-width: 1023.98px)");
+
+    applyTheme(mode); /* re-run so the button gets its label */
+
+    /* the document title is derived from the bar so the title string is
+       substituted in exactly one place at assembly time */
+    var titleEl = document.querySelector(".topbar__title");
+    if (titleEl && titleEl.textContent.trim()) document.title = titleEl.textContent.trim();
+
+    function topbarHeight() {
+      return topbar ? Math.round(topbar.getBoundingClientRect().height) : 52;
+    }
+
+    /* =====================================================================
+       Theme toggle — auto -> light -> dark -> auto
+       ===================================================================== */
+    if (themeToggle) {
+      themeToggle.addEventListener("click", function () {
+        var next = MODES[(MODES.indexOf(mode) + 1) % MODES.length];
+        applyTheme(next);
+        writeStore(STORE_KEY, next);
+      });
+    }
+    /* keep "auto" honest when the OS flips while the page is open */
+    var schemeQuery = window.matchMedia("(prefers-color-scheme: dark)");
+    var onScheme = function () { if (mode === "auto") applyTheme("auto"); };
+    if (schemeQuery.addEventListener) schemeQuery.addEventListener("change", onScheme);
+    else if (schemeQuery.addListener) schemeQuery.addListener(onScheme);
+
+    /* =====================================================================
+       Skip link — move real focus into the article
+       ===================================================================== */
+    var skip = document.querySelector(".skip-link");
+    if (skip && main) {
+      skip.addEventListener("click", function () {
+        main.setAttribute("tabindex", "-1");
+        main.focus({ preventScroll: true });
+        window.setTimeout(function () { main.removeAttribute("tabindex"); }, 800);
+      });
+    }
+
+    /* =====================================================================
+       Mobile drawer
+       ===================================================================== */
+    var backdrop = document.createElement("div");
+    backdrop.className = "nav-backdrop";
+    backdrop.setAttribute("hidden", "");
+    document.body.appendChild(backdrop);
+
+    var scrollLockY = 0;
+    function openNav() {
+      if (root.classList.contains("nav-open")) return;
+      scrollLockY = window.scrollY || window.pageYOffset || 0;
+      backdrop.removeAttribute("hidden");
+      root.classList.add("nav-open");
+      if (navToggle) navToggle.setAttribute("aria-expanded", "true");
+      var first = sidebar ? sidebar.querySelector(".toc__link") : null;
+      if (first) first.focus({ preventScroll: true });
+    }
+    function closeNav(restoreFocus) {
+      if (!root.classList.contains("nav-open")) return;
+      root.classList.remove("nav-open");
+      if (navToggle) navToggle.setAttribute("aria-expanded", "false");
+      window.setTimeout(function () {
+        if (!root.classList.contains("nav-open")) backdrop.setAttribute("hidden", "");
+      }, 240);
+      if (restoreFocus && navToggle) navToggle.focus({ preventScroll: true });
+      if (scrollLockY) window.scrollTo(0, scrollLockY);
+    }
+    function toggleNav() {
+      if (root.classList.contains("nav-open")) closeNav(true); else openNav();
+    }
+
+    if (navToggle) navToggle.addEventListener("click", toggleNav);
+    backdrop.addEventListener("click", function () { closeNav(false); });
+
+    /* close the drawer when a TOC entry is chosen, or the viewport grows */
+    if (sidebar) {
+      sidebar.addEventListener("click", function (ev) {
+        var link = ev.target.closest ? ev.target.closest(".toc__link") : null;
+        if (link && isMobile.matches) closeNav(false);
+      });
+    }
+    var onBreak = function (ev) { if (!ev.matches) closeNav(false); };
+    if (isMobile.addEventListener) isMobile.addEventListener("change", onBreak);
+    else if (isMobile.addListener) isMobile.addListener(onBreak);
+
+    /* =====================================================================
+       Table of contents: scrollspy + filter
+       ===================================================================== */
+    var tocLinks = sidebar ? Array.prototype.slice.call(sidebar.querySelectorAll(".toc__link")) : [];
+    var linkFor = Object.create(null);
+    var headings = [];
+    var activeLink = null;
+
+    tocLinks.forEach(function (link) {
+      var href = link.getAttribute("href") || "";
+      if (href.charAt(0) !== "#") return;
+      var id = href.slice(1);
+      try { id = decodeURIComponent(id); } catch (e) {}
+      if (!linkFor[id]) linkFor[id] = link;
+    });
+
+    if (content) {
+      headings = Array.prototype.slice
+        .call(content.querySelectorAll("h1[id], h2[id], h3[id], h4[id]"))
+        .filter(function (h) { return !!linkFor[h.id]; });
+    }
+
+    function scrollActiveIntoView(link) {
+      if (!sidebar || !link) return;
+      if (isMobile.matches && !root.classList.contains("nav-open")) return;
+      var sr = sidebar.getBoundingClientRect();
+      var lr = link.getBoundingClientRect();
+      var pad = 24;
+      if (lr.top < sr.top + pad) sidebar.scrollTop -= (sr.top + pad - lr.top);
+      else if (lr.bottom > sr.bottom - pad) sidebar.scrollTop += (lr.bottom - (sr.bottom - pad));
+    }
+
+    function setActive(link) {
+      if (link === activeLink) return;
+      if (activeLink) {
+        activeLink.classList.remove("is-active");
+        activeLink.removeAttribute("aria-current");
+      }
+      activeLink = link || null;
+      if (activeLink) {
+        activeLink.classList.add("is-active");
+        activeLink.setAttribute("aria-current", "location");
+        scrollActiveIntoView(activeLink);
+      }
+    }
+
+    function computeActive() {
+      if (!headings.length) return;
+      var line = topbarHeight() + 28;
+      var current = null;
+      for (var i = 0; i < headings.length; i++) {
+        if (headings[i].getBoundingClientRect().top - line <= 0) current = headings[i];
+        else break;
+      }
+      /* at the very bottom, own the last section outright */
+      var docH = document.documentElement.scrollHeight;
+      if (window.innerHeight + window.scrollY >= docH - 4) current = headings[headings.length - 1];
+      if (!current) current = headings[0];
+      setActive(linkFor[current.id] || null);
+    }
+
+    /* rAF is paused in a background tab, so the frame callback that clears
+       `ticking` may never run — every later schedule() would then no-op and
+       the spy would stay dead. The pending id is tracked so waking the tab
+       can cancel it, clear the latch and recompute. */
+    var ticking = false;
+    var rafId = 0;
+    function schedule() {
+      if (ticking) return;
+      ticking = true;
+      rafId = window.requestAnimationFrame(function () { ticking = false; computeActive(); });
+    }
+    function flushSpy() {
+      if (rafId) window.cancelAnimationFrame(rafId);
+      ticking = false;
+      rafId = 0;
+      computeActive();
+    }
+
+    if (headings.length && "IntersectionObserver" in window) {
+      var observer = new IntersectionObserver(schedule, {
+        rootMargin: "-" + (topbarHeight() + 8) + "px 0px -62% 0px",
+        threshold: [0, 1]
+      });
+      headings.forEach(function (h) { observer.observe(h); });
+    }
+    window.addEventListener("scroll", schedule, { passive: true });
+    window.addEventListener("resize", schedule, { passive: true });
+    document.addEventListener("visibilitychange", function () {
+      if (!document.hidden) flushSpy();
+    });
+    window.addEventListener("pageshow", flushSpy);
+    computeActive(); /* synchronous, so the first paint already has an active item */
+
+    /* ---- TOC filter ---- */
+    var tocItems = sidebar ? Array.prototype.slice.call(sidebar.querySelectorAll(".toc__item")) : [];
+    var emptyNote = null;
+
+    function filterToc(raw) {
+      var q = (raw || "").trim().toLowerCase().replace(/\s+/g, " ");
+      var shown = 0;
+      for (var i = 0; i < tocItems.length; i++) {
+        var item = tocItems[i];
+        var text = item.dataset.filterText;
+        if (text === undefined) {
+          text = (item.textContent || "").toLowerCase().replace(/\s+/g, " ").trim();
+          item.dataset.filterText = text;
+        }
+        var hit = !q || text.indexOf(q) !== -1;
+        if (hit) { item.removeAttribute("hidden"); shown++; }
+        else item.setAttribute("hidden", "");
+      }
+      if (sidebar) {
+        if (!shown && q) {
+          if (!emptyNote) {
+            emptyNote = document.createElement("p");
+            emptyNote.className = "toc__empty";
+            emptyNote.setAttribute("role", "status");
+            sidebar.appendChild(emptyNote);
+          }
+          emptyNote.textContent = tf("toc_empty", "No sections match “{query}”", { query: raw.trim() });
+          emptyNote.removeAttribute("hidden");
+        } else if (emptyNote) {
+          emptyNote.setAttribute("hidden", "");
+        }
+      }
+      if (!q) scrollActiveIntoView(activeLink);
+    }
+
+    if (searchInput) {
+      searchInput.setAttribute("title", "Filter sections (press / to focus)");
+      searchInput.addEventListener("input", function () { filterToc(searchInput.value); });
+      searchInput.addEventListener("keydown", function (ev) {
+        if (ev.key === "Escape") {
+          ev.stopPropagation();
+          if (searchInput.value) { searchInput.value = ""; filterToc(""); }
+          else searchInput.blur();
+        }
+      });
+    }
+
+    /* =====================================================================
+       Copy buttons
+       ===================================================================== */
+    var canExec = false;
+    try { canExec = !!document.queryCommandSupported && document.queryCommandSupported("copy"); } catch (e) { canExec = false; }
+    var canClip = !!(navigator.clipboard && navigator.clipboard.writeText);
+
+    if (!canClip && !canExec) {
+      Array.prototype.forEach.call(document.querySelectorAll(".codeblock__copy"), function (b) {
+        b.setAttribute("hidden", "");
+      });
+    }
+
+    function legacyCopy(text) {
+      var ta = document.createElement("textarea");
+      ta.value = text;
+      ta.setAttribute("readonly", "");
+      ta.style.cssText = "position:fixed;top:0;left:-9999px;opacity:0;";
+      document.body.appendChild(ta);
+      ta.select();
+      var ok = false;
+      try { ok = document.execCommand("copy"); } catch (e) { ok = false; }
+      document.body.removeChild(ta);
+      return ok;
+    }
+
+    function flashCopied(btn, ok) {
+      var original = btn.dataset.label || btn.textContent || t("copy", "Copy");
+      btn.dataset.label = original;
+      btn.textContent = ok ? t("copied", "Copied") : t("copy", "Copy");
+      if (ok) btn.classList.add("is-copied");
+      window.clearTimeout(btn._resetTimer);
+      btn._resetTimer = window.setTimeout(function () {
+        btn.textContent = btn.dataset.label || t("copy", "Copy");
+        btn.classList.remove("is-copied");
+      }, 1600);
+    }
+
+    document.addEventListener("click", function (ev) {
+      var btn = ev.target.closest ? ev.target.closest(".codeblock__copy") : null;
+      if (!btn) return;
+      var block = btn.closest(".codeblock");
+      var code = block ? block.querySelector("pre code") : null;
+      if (!code) return;
+      var text = code.textContent || "";
+      if (canClip) {
+        navigator.clipboard.writeText(text).then(
+          function () { flashCopied(btn, true); },
+          function () { flashCopied(btn, canExec && legacyCopy(text)); }
+        );
+      } else {
+        flashCopied(btn, legacyCopy(text));
+      }
+    });
+
+    /* =====================================================================
+       Back to top
+       ===================================================================== */
+    if (toTop) {
+      toTop.addEventListener("click", function () {
+        try {
+          window.scrollTo({ top: 0, behavior: reduceMotion.matches ? "auto" : "smooth" });
+        } catch (e) { window.scrollTo(0, 0); }
+        if (main) {
+          main.setAttribute("tabindex", "-1");
+          main.focus({ preventScroll: true });
+          window.setTimeout(function () { main.removeAttribute("tabindex"); }, 800);
+        }
+      });
+      var toTopTick = false;
+      var toTopRaf = 0;
+      var applyToTop = function () {
+        toTop.classList.toggle("is-visible", (window.scrollY || window.pageYOffset || 0) > 640);
+      };
+      var updateToTop = function () {
+        if (toTopTick) return;
+        toTopTick = true;
+        toTopRaf = window.requestAnimationFrame(function () { toTopTick = false; applyToTop(); });
+      };
+      window.addEventListener("scroll", updateToTop, { passive: true });
+      document.addEventListener("visibilitychange", function () {
+        if (document.hidden) return;
+        if (toTopRaf) window.cancelAnimationFrame(toTopRaf);
+        toTopTick = false;
+        applyToTop();
+      });
+      applyToTop();
+    }
+
+    /* =====================================================================
+       Tall tables get an internal scroller so the header row can stick
+       ===================================================================== */
+    Array.prototype.forEach.call(document.querySelectorAll(".tablewrap"), function (wrap) {
+      var table = wrap.querySelector("table");
+      if (!table) return;
+      if (table.tBodies[0] && table.tBodies[0].rows.length >= 14) wrap.classList.add("tablewrap--tall");
+      /* wrappers that scroll horizontally are focusable so keyboard users can pan */
+      if (wrap.scrollWidth > wrap.clientWidth + 1) {
+        wrap.setAttribute("tabindex", "0");
+        wrap.setAttribute("role", "region");
+        wrap.setAttribute("aria-label", t("table_scrollable", "Scrollable table"));
+      }
+    });
+
+    /* =====================================================================
+       Keyboard shortcuts
+       ===================================================================== */
+    document.addEventListener("keydown", function (ev) {
+      var t = ev.target;
+      var typing = t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.tagName === "SELECT" || t.isContentEditable);
+
+      if (ev.key === "/" && !typing && !ev.metaKey && !ev.ctrlKey && !ev.altKey) {
+        ev.preventDefault();
+        if (searchInput) { searchInput.focus(); searchInput.select(); }
+        return;
+      }
+      if (ev.key === "Escape") {
+        if (root.classList.contains("nav-open")) { closeNav(true); return; }
+        if (searchInput && searchInput.value) { searchInput.value = ""; filterToc(""); }
+      }
+    });
+
+    /* =====================================================================
+       Hash handling — keep the sticky bar off the target, sync the TOC
+       ===================================================================== */
+    function syncFromHash() {
+      var id = window.location.hash.slice(1);
+      if (!id) return;
+      try { id = decodeURIComponent(id); } catch (e) {}
+      var link = linkFor[id];
+      if (link) setActive(link);
+      schedule();
+    }
+    window.addEventListener("hashchange", syncFromHash);
+    if (window.location.hash) window.setTimeout(syncFromHash, 60);
+  });
+  /* ---- diagrams: legibility floor, scroll affordance, click-to-enlarge ---- */
+  ready(function () {
+    var MIN_TEXT_PX = 9.5;
+    var figs = [].slice.call(document.querySelectorAll("figure.diagram"));
+    if (!figs.length) return;
+    var lb = null, stage = null, pct = null, ttl = null;
+    var openFig = null, holder = null, baseW = 0, z = 1, lastFocus = null;
+
+    function smallestFont(svg) {
+      var min = Infinity, nodes = svg.querySelectorAll("text, tspan, foreignObject div, foreignObject span, foreignObject p");
+      for (var i = 0; i < nodes.length; i++) {
+        if (!(nodes[i].textContent || "").trim()) continue;
+        var fs = parseFloat(getComputedStyle(nodes[i]).fontSize);
+        if (fs && fs < min) min = fs;
+      }
+      return isFinite(min) ? min : 0;
+    }
+    function syncScroll(fig) { fig.classList.toggle("is-scrollable", fig.scrollWidth - fig.clientWidth > 2); }
+    /* Only force a width floor when downscaling would actually make labels
+       illegible — and only when the floor buys >5% over the fitted width,
+       so a diagram never scrolls just to gain a few pixels. */
+    function applyFloor(fig) {
+      if (!fig._vbw || !fig._mf) return;
+      var cs = getComputedStyle(fig);
+      var avail = fig.clientWidth - parseFloat(cs.paddingLeft || 0) - parseFloat(cs.paddingRight || 0);
+      var floorW = fig._vbw * Math.min(1, MIN_TEXT_PX / fig._mf);
+      if (avail > 0 && floorW > avail * 1.05) fig.style.setProperty("--diagram-min-w", Math.round(floorW) + "px");
+      else fig.style.removeProperty("--diagram-min-w");
+    }
+    function setZoom(v) {
+      z = Math.min(4, Math.max(0.1, v));
+      var svg = stage.querySelector("svg");
+      if (!svg || !baseW) return;
+      svg.style.width = Math.round(baseW * z) + "px";
+      pct.textContent = Math.round(z * 100) + "%";
+    }
+    function fit() { setZoom(baseW ? (stage.clientWidth - 40) / baseW : 1); }
+    function build() {
+      lb = document.createElement("div");
+      lb.className = "lightbox"; lb.setAttribute("hidden", "");
+      lb.setAttribute("role", "dialog"); lb.setAttribute("aria-modal", "true");
+      lb.setAttribute("aria-label", t("lightbox_aria", "Enlarged diagram"));
+      lb.innerHTML =
+        '<div class="lightbox__bar"><span class="lightbox__title"></span>' +
+        '<div class="lightbox__tools">' +
+        '<button type="button" class="lightbox__btn" data-act="out" aria-label="' + t("zoom_out", "Zoom out") + '">&#8722;</button>' +
+        '<span class="lightbox__pct">100%</span>' +
+        '<button type="button" class="lightbox__btn" data-act="in" aria-label="' + t("zoom_in", "Zoom in") + '">+</button>' +
+        '<button type="button" class="lightbox__btn" data-act="fit">' + t("zoom_fit", "Fit") + '</button>' +
+        '<button type="button" class="lightbox__btn" data-act="full">100%</button>' +
+        '<button type="button" class="lightbox__btn" data-act="close" aria-label="' + t("close_esc", "Close (Esc)") + '">&#10005;</button>' +
+        '</div></div><div class="lightbox__stage"></div>';
+      document.body.appendChild(lb);
+      stage = lb.querySelector(".lightbox__stage");
+      pct = lb.querySelector(".lightbox__pct");
+      ttl = lb.querySelector(".lightbox__title");
+      lb.addEventListener("click", function (ev) {
+        var b = ev.target.closest ? ev.target.closest("[data-act]") : null;
+        if (b) {
+          var a = b.getAttribute("data-act");
+          if (a === "close") closeLb();
+          else if (a === "in") setZoom(z * 1.25);
+          else if (a === "out") setZoom(z / 1.25);
+          else if (a === "fit") fit();
+          else if (a === "full") setZoom(1);
+          return;
+        }
+        if (ev.target === stage) closeLb();
+      });
+    }
+    function openLb(fig) {
+      var svg = fig.querySelector("svg"); if (!svg) return;
+      if (!lb) build();
+      lastFocus = document.activeElement; openFig = fig;
+      holder = document.createElement("span");
+      holder.className = "diagram__slot"; holder.hidden = true;
+      fig.style.minHeight = Math.round(fig.getBoundingClientRect().height) + "px";
+      svg.parentNode.insertBefore(holder, svg);
+      stage.appendChild(svg);
+      baseW = (svg.viewBox && svg.viewBox.baseVal && svg.viewBox.baseVal.width) || svg.getBoundingClientRect().width || 1;
+      ttl.textContent = (fig.getAttribute("data-mermaid") || t("diagram", "Diagram")) +
+        " · " + tf("diagram_width", "{px}px wide", { px: Math.round(baseW) });
+      lb.removeAttribute("hidden");
+      document.documentElement.classList.add("lb-open");
+      /* Enlarge means "make it readable": always open at natural size and let
+         the stage scroll. "Fit" is one click away for an overview. */
+      setZoom(1);
+      lb.querySelector('[data-act="close"]').focus();
+    }
+    function closeLb() {
+      if (!openFig) return;
+      var svg = stage.querySelector("svg");
+      if (svg && holder && holder.parentNode) {
+        svg.style.width = ""; holder.parentNode.replaceChild(svg, holder);
+      }
+      openFig.style.minHeight = ""; syncScroll(openFig);
+      lb.setAttribute("hidden", "");
+      document.documentElement.classList.remove("lb-open");
+      if (lastFocus && lastFocus.focus) lastFocus.focus();
+      openFig = null; holder = null;
+    }
+    document.addEventListener("keydown", function (ev) {
+      if (!openFig) return;
+      if (ev.key === "Escape") { ev.preventDefault(); closeLb(); }
+      else if (ev.key === "+" || ev.key === "=") { ev.preventDefault(); setZoom(z * 1.25); }
+      else if (ev.key === "-") { ev.preventDefault(); setZoom(z / 1.25); }
+      else if (ev.key === "0") { ev.preventDefault(); fit(); }
+    });
+
+    figs.forEach(function (fig) {
+      var svg = fig.querySelector("svg"); if (!svg) return;
+      var vbw = (svg.viewBox && svg.viewBox.baseVal && svg.viewBox.baseVal.width) || 0;
+      var mf = vbw ? smallestFont(svg) : 0;
+      fig._vbw = vbw; fig._mf = mf;
+      applyFloor(fig);
+      fig.classList.add("is-zoomable");
+      var btn = document.createElement("button");
+      btn.type = "button"; btn.className = "diagram__zoom";
+      btn.setAttribute("aria-label", t("enlarge_aria", "Enlarge diagram"));
+      btn.innerHTML = '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><path d="M6.2 2.2H2.2v4M9.8 2.2h4v4M9.8 13.8h4v-4M6.2 13.8H2.2v-4"/></svg><span>' + t("enlarge", "Enlarge") + '</span>';
+      btn.addEventListener("click", function (ev) { ev.stopPropagation(); openLb(fig); });
+      fig.appendChild(btn);
+      svg.addEventListener("click", function () { openLb(fig); });
+      syncScroll(fig);
+      var hint = document.createElement("span");
+      hint.className = "diagram__hint";
+      hint.textContent = t("diagram_hint", "↔ scroll · click to enlarge");
+      fig.appendChild(hint);
+    });
+    var rt; addEventListener("resize", function () {
+      clearTimeout(rt); rt = setTimeout(function () {
+        figs.forEach(function (f) { if (f !== openFig) { applyFloor(f); syncScroll(f); } });
+      }, 150);
+    });
+  });
+
+})();
+</script>
+</head>
+<body data-doc="plat">
+  <a class="skip-link" href="#main">跳到正文</a>
+  <header class="topbar">
+    <button class="icon-btn" id="nav-toggle" aria-label="切换目录" aria-expanded="false"><svg class="ico ico--menu" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><path d="M2 4h12M2 8h12M2 12h12"/></svg><svg class="ico ico--close" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><path d="M3.5 3.5l9 9M12.5 3.5l-9 9"/></svg></button>
+    <span class="topbar__title">平台选型与开发计划</span>
+    <span class="topbar__badge">v2 · 平台与计划</span>
+    <div class="topbar__spacer"></div>
+    <input id="toc-search" class="search" type="search" placeholder="筛选章节" aria-label="筛选章节">
+    <a class="topbar__link" href="platform-and-dev-plan-v2-en.html">English</a>
+    <a class="topbar__link" id="sibling-link" href="architecture-v0.4-zh.html">← 架构</a>
+    <button class="icon-btn" id="theme-toggle" aria-label="切换配色主题"><svg class="ico ico--auto" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true"><circle cx="8" cy="8" r="5.25"/><path d="M8 2.75v10.5a5.25 5.25 0 000-10.5z" fill="currentColor" stroke="none"/></svg><svg class="ico ico--light" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" aria-hidden="true"><circle cx="8" cy="8" r="3.1"/><path d="M8 1.2v1.6M8 13.2v1.6M14.8 8h-1.6M2.8 8H1.2M12.8 3.2l-1.1 1.1M4.3 11.7l-1.1 1.1M12.8 12.8l-1.1-1.1M4.3 4.3L3.2 3.2"/></svg><svg class="ico ico--dark" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round" aria-hidden="true"><path d="M13.4 9.6A5.6 5.6 0 016.4 2.6a5.75 5.75 0 107 7z"/></svg></button>
+  </header>
+  <div class="layout">
+    <nav class="sidebar" id="sidebar" aria-label="目录"><ol class="toc">
+  <li class="toc__item toc__item--h2"><a class="toc__link" href="#执行摘要">执行摘要</a></li>
+  <li class="toc__item toc__item--h2"><a class="toc__link" href="#第一部分-agent-面的容器平台">第一部分 —— Agent 面的容器平台</a></li>
+  <li class="toc__item toc__item--h3"><a class="toc__link" href="#a1-工作负载画像平台必须容得下什么">A.1 工作负载画像（平台必须容得下什么）</a></li>
+  <li class="toc__item toc__item--h3"><a class="toc__link" href="#a2-逐个方案评估">A.2 逐个方案评估</a></li>
+  <li class="toc__item toc__item--h4"><a class="toc__link" href="#1-普通虚拟机-docker-composehetznerec2lightsail-作对照">1. 普通虚拟机 + docker compose（Hetzner；EC2/Lightsail 作对照）</a></li>
+  <li class="toc__item toc__item--h4"><a class="toc__link" href="#2-flyio-machines">2. Fly.io Machines</a></li>
+  <li class="toc__item toc__item--h4"><a class="toc__link" href="#3-railway-render-排除">3. Railway / Render —— 排除</a></li>
+  <li class="toc__item toc__item--h4"><a class="toc__link" href="#4-gcp-cloud-run-jobs">4. GCP Cloud Run Jobs</a></li>
+  <li class="toc__item toc__item--h4"><a class="toc__link" href="#5-aws-ecs-fargate">5. AWS ECS Fargate</a></li>
+  <li class="toc__item toc__item--h4"><a class="toc__link" href="#6-azure-container-apps-jobs-对本团队排除">6. Azure Container Apps Jobs —— 对本团队排除</a></li>
+  <li class="toc__item toc__item--h4"><a class="toc__link" href="#7-kubernetes-mvp-阶段排除但记为最终的规模形态">7. Kubernetes —— MVP 阶段排除；但记为最终的规模形态</a></li>
+  <li class="toc__item toc__item--h3"><a class="toc__link" href="#a3-对比矩阵">A.3 对比矩阵</a></li>
+  <li class="toc__item toc__item--h3"><a class="toc__link" href="#a4-建议按优先级">A.4 建议（按优先级）</a></li>
+  <li class="toc__item toc__item--h2"><a class="toc__link" href="#第二部分-可信区技术栈前端-api-postgres-认证-存储-实时推送">第二部分 —— 可信区技术栈（前端 · API · Postgres · 认证 · 存储 · 实时推送）</a></li>
+  <li class="toc__item toc__item--h3"><a class="toc__link" href="#b0-立论这个切分是架构性的不是偶然的">B.0 立论：这个切分是架构性的，不是偶然的</a></li>
+  <li class="toc__item toc__item--h3"><a class="toc__link" href="#b1-作业契约两个面都认的那张表">B.1 作业契约（两个面都认的那张表）</a></li>
+  <li class="toc__item toc__item--h3"><a class="toc__link" href="#b2-技术栈对比">B.2 技术栈对比</a></li>
+  <li class="toc__item toc__item--h3"><a class="toc__link" href="#b3-实时进度先选无聊的方案">B.3 实时进度：先选无聊的方案</a></li>
+  <li class="toc__item toc__item--h3"><a class="toc__link" href="#b4-工作流引擎放在哪里">B.4 工作流引擎放在哪里？</a></li>
+  <li class="toc__item toc__item--h3"><a class="toc__link" href="#b5-排序后的建议">B.5 排序后的建议</a></li>
+  <li class="toc__item toc__item--h2"><a class="toc__link" href="#第三部分-最终选型与-8-周开发计划">第三部分 —— 最终选型与 8 周开发计划</a></li>
+  <li class="toc__item toc__item--h3"><a class="toc__link" href="#1-最终选型">1. 最终选型</a></li>
+  <li class="toc__item toc__item--h4"><a class="toc__link" href="#执行器适配器契约承重的那个接口">执行器适配器契约（承重的那个接口）</a></li>
+  <li class="toc__item toc__item--h3"><a class="toc__link" href="#2-逐周计划8-周单人做到可收费的-beta">2. 逐周计划（8 周，单人，做到可收费的 beta）</a></li>
+  <li class="toc__item toc__item--h4"><a class="toc__link" href="#第-1-周-地基仓库认证虚拟机">第 1 周 —— 地基：仓库、认证、虚拟机</a></li>
+  <li class="toc__item toc__item--h4"><a class="toc__link" href="#第-2-周-结构化信息采集-上传">第 2 周 —— 结构化信息采集 + 上传</a></li>
+  <li class="toc__item toc__item--h4"><a class="toc__link" href="#第-3-周-conductor-hermes-执行器第一个云端产出的签证包">第 3 周 —— conductor + Hermes 执行器：第一个云端产出的签证包</a></li>
+  <li class="toc__item toc__item--h4"><a class="toc__link" href="#第-4-周-进度复核门交付">第 4 周 —— 进度、复核门、交付</a></li>
+  <li class="toc__item toc__item--h4"><a class="toc__link" href="#第-5-周-llm-网关执行器-预算-缓存">第 5 周 —— LLM 网关执行器 + 预算 + 缓存</a></li>
+  <li class="toc__item toc__item--h4"><a class="toc__link" href="#第-6-周-cicdstagingprod加固可观测性">第 6 周 —— CI/CD、staging/prod、加固、可观测性</a></li>
+  <li class="toc__item toc__item--h4"><a class="toc__link" href="#第-7-周-beta-打磨本地化通知pii-生命周期恢复演练">第 7 周 —— Beta 打磨：本地化、通知、PII 生命周期、恢复演练</a></li>
+  <li class="toc__item toc__item--h4"><a class="toc__link" href="#第-8-周-可收费的-beta-上线">第 8 周 —— 可收费的 beta 上线</a></li>
+  <li class="toc__item toc__item--h3"><a class="toc__link" href="#3-cicd-与环境">3. CI/CD 与环境</a></li>
+  <li class="toc__item toc__item--h3"><a class="toc__link" href="#4-mvp-每月成本">4. MVP 每月成本</a></li>
+  <li class="toc__item toc__item--h3"><a class="toc__link" href="#5-运维-运行手册基础">5. 运维 / 运行手册基础</a></li>
+  <li class="toc__item toc__item--h3"><a class="toc__link" href="#6-明确推迟的事项-附触发条件">6. 明确推迟的事项 —— 附触发条件</a></li>
+  <li class="toc__item toc__item--h2"><a class="toc__link" href="#结语">结语</a></li>
+</ol>
+</nav>
+    <main class="content" id="main"><article class="prose"><h1 id="平台选型与开发计划-v2v04-配套文档" class="hd">平台选型与开发计划 v2（v0.4 配套文档）<a class="hd__anchor" href="#平台选型与开发计划-v2v04-配套文档" aria-label="本节链接">#</a></h1>
+<p><strong>状态：</strong> 生效中 —— 依据 <a href="../discussion/ADR-004-api-first-control-plane.md">ADR-004</a>（2026-08-12）取代 <a href="archive/platform-and-dev-plan-zh.md">platform-and-dev-plan-zh.md</a>
+<strong>v2 改了什么：</strong> 控制面采纳 API-first 纪律 —— 每一项核心业务能力都放在 <code>/api/v1/**</code> 路由处理器之后、由服务层承载，Web UI 只是这份契约的一个客户端；Server Actions 不再承载任何核心业务操作。落位、周计划与 monorepo 说明相应更新。
+<strong>配套文档：</strong> <a href="architecture-v0.4-zh.html">architecture-v0.4</a> —— 本文档是平台相关的那一半：架构跑在哪里，以及具体的构建计划。</p>
+<blockquote class="note">
+<p>英文原件：<a href="platform-and-dev-plan-v2-en.html">platform-and-dev-plan-v2 (English)</a></p>
+</blockquote>
+<nav class="contents" aria-labelledby="contents-title">
+<h2 class="contents__title" id="contents-title">目录</h2>
+<ol class="contents__list">
+  <li class="contents__item contents__item--d1"><a class="contents__link" href="#执行摘要">执行摘要</a></li>
+  <li class="contents__item contents__item--d1"><a class="contents__link" href="#第一部分-agent-面的容器平台">第一部分 —— Agent 面的容器平台</a></li>
+  <li class="contents__item contents__item--d2"><a class="contents__link" href="#a1-工作负载画像平台必须容得下什么">A.1 工作负载画像（平台必须容得下什么）</a></li>
+  <li class="contents__item contents__item--d2"><a class="contents__link" href="#a2-逐个方案评估">A.2 逐个方案评估</a></li>
+  <li class="contents__item contents__item--d2"><a class="contents__link" href="#a3-对比矩阵">A.3 对比矩阵</a></li>
+  <li class="contents__item contents__item--d2"><a class="contents__link" href="#a4-建议按优先级">A.4 建议（按优先级）</a></li>
+  <li class="contents__item contents__item--d1"><a class="contents__link" href="#第二部分-可信区技术栈前端-api-postgres-认证-存储-实时推送">第二部分 —— 可信区技术栈（前端 · API · Postgres · 认证 · 存储 · 实时推送）</a></li>
+  <li class="contents__item contents__item--d2"><a class="contents__link" href="#b0-立论这个切分是架构性的不是偶然的">B.0 立论：这个切分是架构性的，不是偶然的</a></li>
+  <li class="contents__item contents__item--d2"><a class="contents__link" href="#b1-作业契约两个面都认的那张表">B.1 作业契约（两个面都认的那张表）</a></li>
+  <li class="contents__item contents__item--d2"><a class="contents__link" href="#b2-技术栈对比">B.2 技术栈对比</a></li>
+  <li class="contents__item contents__item--d2"><a class="contents__link" href="#b3-实时进度先选无聊的方案">B.3 实时进度：先选无聊的方案</a></li>
+  <li class="contents__item contents__item--d2"><a class="contents__link" href="#b4-工作流引擎放在哪里">B.4 工作流引擎放在哪里？</a></li>
+  <li class="contents__item contents__item--d2"><a class="contents__link" href="#b5-排序后的建议">B.5 排序后的建议</a></li>
+  <li class="contents__item contents__item--d1"><a class="contents__link" href="#第三部分-最终选型与-8-周开发计划">第三部分 —— 最终选型与 8 周开发计划</a></li>
+  <li class="contents__item contents__item--d2"><a class="contents__link" href="#1-最终选型">1. 最终选型</a></li>
+  <li class="contents__item contents__item--d2"><a class="contents__link" href="#2-逐周计划8-周单人做到可收费的-beta">2. 逐周计划（8 周，单人，做到可收费的 beta）</a></li>
+  <li class="contents__item contents__item--d2"><a class="contents__link" href="#3-cicd-与环境">3. CI/CD 与环境</a></li>
+  <li class="contents__item contents__item--d2"><a class="contents__link" href="#4-mvp-每月成本">4. MVP 每月成本</a></li>
+  <li class="contents__item contents__item--d2"><a class="contents__link" href="#5-运维-运行手册基础">5. 运维 / 运行手册基础</a></li>
+  <li class="contents__item contents__item--d2"><a class="contents__link" href="#6-明确推迟的事项-附触发条件">6. 明确推迟的事项 —— 附触发条件</a></li>
+  <li class="contents__item contents__item--d1"><a class="contents__link" href="#结语">结语</a></li>
+</ol>
+</nav><h2 id="执行摘要" class="hd">执行摘要<a class="hd__anchor" href="#执行摘要" aria-label="本节链接">#</a></h2>
+<p><strong>建议：采用双面（two-plane）部署。</strong></p>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>面</th>
+<th>选型</th>
+<th>每月成本</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>可信控制面</strong> —— 前端、API、Postgres、认证、存储、实时推送</td>
+<td><strong>Vercel (Next.js) + Supabase</strong>（Postgres + Auth + Storage + Realtime，一家供应商替掉四家）</td>
+<td>约 $45 + 约 $10 PITR</td>
+</tr>
+<tr>
+<td><strong>Agent 执行面</strong> —— conductor（工作流引擎）、Hermes 执行器、LLM 网关、出站代理</td>
+<td><strong>一台 Hetzner CAX31 arm64 虚拟机</strong>（8 vCPU / 16 GB，docker compose —— 那个约 5 GB 的 arm64 镜像原样就能跑，缓存在磁盘上，每个作业零拉取）</td>
+<td>约 $19</td>
+</tr>
+</tbody></table>
+</div>
+<p>两者用「<strong>数据库即接口，虚拟机只出不进</strong>」的模式衔接：虚拟机上的 conductor 通过 TLS 轮询 <code>jobs</code> 表（<code>FOR UPDATE SKIP LOCKED</code>）并把产物上传到对象存储 —— 虚拟机<strong>不开放任何入站端口</strong>（管理通道走 Tailscale）。固定基础设施落在<strong>约 $75/月</strong>；LLM 用量是唯一的可变成本项（每个签证包约 $0.60–4.00，取决于模型档次）。</p>
+<p>那些看起来更显然的替代方案为什么不行，各用一句话：</p>
+<ul>
+<li><strong>只用 Vercel</strong> —— serverless 函数的时长上限远低于约 10 分钟的 agent 作业，而且没有 Docker；拆成两面是架构使然，不是权宜之计。</li>
+<li><strong>全用 AWS / GCP / Azure</strong> —— 在产出第一个签证包之前，先要花 1–2 周做 VPC/IAM/Cognito 的管线活，还要付 NAT 网关的账单；这是规模放大 50 倍之后的正确答案，现在推迟（可移植的 Postgres schema + S3 兼容存储保证了退出通道干净）。</li>
+<li><strong>Fly.io Machines</strong> —— 单作业原语最好（停机实例池、microVM 隔离），也是指定的<strong>扩容目标</strong>，但它的出站管控是在客户机内部执行的（平台层没有防火墙），因此它是继承而不是解决了 v0.3 里最难的那条要求。</li>
+<li><strong>Railway / Render</strong> —— 完全没有出站网络管控：在 agent 面上直接不满足 v0.3。</li>
+<li><strong>全部自建</strong> —— 把护照和银行流水这类 PII 放在自己手搓的备份上，对一个单人创始人来说是错误的风险取舍；而把可信数据库与不可信 agent 容器放在同一台机器上，违反 v0.3 的信任切分。</li>
+</ul>
+<p>全文分三部分：<strong>第一部分</strong>比较 agent 面的容器/执行平台，<strong>第二部分</strong>比较可信区技术栈，<strong>第三部分</strong>是调和后的最终选型与 8 周开发计划。价格声明打了标签：<strong>[V]</strong> 表示经网络核实（2026 年 8 月），<strong>[T]</strong> 表示来自训练知识（下决心前请重新核实）。</p>
+<h2 id="第一部分-agent-面的容器平台" class="hd">第一部分 —— Agent 面的容器平台<a class="hd__anchor" href="#第一部分-agent-面的容器平台" aria-label="本节链接">#</a></h2>
+<h3 id="a1-工作负载画像平台必须容得下什么" class="hd">A.1 工作负载画像（平台必须容得下什么）<a class="hd__anchor" href="#a1-工作负载画像平台必须容得下什么" aria-label="本节链接">#</a></h3>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>约束</th>
+<th>取值</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>镜像</td>
+<td><code>visa-master-hermes:latest</code>，约 5 GB，目前<strong>只在 arm64 上验证过</strong>（在 Apple Silicon 上构建）；要上 amd64 需要用 <code>buildx</code> 做多架构重建</td>
+</tr>
+<tr>
+<td>作业形态</td>
+<td>每个签证包起一个、用完即毁；典型约 10 分钟，硬上限 60 分钟；大量串行 LLM 往返 + 实时网页浏览 + LibreOffice/Python 渲染</td>
+</tr>
+<tr>
+<td>镜像经济性</td>
+<td><strong>每个作业</strong>都从镜像仓库拉 5 GB 是不可接受的；镜像必须缓存在执行主机上（或者平台让镜像大小变得无关紧要）</td>
+</tr>
+<tr>
+<td>出站</td>
+<td>作业容器<strong>不能有默认路由</strong>；唯一的出口是出站代理（按 v0.3：封禁 RFC1918 与 169.254.0.0/16，只放行 80/443）</td>
+</tr>
+<tr>
+<td>完成判定</td>
+<td><strong>按产物</strong>判定（<code>qa-report.json</code> + 交付目录），绝不按进程退出 —— 最后那步 &quot;workspace open&quot; 会起一个前台服务。在任何按作业计费的平台上，入口封装脚本都<strong>必须</strong>做到「守候产物 → 上传对象存储 → <code>exit 0</code>」，否则作业会一直烧预算直到超时。这个封装是方案 2–6 的前置条件，不是可有可无的润色。</td>
+</tr>
+<tr>
+<td>规模</td>
+<td>MVP = 单并发，每天约 5–30 个签证包；单人创始人；对成本敏感</td>
+</tr>
+</tbody></table>
+</div>
+<p>下文的成本数字统一归一到<strong>4 vCPU / 8 GB、10 分钟一个作业</strong>；60 分钟最坏情况乘以 6。可信度标签：<strong>[V]</strong> = 本次已对 2026 年的资料核实；<strong>[T]</strong> = 训练知识，下决心前请重新核实。</p>
+<h3 id="a2-逐个方案评估" class="hd">A.2 逐个方案评估<a class="hd__anchor" href="#a2-逐个方案评估" aria-label="本节链接">#</a></h3>
+<h4 id="1-普通虚拟机-docker-composehetznerec2lightsail-作对照" class="hd">1. 普通虚拟机 + docker compose（Hetzner；EC2/Lightsail 作对照）<a class="hd__anchor" href="#1-普通虚拟机-docker-composehetznerec2lightsail-作对照" aria-label="本节链接">#</a></h4>
+<ul>
+<li><strong>单作业启停契合度：优秀。</strong>「每作业一个容器」就是由后端的作业运行器通过本地 Docker socket 执行 <code>docker run --rm --network egress-internal ...</code>（或 <code>docker compose run</code>）。compose 文件已经存在，而且这正是本地已验证过的拓扑。每个作业一层全新可写层，结束时 <code>docker rm</code> —— 就是 v0.3 的即抛暂存模型，只是少了 microVM 级的加固。</li>
+<li><strong>5 GB 镜像：结构上就没有这个问题。</strong> 每个<em>版本</em>拉一次（从 GHCR/仓库），之后永久缓存在虚拟机磁盘上。每作业容器启动 &lt; 5 秒。这是唯一一个每作业镜像成本严格为零的方案。</li>
+<li><strong>出站管控：所有方案里最强的，而且已经验证过。</strong> Docker 的 <code>internal: true</code> 网络让作业容器<strong>完全没有默认路由</strong>；代理容器是双网卡的（内部网 + 外部网）。Hetzner 的元数据服务（169.254.169.254）从内部网络不可达。这就是 v0.3 的出站设计，用大约 15 行 compose 实现。</li>
+</ul>
+<figure class="diagram" data-mermaid="platzh-0"><svg style="background-color: transparent;" id="platzh-0" xmlns="http://www.w3.org/2000/svg" class="flowchart" viewBox="0 0 1621.453125 318.93475341796875" role="graphics-document document" aria-roledescription="flowchart-v2" width="100%" preserveAspectRatio="xMidYMid meet" data-diagram-id="platzh-0" data-intrinsic-width="1621.453125" data-intrinsic-height="318.93475341796875"><style>#platzh-0{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;font-size:16px;fill:#333;}@keyframes edge-animation-frame{from{stroke-dashoffset:0;}}@keyframes dash{to{stroke-dashoffset:0;}}#platzh-0 .edge-animation-slow{stroke-dasharray:9,5!important;stroke-dashoffset:900;animation:dash 50s linear infinite;stroke-linecap:round;}#platzh-0 .edge-animation-fast{stroke-dasharray:9,5!important;stroke-dashoffset:900;animation:dash 20s linear infinite;stroke-linecap:round;}#platzh-0 .error-icon{fill:#552222;}#platzh-0 .error-text{fill:#552222;stroke:#552222;}#platzh-0 .edge-thickness-normal{stroke-width:1px;}#platzh-0 .edge-thickness-thick{stroke-width:3.5px;}#platzh-0 .edge-pattern-solid{stroke-dasharray:0;}#platzh-0 .edge-thickness-invisible{stroke-width:0;fill:none;}#platzh-0 .edge-pattern-dashed{stroke-dasharray:3;}#platzh-0 .edge-pattern-dotted{stroke-dasharray:2;}#platzh-0 .marker{fill:#333333;stroke:#333333;}#platzh-0 .marker.cross{stroke:#333333;}#platzh-0 svg{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;font-size:16px;}#platzh-0 p{margin:0;}#platzh-0 .label{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;color:#333;}#platzh-0 .cluster-label text{fill:#333;}#platzh-0 .cluster-label span{color:#333;}#platzh-0 .cluster-label span p{background-color:transparent;}#platzh-0 .label text,#platzh-0 span{fill:#333;color:#333;}#platzh-0 .node rect,#platzh-0 .node circle,#platzh-0 .node ellipse,#platzh-0 .node polygon,#platzh-0 .node path{fill:#ECECFF;stroke:#9370DB;stroke-width:1px;}#platzh-0 .rough-node .label text,#platzh-0 .node .label text,#platzh-0 .image-shape .label,#platzh-0 .icon-shape .label{text-anchor:middle;}#platzh-0 .node .katex path{fill:#000;stroke:#000;stroke-width:1px;}#platzh-0 .rough-node .label,#platzh-0 .node .label,#platzh-0 .image-shape .label,#platzh-0 .icon-shape .label{text-align:center;}#platzh-0 .node.clickable{cursor:pointer;}#platzh-0 .root .anchor path{fill:#333333!important;stroke-width:0;stroke:#333333;}#platzh-0 .arrowheadPath{fill:#333333;}#platzh-0 .edgePaths .path{stroke:#333333;stroke-width:1px;}#platzh-0 .flowchart-link{stroke:#333333;fill:none;}#platzh-0 .edgeLabel{background-color:rgba(232,232,232, 0.8);text-align:center;}#platzh-0 .edgeLabel p{background-color:rgba(232,232,232, 0.8);}#platzh-0 .edgeLabel rect{opacity:0.5;background-color:rgba(232,232,232, 0.8);fill:rgba(232,232,232, 0.8);}#platzh-0 .labelBkg{background-color:rgba(232, 232, 232, 0.5);}#platzh-0 .cluster rect{fill:#ffffde;stroke:#aaaa33;stroke-width:1px;}#platzh-0 .cluster text{fill:#333;}#platzh-0 .cluster span{color:#333;}#platzh-0 .node .collapsed-indicator{fill:#aaaa33;stroke:none;opacity:0.6;}#platzh-0 .node .collapsed-separator{stroke:#aaaa33;stroke-width:0.75px;}#platzh-0 div.mermaidTooltip{position:absolute;text-align:center;max-width:200px;padding:2px;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;font-size:12px;background:hsl(80, 100%, 96.2745098039%);border:1px solid #aaaa33;border-radius:2px;pointer-events:none;z-index:100;}#platzh-0 .flowchartTitleText{text-anchor:middle;font-size:18px;fill:#333;}#platzh-0 rect.text{fill:none;stroke-width:0;}#platzh-0 .icon-shape,#platzh-0 .image-shape{background-color:rgba(232,232,232, 0.8);text-align:center;}#platzh-0 .icon-shape p,#platzh-0 .image-shape p{background-color:rgba(232,232,232, 0.8);padding:2px;}#platzh-0 .icon-shape .label rect,#platzh-0 .image-shape .label rect{opacity:0.5;background-color:rgba(232,232,232, 0.8);fill:rgba(232,232,232, 0.8);}#platzh-0 .label-icon{display:inline-block;height:1em;overflow:visible;vertical-align:-0.125em;}#platzh-0 .node .label-icon path{fill:currentColor;stroke:revert;stroke-width:revert;}#platzh-0 .node .neo-node{stroke:#9370DB;}#platzh-0 [data-look="neo"].node rect,#platzh-0 [data-look="neo"].cluster rect,#platzh-0 [data-look="neo"].node polygon{stroke:#9370DB;filter:drop-shadow(1px 2px 2px rgba(185, 185, 185, 1));}#platzh-0 [data-look="neo"].swimlane.cluster rect{filter:none;}#platzh-0 [data-look="neo"].node path{stroke:#9370DB;stroke-width:1px;}#platzh-0 [data-look="neo"].node .outer-path{filter:drop-shadow(1px 2px 2px rgba(185, 185, 185, 1));}#platzh-0 [data-look="neo"].node .neo-line path{stroke:#9370DB;filter:none;}#platzh-0 [data-look="neo"].node circle{stroke:#9370DB;filter:drop-shadow(1px 2px 2px rgba(185, 185, 185, 1));}#platzh-0 [data-look="neo"].node circle .state-start{fill:#000000;}#platzh-0 [data-look="neo"].icon-shape .icon{fill:#9370DB;filter:drop-shadow(1px 2px 2px rgba(185, 185, 185, 1));}#platzh-0 [data-look="neo"].icon-shape .icon-neo path{stroke:#9370DB;filter:drop-shadow(1px 2px 2px rgba(185, 185, 185, 1));}#platzh-0 :root{--mermaid-font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;}</style><g><marker id="platzh-0_flowchart-v2-pointEnd" class="marker flowchart-v2" viewBox="0 0 10 10" refX="5" refY="5" markerUnits="userSpaceOnUse" markerWidth="8" markerHeight="8" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" class="arrowMarkerPath" style="stroke-width: 1; stroke-dasharray: 1, 0;"></path></marker><marker id="platzh-0_flowchart-v2-pointStart" class="marker flowchart-v2" viewBox="0 0 10 10" refX="4.5" refY="5" markerUnits="userSpaceOnUse" markerWidth="8" markerHeight="8" orient="auto"><path d="M 0 5 L 10 10 L 10 0 z" class="arrowMarkerPath" style="stroke-width: 1; stroke-dasharray: 1, 0;"></path></marker><marker id="platzh-0_flowchart-v2-pointEnd-margin" class="marker flowchart-v2" viewBox="0 0 11.5 14" refX="11.5" refY="7" markerUnits="userSpaceOnUse" markerWidth="10.5" markerHeight="14" orient="auto"><path d="M 0 0 L 11.5 7 L 0 14 z" class="arrowMarkerPath" style="stroke-width: 0; stroke-dasharray: 1, 0;"></path></marker><marker id="platzh-0_flowchart-v2-pointStart-margin" class="marker flowchart-v2" viewBox="0 0 11.5 14" refX="1" refY="7" markerUnits="userSpaceOnUse" markerWidth="11.5" markerHeight="14" orient="auto"><polygon points="0,7 11.5,14 11.5,0" class="arrowMarkerPath" style="stroke-width: 0; stroke-dasharray: 1, 0;"></polygon></marker><marker id="platzh-0_flowchart-v2-circleEnd" class="marker flowchart-v2" viewBox="0 0 10 10" refX="11" refY="5" markerUnits="userSpaceOnUse" markerWidth="11" markerHeight="11" orient="auto"><circle cx="5" cy="5" r="5" class="arrowMarkerPath" style="stroke-width: 1; stroke-dasharray: 1, 0;"></circle></marker><marker id="platzh-0_flowchart-v2-circleStart" class="marker flowchart-v2" viewBox="0 0 10 10" refX="-1" refY="5" markerUnits="userSpaceOnUse" markerWidth="11" markerHeight="11" orient="auto"><circle cx="5" cy="5" r="5" class="arrowMarkerPath" style="stroke-width: 1; stroke-dasharray: 1, 0;"></circle></marker><marker id="platzh-0_flowchart-v2-circleEnd-margin" class="marker flowchart-v2" viewBox="0 0 10 10" refY="5" refX="12.25" markerUnits="userSpaceOnUse" markerWidth="14" markerHeight="14" orient="auto"><circle cx="5" cy="5" r="5" class="arrowMarkerPath" style="stroke-width: 0; stroke-dasharray: 1, 0;"></circle></marker><marker id="platzh-0_flowchart-v2-circleStart-margin" class="marker flowchart-v2" viewBox="0 0 10 10" refX="-2" refY="5" markerUnits="userSpaceOnUse" markerWidth="14" markerHeight="14" orient="auto"><circle cx="5" cy="5" r="5" class="arrowMarkerPath" style="stroke-width: 0; stroke-dasharray: 1, 0;"></circle></marker><marker id="platzh-0_flowchart-v2-crossEnd" class="marker cross flowchart-v2" viewBox="0 0 11 11" refX="12" refY="5.2" markerUnits="userSpaceOnUse" markerWidth="11" markerHeight="11" orient="auto"><path d="M 1,1 l 9,9 M 10,1 l -9,9" class="arrowMarkerPath" style="stroke-width: 2; stroke-dasharray: 1, 0;"></path></marker><marker id="platzh-0_flowchart-v2-crossStart" class="marker cross flowchart-v2" viewBox="0 0 11 11" refX="-1" refY="5.2" markerUnits="userSpaceOnUse" markerWidth="11" markerHeight="11" orient="auto"><path d="M 1,1 l 9,9 M 10,1 l -9,9" class="arrowMarkerPath" style="stroke-width: 2; stroke-dasharray: 1, 0;"></path></marker><marker id="platzh-0_flowchart-v2-crossEnd-margin" class="marker cross flowchart-v2" viewBox="0 0 15 15" refX="17.7" refY="7.5" markerUnits="userSpaceOnUse" markerWidth="12" markerHeight="12" orient="auto"><path d="M 1,1 L 14,14 M 1,14 L 14,1" class="arrowMarkerPath" style="stroke-width: 2.5;"></path></marker><marker id="platzh-0_flowchart-v2-crossStart-margin" class="marker cross flowchart-v2" viewBox="0 0 15 15" refX="-3.5" refY="7.5" markerUnits="userSpaceOnUse" markerWidth="12" markerHeight="12" orient="auto"><path d="M 1,1 L 14,14 M 1,14 L 14,1" class="arrowMarkerPath" style="stroke-width: 2.5; stroke-dasharray: 1, 0;"></path></marker><g class="root"><g class="clusters"><g class="cluster" id="platzh-0-vm" data-look="classic"><rect style="" x="8" y="8" width="1235.015625" height="200"></rect><g class="cluster-label" transform="translate(522.9296875, 8)"><foreignObject width="205.15625" height="24"><div xmlns="http://www.w3.org/1999/xhtml" style="display: table-cell; white-space: nowrap; line-height: 1.5;"><span class="nodeLabel"><p>Hetzner CAX21 - 一台虚拟机</p></span></div></foreignObject></g></g><g class="cluster" id="platzh-0-internal" data-look="classic"><rect style="" x="445.234375" y="35" width="310" height="153"></rect><g class="cluster-label" transform="translate(452.765625, 35)"><foreignObject width="294.9375" height="24"><div xmlns="http://www.w3.org/1999/xhtml" style="display: table-cell; white-space: nowrap; line-height: 1.5;"><span class="nodeLabel"><p>docker 网络 egress-internal - 无默认路由</p></span></div></foreignObject></g></g></g><g class="edgePaths"><path d="M730.234,95.548L734.401,94.957C738.568,94.366,746.901,93.183,767.966,92.591C789.031,92,822.828,92,855.958,92C889.089,92,921.552,92,937.784,92L954.016,92" id="platzh-0-L_J_P_0" class="edge-thickness-normal edge-pattern-solid edge-thickness-normal edge-pattern-solid flowchart-link" style=";" data-edge="true" data-et="edge" data-id="L_J_P_0" data-points="W3sieCI6NzMwLjIzNDM3NSwieSI6OTUuNTQ4Mzg3MDk2Nzc0MTl9LHsieCI6NzU1LjIzNDM3NSwieSI6OTJ9LHsieCI6ODU2LjYyNSwieSI6OTJ9LHsieCI6OTU4LjAxNTYyNSwieSI6OTJ9XQ==" data-look="classic" marker-end="url(#platzh-0_flowchart-v2-pointEnd)"></path><path d="M1218.016,92L1222.182,92C1226.349,92,1234.682,92,1251.802,92C1268.922,92,1294.828,92,1320.068,92C1345.307,92,1369.88,92,1382.167,92L1394.453,92" id="platzh-0-L_P_I_0" class="edge-thickness-normal edge-pattern-solid edge-thickness-normal edge-pattern-solid flowchart-link" style=";" data-edge="true" data-et="edge" data-id="L_P_I_0" data-points="W3sieCI6MTIxOC4wMTU2MjUsInkiOjkyfSx7IngiOjEyNDMuMDE1NjI1LCJ5Ijo5Mn0seyJ4IjoxMzIwLjczNDM3NSwieSI6OTJ9LHsieCI6MTM5OC40NTMxMjUsInkiOjkyfV0=" data-look="classic" marker-end="url(#platzh-0_flowchart-v2-pointEnd)"></path><path d="M293,114L305.686,114C318.372,114,343.745,114,369.117,114C394.49,114,419.862,114,436.048,114C452.234,114,459.234,114,462.734,114L466.234,114" id="platzh-0-L_B_J_0" class="edge-thickness-normal edge-pattern-solid edge-thickness-normal edge-pattern-solid flowchart-link" style=";" data-edge="true" data-et="edge" data-id="L_B_J_0" data-points="W3sieCI6MjkzLCJ5IjoxMTR9LHsieCI6MzY5LjExNzE4NzUsInkiOjExNH0seyJ4Ijo0NDUuMjM0Mzc1LCJ5IjoxMTR9LHsieCI6NDcwLjIzNDM3NSwieSI6MTE0fV0=" data-look="classic" marker-end="url(#platzh-0_flowchart-v2-pointEnd)"></path><path d="M730.234,136.645L734.401,137.371C738.568,138.097,746.901,139.548,767.966,140.274C789.031,141,822.828,141,871.174,159.479C919.52,177.958,982.414,214.915,1013.862,233.394L1045.309,251.873" id="platzh-0-L_J_S3_0" class="edge-thickness-normal edge-pattern-solid edge-thickness-normal edge-pattern-solid flowchart-link" style=";" data-edge="true" data-et="edge" data-id="L_J_S3_0" data-points="W3sieCI6NzMwLjIzNDM3NSwieSI6MTM2LjY0NTE2MTI5MDMyMjZ9LHsieCI6NzU1LjIzNDM3NSwieSI6MTQxfSx7IngiOjg1Ni42MjUsInkiOjE0MX0seyJ4IjoxMDQ4Ljc1NzgxMjUsInkiOjI1My44OTkwOTg3ODM2NTd9XQ==" data-look="classic" marker-end="url(#platzh-0_flowchart-v2-pointEnd)"></path></g><g class="edgeLabels"><g class="edgeLabel" transform="translate(856.625, 92)"><g class="label" data-id="L_J_P_0" transform="translate(-76.390625, -12)"><foreignObject width="152.78125" height="24"><div xmlns="http://www.w3.org/1999/xhtml" class="labelBkg" style="display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 200px; text-align: center;"><span class="edgeLabel"><p>唯一出口: proxy:3128</p></span></div></foreignObject></g></g><g class="edgeLabel" transform="translate(1320.734375, 92)"><g class="label" data-id="L_P_I_0" transform="translate(-52.71875, -12)"><foreignObject width="105.4375" height="24"><div xmlns="http://www.w3.org/1999/xhtml" class="labelBkg" style="display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 200px; text-align: center;"><span class="edgeLabel"><p>80/443 白名单</p></span></div></foreignObject></g></g><g class="edgeLabel" transform="translate(369.1171875, 114)"><g class="label" data-id="L_B_J_0" transform="translate(-51.1171875, -12)"><foreignObject width="102.234375" height="24"><div xmlns="http://www.w3.org/1999/xhtml" class="labelBkg" style="display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 200px; text-align: center;"><span class="edgeLabel"><p>docker socket</p></span></div></foreignObject></g></g><g class="edgeLabel" transform="translate(856.625, 141)"><g class="label" data-id="L_J_S3_0" transform="translate(-15.8828125, -12)"><foreignObject width="31.765625" height="24"><div xmlns="http://www.w3.org/1999/xhtml" class="labelBkg" style="display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 200px; text-align: center;"><span class="edgeLabel"><p>产物</p></span></div></foreignObject></g></g></g><g class="nodes"><g class="node default" id="platzh-0-flowchart-J-0" data-look="classic" transform="translate(600.234375, 114)"><rect class="basic label-container" style="" x="-130" y="-39" width="260" height="78"></rect><g class="label" style="" transform="translate(-100, -24)"><rect></rect><foreignObject width="200" height="48"><div xmlns="http://www.w3.org/1999/xhtml" style="display: table; white-space: break-spaces; line-height: 1.5; max-width: 200px; text-align: center; width: 200px;"><span class="nodeLabel"><p>每个签证包一个作业容器 - 5GB 镜像, 已缓存</p></span></div></foreignObject></g></g><g class="node default" id="platzh-0-flowchart-P-1" data-look="classic" transform="translate(1088.015625, 92)"><rect class="basic label-container" style="" x="-130" y="-39" width="260" height="78"></rect><g class="label" style="" transform="translate(-100, -24)"><rect></rect><foreignObject width="200" height="48"><div xmlns="http://www.w3.org/1999/xhtml" style="display: table; white-space: break-spaces; line-height: 1.5; max-width: 200px; text-align: center; width: 200px;"><span class="nodeLabel"><p>出站代理容器 - 双网卡, 白名单与审计</p></span></div></foreignObject></g></g><g class="node default" id="platzh-0-flowchart-B-2" data-look="classic" transform="translate(163, 114)"><rect class="basic label-container" style="" x="-130" y="-39" width="260" height="78"></rect><g class="label" style="" transform="translate(-100, -24)"><rect></rect><foreignObject width="200" height="48"><div xmlns="http://www.w3.org/1999/xhtml" style="display: table; white-space: break-spaces; line-height: 1.5; max-width: 200px; text-align: center; width: 200px;"><span class="nodeLabel"><p>后端控制面 - 队列与作业运行器</p></span></div></foreignObject></g></g><g class="node default" id="platzh-0-flowchart-I-6" data-look="classic" transform="translate(1505.953125, 92)"><path d="M0,15.808823529411764 a107.5,15.808823529411764 0,0,0 215,0 a107.5,15.808823529411764 0,0,0 -215,0 l0,78.80882352941177 a107.5,15.808823529411764 0,0,0 215,0 l0,-78.80882352941177" class="basic label-container outer-path" style="" transform="translate(-107.5, -55.21323529411765)"></path><g class="label" style="" transform="translate(-100, -14)"><rect></rect><foreignObject width="200" height="48"><div xmlns="http://www.w3.org/1999/xhtml" style="display: table; white-space: break-spaces; line-height: 1.5; max-width: 200px; text-align: center; width: 200px;"><span class="nodeLabel"><p>互联网: LLM API, 使馆与 BLS 站点</p></span></div></foreignObject></g></g><g class="node default" id="platzh-0-flowchart-S3-10" data-look="classic" transform="translate(1088.015625, 276.96736907958984)"><path d="M0,9.644913627639156 a39.2578125,9.644913627639156 0,0,0 78.515625,0 a39.2578125,9.644913627639156 0,0,0 -78.515625,0 l0,48.644913627639156 a39.2578125,9.644913627639156 0,0,0 78.515625,0 l0,-48.644913627639156" class="basic label-container outer-path" style="" transform="translate(-39.2578125, -33.96737044145873)"></path><g class="label" style="" transform="translate(-31.7578125, -2)"><rect></rect><foreignObject width="63.515625" height="24"><div xmlns="http://www.w3.org/1999/xhtml" style="display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 200px; text-align: center;"><span class="nodeLabel"><p>对象存储</p></span></div></foreignObject></g></g></g></g></g><defs><filter id="platzh-0-drop-shadow" height="130%" width="130%"><feDropShadow dx="4" dy="4" stdDeviation="0" flood-opacity="0.06" flood-color="#000000"></feDropShadow></filter></defs><defs><filter id="platzh-0-drop-shadow-small" height="150%" width="150%"><feDropShadow dx="2" dy="2" stdDeviation="0" flood-opacity="0.06" flood-color="#000000"></feDropShadow></filter></defs></svg></figure>
+<ul>
+<li><strong>价格 [V]：</strong> Hetzner <strong>CAX21（4 vCPU Ampere arm64，8 GB，80 GB 盘，20 TB 流量）= €7.99/月 + €0.50 IPv4 ≈ €8.50（约 $10）</strong>。已在 arm64 验证过的镜像<strong>原样就能跑</strong> —— 不用重建 amd64，而且与创始人的 Apple Silicon 开发环路一致。amd64 替代品：CX33（4 vCPU/8 GB）€6.49+€0.50。再上一档 CAX31（8 vCPU/16 GB）€15.99。（2026 年 4 月后的价格；成本优化机型限 EU 与新加坡区域。）AWS 对照 [T，高]：t4g.large（2 vCPU/8 GB）按需约 $49/月，Lightsail 8 GB 约 $44/月，外加 $0.09/GB 出流量 —— <strong>配置更差，价格是 Hetzner 的 4–6 倍</strong>；只有当整套技术栈第一天就必须在 AWS 上时才选 EC2。</li>
+<li><strong>运维负担：低，且熟悉。</strong> 一台机器、compose、一个 systemd unit、unattended-upgrades。诚实地说说弱点：(a) 隔离靠的是共享的 Docker daemon —— 一次容器逃逸就拿下整台虚拟机，如果控制面也同机就连控制面一起（便宜的加固手段：给作业容器用 <code>runsc</code>/gVisor 运行时，arm64 上可用 [T，中高]；no-new-privileges、非 root、seccomp）；(b) 容量是固定的 —— 若按最坏情况 60 分钟一个作业算，单并发下每天 30 个签证包超出一台机器一天的能力，所以运行器需要并发 2 或者第二台虚拟机；(c) 内核与 docker 的补丁得自己打。</li>
+</ul>
+<h4 id="2-flyio-machines" class="hd">2. Fly.io Machines<a class="hd__anchor" href="#2-flyio-machines" aria-label="本节链接">#</a></h4>
+<ul>
+<li><strong>单作业启停契合度：优秀 —— 这就是该产品的设计初衷。</strong> Machines REST API 负责创建/启动/停止/销毁 Firecracker microVM；<strong>通过 Machines API 创建的应用默认不分配公网 IP</strong> [V]。Hermes 镜像的入口已经支持 Fly 的非 PID-1 模式（FACTS），因此原样就能跑。每虚拟机（而非共享内核）的隔离，相对方案 1 是严格的升级。</li>
+<li><strong>5 GB 镜像：用「停机实例池」模式解决。</strong> 这是 Fly 自己的建议：预先创建 Machine 并让它们保持<strong>停机</strong>状态（rootfs $0.15/GB-月 → 池中每台 5 GB 实例 <strong>$0.75/月</strong> [V]），作业到达时 <code>start</code>（几秒，无需拉取），产物上传完成后 <code>stop</code>；发版时用 <code>machine update</code> 重做整个池。从镜像仓库冷 <code>create</code> 一个 5 GB 镜像可能要几分钟，且随宿主机缓存状况波动 —— 所以「停机池」是必须，不是可选。</li>
+<li><strong>出站管控：短板所在。</strong> Fly <strong>没有平台级的出站防火墙，也无法删除默认路由</strong>；每台机器都有出站 NAT [V 支持]。可用的缓解手段：6PN 私有网络接到一台代理机 + 由（可信的、创始人自建的）入口脚本在降权到非 root agent 用户之前装好的<strong>客户机内 nftables</strong>、HTTP(S)_PROXY 环境变量、如果使馆/BLS 站点需要 IP 稳定则加 $3.60/月的静态出口 IP [V]。这是在<em>不可信客户机内部</em>执行的管控 —— 明显弱于「没有路由」的网络。作为过渡姿态可以接受；在严格的安全评审面前站不住。</li>
+<li><strong>价格 [V]：</strong> 按秒计费，只在运行时计。performance-2x/4GB = $0.00002484/秒 → <strong>每个 10 分钟作业 $0.015</strong>；shared-cpu-4x/8GB 约 $0.007 [T，中]。每天 30 个签证包约 <strong>$5–15/月算力 + 双机停机池约 $1.50</strong> + 出流量 $0.02/GB（北美/欧洲）。空闲成本近乎为零。</li>
+<li><strong>运维负担：低。</strong> 没有 VPC/IAM 的管线活；后端里加一个小的池管理循环（创建/启动/停止/回收 + 到硬期限就销毁）。已知的长尾风险：偶发的宿主容量/调度抖动 [T，中] —— 用硬性挂钟期限 + 换新机器重试的策略即可覆盖。</li>
+</ul>
+<h4 id="3-railway-render-排除" class="hd">3. Railway / Render —— <strong>排除</strong><a class="hd__anchor" href="#3-railway-render-排除" aria-label="本节链接">#</a></h4>
+<p>完全没有出站网络原语（无法移除默认路由，没有 VPC/防火墙控制）—— 仅此一条就不满足 v0.3 的硬要求。两家也都没有一等公民的「按作业起一个即抛容器，且镜像本地缓存」API；它们的模型是长驻 worker + cron（Render 的一次性作业复用服务的镜像，但仍然不给网络控制）[V]。这里没有任何一点能在价格上赢方案 1，或在原语契合度上赢方案 2。不值得进一步分析。</p>
+<h4 id="4-gcp-cloud-run-jobs" class="hd">4. GCP Cloud Run Jobs<a class="hd__anchor" href="#4-gcp-cloud-run-jobs" aria-label="本节链接">#</a></h4>
+<ul>
+<li><strong>单作业启停契合度：良好。</strong> 每个签证包一次 <code>jobs.run</code>；任务超时最长可到 <strong>168 小时</strong>（默认 10 分钟 —— 记得调高）；容器启动期限 4 分钟（够用）[V]。</li>
+<li><strong>5 GB 镜像：设计上就不是问题。</strong> 镜像大小 <strong>「没有直接限制」</strong>，而且冷启动<strong>与镜像大小无关</strong>（Cloud Run 从它在部署时留的副本流式加载）[V]。这是几家超大规模云里对大镜像最友好的。<strong>需要先扫清的阻碍：</strong> 镜像清单<strong>必须包含 linux/amd64</strong> [V] —— 只有 arm64 的镜像需要多架构重建，而且 <code>nousresearch/hermes-agent</code> 基础镜像必须存在 amd64 版本（待核实）。可写文件系统是<strong>内存盘</strong>（算进 32 GiB 上限）—— 在 8–16 GiB 内存下，工作区几百 MB 的写入没问题 [V]。</li>
+<li><strong>出站管控：确实很强。</strong> Direct VPC egress 设为 <code>all-traffic</code> + <strong>不配 Cloud NAT</strong> = 没有互联网路由；VPC 防火墙只放行 proxy-VM:3128。平台级执行，等价于 v0.3 的设计 [T，高]。</li>
+<li><strong>价格 [T，高]：</strong> 一档区域：4 vCPU × $0.000024/vCPU-秒 + 8 GiB × $0.0000025/GiB-秒 → <strong>每个 10 分钟作业约 $0.07</strong>；每天 30 个约 $63/月，另加代理用的 e2-micro 约 $7 与 Artifact Registry 约 $0.50。注意 Cloud Run 的 vCPU（$0.0864/vCPU-小时）约为 Fargate 的两倍。</li>
+<li><strong>运维负担：中等。</strong> VPC + 防火墙 + AR + IAM，外加 amd64 重建与 CI。比 AWS 少些管线活，比 Fly/Hetzner 多。</li>
+</ul>
+<h4 id="5-aws-ecs-fargate" class="hd">5. AWS ECS Fargate<a class="hd__anchor" href="#5-aws-ecs-fargate" aria-label="本节链接">#</a></h4>
+<ul>
+<li><strong>单作业启停契合度：良好。</strong> 每个签证包一次 <code>RunTask</code>；原生跑 arm64（Graviton，便宜 20%）[V] —— 不用重建。</li>
+<li><strong>5 GB 镜像：痛点。</strong> <strong>任务之间没有镜像缓存 —— 每个任务都要从 ECR 拉完整镜像</strong> [V]；5 GB 大约要拉 3–7 分钟，而且<strong>计费从开始拉取时就起算</strong> [T，高]。在 CI 里构建的 SOCI 惰性加载索引能明显缩短「拉取到启动」的时间（大镜像上报称能降 50–60%）[V]。在 60 分钟预算内可以忍受；但在作业时延上永远比方案 1/2/4 差。</li>
+<li><strong>出站管控：优秀且标准。</strong> 任务 ENI 放在私有子网里，<strong>不配 NAT 网关、没有 IGW 路由</strong> → 结构上就没有默认路由；安全组只放行 proxy:3128。元数据只能以任务作用域的 ECS 端点访问（相对 EC2 凭证而言无害）[T，高]。无 NAT 设计的隐藏成本：镜像拉取需要 VPC 端点（ecr.api、ecr.dkr 各约 $7.3/月 + 免费的 S3 网关端点），或者走代理拉取 —— 固定预算按<strong>约 $15–25/月</strong>算 [T，中高]。</li>
+<li><strong>价格 [V]：</strong> arm64 $0.032384/vCPU-小时 + $0.003556/GB-小时 → 4 vCPU/8 GB 约 $0.158/小时 → <strong>每个 10 分钟作业约 $0.026</strong>（外加拉取时间）；每天 30 个约 $24/月，另加端点与代理的固定成本。20 GB 临时存储免费 [V]。</li>
+<li><strong>运维负担：对单人来说是所有认真候选里最高的</strong> —— VPC/子网/安全组/IAM/ECR/SOCI-CI/任务定义。当安全评审要求 AWS 原生、可审计的隔离时，这份代价才值得付。</li>
+</ul>
+<h4 id="6-azure-container-apps-jobs-对本团队排除" class="hd">6. Azure Container Apps Jobs —— <strong>对本团队排除</strong><a class="hd__anchor" href="#6-azure-container-apps-jobs-对本团队排除" aria-label="本节链接">#</a></h4>
+<p>手动触发的作业是有的，也只在运行时计费（4 vCPU/8 GiB 的 10 分钟作业约 $0.072 [T，中]）。但是：镜像每次执行都要拉，节点缓存只是尽力而为 [V]；硬性的出站管控（UDR）需要 workload-profiles 环境，而且现实里还要 Azure Firewall（约 $290/月）或自管 NVA [T，中]；再加上它带来第三朵云的学习曲线，相对方案 4/5 却没有任何独有优势。跳过。</p>
+<h4 id="7-kubernetes-mvp-阶段排除但记为最终的规模形态" class="hd">7. Kubernetes —— <strong>MVP 阶段排除；但记为最终的规模形态</strong><a class="hd__anchor" href="#7-kubernetes-mvp-阶段排除但记为最终的规模形态" aria-label="本节链接">#</a></h4>
+<p>K8s Job + NetworkPolicy（默认拒绝）+ 节点缓存镜像 + gVisor/Kata，在架构上是长期<em>正确</em>的原语 —— 但 EKS/GKE 光控制面就约 $73–75/月（还没算节点），而且对单人创始人来说运维面积远大于其他方案。在每天约 50–100 个作业或第二位工程师到位之前不要考虑。如果单机运行器不够用了，2–3 台 Hetzner 节点上的 k3s 集群（约 €25–35/月）是便宜的中间一步。</p>
+<h3 id="a3-对比矩阵" class="hd">A.3 对比矩阵<a class="hd__anchor" href="#a3-对比矩阵" aria-label="本节链接">#</a></h3>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th></th>
+<th>单作业启停</th>
+<th>5 GB 镜像</th>
+<th>出站「无默认路由」</th>
+<th>每个 10 分钟作业约 $（4c/8GB）</th>
+<th>固定 $/月（MVP）</th>
+<th>运维（单人）</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Hetzner 虚拟机 + compose</strong></td>
+<td>每作业 docker run</td>
+<td>缓存在磁盘，每作业 0</td>
+<td><strong>原生（内部网络）</strong></td>
+<td>约 $0（包月）</td>
+<td><strong>约 $10</strong></td>
+<td><strong>最低</strong></td>
+</tr>
+<tr>
+<td><strong>Fly Machines</strong></td>
+<td>原生 API，microVM</td>
+<td>停机池，每机 $0.75/月</td>
+<td><strong>平台无防火墙</strong> —— 只有客户机内 nftables</td>
+<td>$0.007–0.03</td>
+<td>约 $2–5</td>
+<td>低</td>
+</tr>
+<tr>
+<td>Railway/Render</td>
+<td>弱</td>
+<td>尚可</td>
+<td><strong>无 —— 不合格</strong></td>
+<td>—</td>
+<td>—</td>
+<td>低</td>
+</tr>
+<tr>
+<td><strong>Cloud Run Jobs</strong></td>
+<td>jobs.run</td>
+<td>流式加载，与大小无关；<strong>需重建 amd64</strong></td>
+<td>VPC egress + 无 NAT（强）</td>
+<td>约 $0.07</td>
+<td>约 $8</td>
+<td>中等</td>
+</tr>
+<tr>
+<td><strong>ECS Fargate（arm64）</strong></td>
+<td>RunTask</td>
+<td><strong>每作业全量拉取</strong>；SOCI 可缓解</td>
+<td>私有子网、无 NAT（强）</td>
+<td>约 $0.03 + 拉取</td>
+<td>约 $15–25</td>
+<td>高</td>
+</tr>
+<tr>
+<td>ACA Jobs</td>
+<td>手动作业</td>
+<td>每作业拉取</td>
+<td>需要 WP 环境 + 防火墙（$$$）</td>
+<td>约 $0.07</td>
+<td>高</td>
+<td>高</td>
+</tr>
+<tr>
+<td>K8s</td>
+<td>Job（理想）</td>
+<td>节点缓存（理想）</td>
+<td>NetworkPolicy（理想）</td>
+<td>不适用</td>
+<td>$75 + 节点</td>
+<td>最高</td>
+</tr>
+</tbody></table>
+</div>
+<h3 id="a4-建议按优先级" class="hd">A.4 建议（按优先级）<a class="hd__anchor" href="#a4-建议按优先级" aria-label="本节链接">#</a></h3>
+<p><strong>MVP（当下）：Hetzner CAX21 + docker compose —— 约 €8.50/月。</strong> 它是唯一同时做到以下几点的方案：原样运行 arm64 镜像、把每作业镜像成本彻底消掉、用已经存在的 compose 文件<em>精确</em>实现 v0.3 的出站边界（内部网络 + 双网卡代理），并且在每天 15–30 个签证包以内的任何量级上都只花约 $10/月的固定费用。用便宜手段加固：作业容器用 gVisor 运行时、非 root agent 用户、每作业暂存目录在回收时擦除、后端强制挂钟期限与按产物判定完成。把有记录的隔离折衷（共享 daemon）作为 MVP 的取舍写进 ADR 接受下来。<strong>关于规格的说明：</strong> 第三部分把它修订为 CAX31（8 vCPU / 16 GB），好让 conductor、出站代理和 Docker daemon 能与一个满配的作业容器共享这台机器 —— CAX21 只够作业容器本身。</p>
+<p><strong>扩容（下一步）：Fly.io Machines</strong> —— 一池预创建的停机实例（rootfs $0.15/GB-月），<code>start</code> → 运行 → 上传产物 → <code>stop</code>，发版时销毁重建。单作业原语契合度最好，隔离升级到每虚拟机，空闲成本近零，镜像原样就能跑（已支持非 PID-1 模式）。<strong>要明确地把这条注意事项带下去：</strong> 它的出站管控在客户机内部，不是平台层的。</p>
+<p><strong>规模化后的严格边界备选：Graviton 上的 ECS Fargate（配 SOCI）</strong> —— 当客户或安全评审要求平台级强制的「无路由」网络与 AWS 原生审计时选它，并接受拉取时延与 AWS 的管线税。（Cloud Run Jobs 是 GCP 上的对应答案，在镜像处理上胜过 Fargate，但需要重建 amd64 —— 把它列入候选前请先确认 Hermes 基础镜像有 amd64 版本。）</p>
+<p><strong>迁移触发条件（虚拟机 → Fly/Fargate）：</strong></p>
+<ol>
+<li>高峰期队列 p95 等待 &gt; 30 分钟，或持续需要 &gt;2 并发作业（第一反应：升一档配置／加第二台虚拟机；当虚拟机池管理本身变成一份工作时再迁移）。</li>
+<li>第一个 B2B/付费客户的评审要求比「共享 daemon」更强的隔离 → 视出站要求被追问得多紧，选 Fly（microVM）或 Fargate（microVM + 网络边界）。</li>
+<li>每天 &gt;50 个签证包，或单机上按最坏时长计算的利用率 &gt;60%。</li>
+<li>出现多区域执行的需求（面向中国邻近区域用户的时延）—— 按作业计费的平台白送多区域。</li>
+<li>第二位工程师加入 → AWS 的运维税开始付得起；Fargate/K8s 进入视野。</li>
+</ol>
+<p><strong>资料来源：</strong><a href="https://fly.io/docs/about/pricing/">Fly.io 资源价格</a> · <a href="https://fly.io/docs/machines/api/working-with-machines-api/">Fly Machines API</a> · <a href="https://fly.io/docs/networking/private-networking/">Fly 私有网络</a> · <a href="https://docs.cloud.google.com/run/quotas">Cloud Run 配额</a> · <a href="https://docs.cloud.google.com/run/docs/container-contract">Cloud Run 容器契约</a> · <a href="https://docs.cloud.google.com/run/docs/configuring/task-timeout">Cloud Run 任务超时</a> · <a href="https://github.com/ahmetb/cloud-run-faq">ahmetb 的 Cloud Run FAQ（镜像大小与冷启动）</a> · <a href="https://www.bitdoze.com/hetzner-cloud-cost-optimized-plans/">Hetzner 2026 价格拆解</a> · <a href="https://northflank.com/blog/hetzner-cloud-server-price-increases">Hetzner 涨价分析</a> · <a href="https://aws.amazon.com/fargate/pricing/">AWS Fargate 价格</a> · <a href="https://aws.amazon.com/blogs/containers/under-the-hood-lazy-loading-container-images-with-seekable-oci-and-aws-fargate">AWS SOCI 惰性加载</a> · <a href="https://learn.microsoft.com/en-us/azure/container-apps/jobs">Azure Container Apps Jobs</a> · <a href="https://azure.microsoft.com/en-us/pricing/details/container-apps/">ACA 价格</a></p>
+<h2 id="第二部分-可信区技术栈前端-api-postgres-认证-存储-实时推送" class="hd">第二部分 —— 可信区技术栈（前端 · API · Postgres · 认证 · 存储 · 实时推送）<a class="hd__anchor" href="#第二部分-可信区技术栈前端-api-postgres-认证-存储-实时推送" aria-label="本节链接">#</a></h2>
+<h3 id="b0-立论这个切分是架构性的不是偶然的" class="hd">B.0 立论：这个切分是架构性的，不是偶然的<a class="hd__anchor" href="#b0-立论这个切分是架构性的不是偶然的" aria-label="本节链接">#</a></h3>
+<p>一个签证包作业的挂钟时间约 10 分钟，其中有几十次串行 LLM 调用、Docker、LibreOffice 和实时的网页出站。本次比较里没有任何 serverless 平台能承载它：Vercel 函数的上限是约 10–60 秒（Hobby）／约 300 秒，用 Fluid compute（Pro）最多约 800 秒 —— 勉强够一次典型运行，离 60 分钟最坏情况的预算差得远 —— 而且 serverless 没有 Docker socket、没有常驻定时器，也没有 agent 面所需的、基于产物做完成判定的文件系统守候。因此每个候选方案都按<strong>可信控制面（本节研究）+ 独立的 Docker 虚拟机 agent 面（固定支出，约 $25–40/月 的 Hetzner/OVH 档次，是方案 1–5 的公共成本）</strong> 来评估。</p>
+<p>最干净的集成模式 —— 也应当作为一条选型标准 —— 是「<strong>数据库即接口，虚拟机只出不进</strong>」：</p>
+<figure class="diagram" data-mermaid="platzh-1"><svg style="background-color: transparent;" id="platzh-1" xmlns="http://www.w3.org/2000/svg" class="flowchart" viewBox="0 0.000003814697265625 1195 603.9786987304688" role="graphics-document document" aria-roledescription="flowchart-v2" width="100%" preserveAspectRatio="xMidYMid meet" data-diagram-id="platzh-1" data-intrinsic-width="1195" data-intrinsic-height="603.9786987304688"><style>#platzh-1{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;font-size:16px;fill:#333;}@keyframes edge-animation-frame{from{stroke-dashoffset:0;}}@keyframes dash{to{stroke-dashoffset:0;}}#platzh-1 .edge-animation-slow{stroke-dasharray:9,5!important;stroke-dashoffset:900;animation:dash 50s linear infinite;stroke-linecap:round;}#platzh-1 .edge-animation-fast{stroke-dasharray:9,5!important;stroke-dashoffset:900;animation:dash 20s linear infinite;stroke-linecap:round;}#platzh-1 .error-icon{fill:#552222;}#platzh-1 .error-text{fill:#552222;stroke:#552222;}#platzh-1 .edge-thickness-normal{stroke-width:1px;}#platzh-1 .edge-thickness-thick{stroke-width:3.5px;}#platzh-1 .edge-pattern-solid{stroke-dasharray:0;}#platzh-1 .edge-thickness-invisible{stroke-width:0;fill:none;}#platzh-1 .edge-pattern-dashed{stroke-dasharray:3;}#platzh-1 .edge-pattern-dotted{stroke-dasharray:2;}#platzh-1 .marker{fill:#333333;stroke:#333333;}#platzh-1 .marker.cross{stroke:#333333;}#platzh-1 svg{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;font-size:16px;}#platzh-1 p{margin:0;}#platzh-1 .label{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;color:#333;}#platzh-1 .cluster-label text{fill:#333;}#platzh-1 .cluster-label span{color:#333;}#platzh-1 .cluster-label span p{background-color:transparent;}#platzh-1 .label text,#platzh-1 span{fill:#333;color:#333;}#platzh-1 .node rect,#platzh-1 .node circle,#platzh-1 .node ellipse,#platzh-1 .node polygon,#platzh-1 .node path{fill:#ECECFF;stroke:#9370DB;stroke-width:1px;}#platzh-1 .rough-node .label text,#platzh-1 .node .label text,#platzh-1 .image-shape .label,#platzh-1 .icon-shape .label{text-anchor:middle;}#platzh-1 .node .katex path{fill:#000;stroke:#000;stroke-width:1px;}#platzh-1 .rough-node .label,#platzh-1 .node .label,#platzh-1 .image-shape .label,#platzh-1 .icon-shape .label{text-align:center;}#platzh-1 .node.clickable{cursor:pointer;}#platzh-1 .root .anchor path{fill:#333333!important;stroke-width:0;stroke:#333333;}#platzh-1 .arrowheadPath{fill:#333333;}#platzh-1 .edgePaths .path{stroke:#333333;stroke-width:1px;}#platzh-1 .flowchart-link{stroke:#333333;fill:none;}#platzh-1 .edgeLabel{background-color:rgba(232,232,232, 0.8);text-align:center;}#platzh-1 .edgeLabel p{background-color:rgba(232,232,232, 0.8);}#platzh-1 .edgeLabel rect{opacity:0.5;background-color:rgba(232,232,232, 0.8);fill:rgba(232,232,232, 0.8);}#platzh-1 .labelBkg{background-color:rgba(232, 232, 232, 0.5);}#platzh-1 .cluster rect{fill:#ffffde;stroke:#aaaa33;stroke-width:1px;}#platzh-1 .cluster text{fill:#333;}#platzh-1 .cluster span{color:#333;}#platzh-1 .node .collapsed-indicator{fill:#aaaa33;stroke:none;opacity:0.6;}#platzh-1 .node .collapsed-separator{stroke:#aaaa33;stroke-width:0.75px;}#platzh-1 div.mermaidTooltip{position:absolute;text-align:center;max-width:200px;padding:2px;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;font-size:12px;background:hsl(80, 100%, 96.2745098039%);border:1px solid #aaaa33;border-radius:2px;pointer-events:none;z-index:100;}#platzh-1 .flowchartTitleText{text-anchor:middle;font-size:18px;fill:#333;}#platzh-1 rect.text{fill:none;stroke-width:0;}#platzh-1 .icon-shape,#platzh-1 .image-shape{background-color:rgba(232,232,232, 0.8);text-align:center;}#platzh-1 .icon-shape p,#platzh-1 .image-shape p{background-color:rgba(232,232,232, 0.8);padding:2px;}#platzh-1 .icon-shape .label rect,#platzh-1 .image-shape .label rect{opacity:0.5;background-color:rgba(232,232,232, 0.8);fill:rgba(232,232,232, 0.8);}#platzh-1 .label-icon{display:inline-block;height:1em;overflow:visible;vertical-align:-0.125em;}#platzh-1 .node .label-icon path{fill:currentColor;stroke:revert;stroke-width:revert;}#platzh-1 .node .neo-node{stroke:#9370DB;}#platzh-1 [data-look="neo"].node rect,#platzh-1 [data-look="neo"].cluster rect,#platzh-1 [data-look="neo"].node polygon{stroke:#9370DB;filter:drop-shadow(1px 2px 2px rgba(185, 185, 185, 1));}#platzh-1 [data-look="neo"].swimlane.cluster rect{filter:none;}#platzh-1 [data-look="neo"].node path{stroke:#9370DB;stroke-width:1px;}#platzh-1 [data-look="neo"].node .outer-path{filter:drop-shadow(1px 2px 2px rgba(185, 185, 185, 1));}#platzh-1 [data-look="neo"].node .neo-line path{stroke:#9370DB;filter:none;}#platzh-1 [data-look="neo"].node circle{stroke:#9370DB;filter:drop-shadow(1px 2px 2px rgba(185, 185, 185, 1));}#platzh-1 [data-look="neo"].node circle .state-start{fill:#000000;}#platzh-1 [data-look="neo"].icon-shape .icon{fill:#9370DB;filter:drop-shadow(1px 2px 2px rgba(185, 185, 185, 1));}#platzh-1 [data-look="neo"].icon-shape .icon-neo path{stroke:#9370DB;filter:drop-shadow(1px 2px 2px rgba(185, 185, 185, 1));}#platzh-1 :root{--mermaid-font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;}</style><g><marker id="platzh-1_flowchart-v2-pointEnd" class="marker flowchart-v2" viewBox="0 0 10 10" refX="5" refY="5" markerUnits="userSpaceOnUse" markerWidth="8" markerHeight="8" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" class="arrowMarkerPath" style="stroke-width: 1; stroke-dasharray: 1, 0;"></path></marker><marker id="platzh-1_flowchart-v2-pointStart" class="marker flowchart-v2" viewBox="0 0 10 10" refX="4.5" refY="5" markerUnits="userSpaceOnUse" markerWidth="8" markerHeight="8" orient="auto"><path d="M 0 5 L 10 10 L 10 0 z" class="arrowMarkerPath" style="stroke-width: 1; stroke-dasharray: 1, 0;"></path></marker><marker id="platzh-1_flowchart-v2-pointEnd-margin" class="marker flowchart-v2" viewBox="0 0 11.5 14" refX="11.5" refY="7" markerUnits="userSpaceOnUse" markerWidth="10.5" markerHeight="14" orient="auto"><path d="M 0 0 L 11.5 7 L 0 14 z" class="arrowMarkerPath" style="stroke-width: 0; stroke-dasharray: 1, 0;"></path></marker><marker id="platzh-1_flowchart-v2-pointStart-margin" class="marker flowchart-v2" viewBox="0 0 11.5 14" refX="1" refY="7" markerUnits="userSpaceOnUse" markerWidth="11.5" markerHeight="14" orient="auto"><polygon points="0,7 11.5,14 11.5,0" class="arrowMarkerPath" style="stroke-width: 0; stroke-dasharray: 1, 0;"></polygon></marker><marker id="platzh-1_flowchart-v2-circleEnd" class="marker flowchart-v2" viewBox="0 0 10 10" refX="11" refY="5" markerUnits="userSpaceOnUse" markerWidth="11" markerHeight="11" orient="auto"><circle cx="5" cy="5" r="5" class="arrowMarkerPath" style="stroke-width: 1; stroke-dasharray: 1, 0;"></circle></marker><marker id="platzh-1_flowchart-v2-circleStart" class="marker flowchart-v2" viewBox="0 0 10 10" refX="-1" refY="5" markerUnits="userSpaceOnUse" markerWidth="11" markerHeight="11" orient="auto"><circle cx="5" cy="5" r="5" class="arrowMarkerPath" style="stroke-width: 1; stroke-dasharray: 1, 0;"></circle></marker><marker id="platzh-1_flowchart-v2-circleEnd-margin" class="marker flowchart-v2" viewBox="0 0 10 10" refY="5" refX="12.25" markerUnits="userSpaceOnUse" markerWidth="14" markerHeight="14" orient="auto"><circle cx="5" cy="5" r="5" class="arrowMarkerPath" style="stroke-width: 0; stroke-dasharray: 1, 0;"></circle></marker><marker id="platzh-1_flowchart-v2-circleStart-margin" class="marker flowchart-v2" viewBox="0 0 10 10" refX="-2" refY="5" markerUnits="userSpaceOnUse" markerWidth="14" markerHeight="14" orient="auto"><circle cx="5" cy="5" r="5" class="arrowMarkerPath" style="stroke-width: 0; stroke-dasharray: 1, 0;"></circle></marker><marker id="platzh-1_flowchart-v2-crossEnd" class="marker cross flowchart-v2" viewBox="0 0 11 11" refX="12" refY="5.2" markerUnits="userSpaceOnUse" markerWidth="11" markerHeight="11" orient="auto"><path d="M 1,1 l 9,9 M 10,1 l -9,9" class="arrowMarkerPath" style="stroke-width: 2; stroke-dasharray: 1, 0;"></path></marker><marker id="platzh-1_flowchart-v2-crossStart" class="marker cross flowchart-v2" viewBox="0 0 11 11" refX="-1" refY="5.2" markerUnits="userSpaceOnUse" markerWidth="11" markerHeight="11" orient="auto"><path d="M 1,1 l 9,9 M 10,1 l -9,9" class="arrowMarkerPath" style="stroke-width: 2; stroke-dasharray: 1, 0;"></path></marker><marker id="platzh-1_flowchart-v2-crossEnd-margin" class="marker cross flowchart-v2" viewBox="0 0 15 15" refX="17.7" refY="7.5" markerUnits="userSpaceOnUse" markerWidth="12" markerHeight="12" orient="auto"><path d="M 1,1 L 14,14 M 1,14 L 14,1" class="arrowMarkerPath" style="stroke-width: 2.5;"></path></marker><marker id="platzh-1_flowchart-v2-crossStart-margin" class="marker cross flowchart-v2" viewBox="0 0 15 15" refX="-3.5" refY="7.5" markerUnits="userSpaceOnUse" markerWidth="12" markerHeight="12" orient="auto"><path d="M 1,1 L 14,14 M 1,14 L 14,1" class="arrowMarkerPath" style="stroke-width: 2.5; stroke-dasharray: 1, 0;"></path></marker><g class="root"><g class="clusters"></g><g class="edgePaths"><path d="M169.609,51.429L188.142,48.727C206.674,46.024,243.74,40.619,285.612,37.916C327.484,35.213,374.164,35.213,397.504,35.213L420.844,35.213" id="platzh-1-L_B_V_0" class="edge-thickness-normal edge-pattern-solid edge-thickness-normal edge-pattern-solid flowchart-link" style=";" data-edge="true" data-et="edge" data-id="L_B_V_0" data-points="W3sieCI6MTY5LjYwOTM3NSwieSI6NTEuNDI5MjIwODM1MzY3ODM2fSx7IngiOjI4MC44MDQ2ODc1LCJ5IjozNS4yMTMyMzc3NjI0NTExN30seyJ4Ijo0MjQuODQzNzUsInkiOjM1LjIxMzIzNzc2MjQ1MTE3fV0=" data-look="classic" marker-end="url(#platzh-1_flowchart-v2-pointEnd)"></path><path d="M619.156,35.213L651.297,35.213C683.438,35.213,747.719,35.213,805.863,37.935C864.007,40.657,916.014,46.101,942.018,48.823L968.022,51.544" id="platzh-1-L_V_P_0" class="edge-thickness-normal edge-pattern-solid edge-thickness-normal edge-pattern-solid flowchart-link" style=";" data-edge="true" data-et="edge" data-id="L_V_P_0" data-points="W3sieCI6NjE5LjE1NjI1LCJ5IjozNS4yMTMyMzc3NjI0NTExN30seyJ4Ijo4MTIsInkiOjM1LjIxMzIzNzc2MjQ1MTE3fSx7IngiOjk3MiwieSI6NTEuOTYwOTAxMzEzODUzMDR9XQ==" data-look="classic" marker-end="url(#platzh-1_flowchart-v2-pointEnd)"></path><path d="M576.949,62.213L616.125,81.462C655.3,100.711,733.65,139.21,806.841,163.354C880.032,187.498,948.064,197.288,982.08,202.183L1016.095,207.078" id="platzh-1-L_V_S_0" class="edge-thickness-normal edge-pattern-solid edge-thickness-normal edge-pattern-solid flowchart-link" style=";" data-edge="true" data-et="edge" data-id="L_V_S_0" data-points="W3sieCI6NTc2Ljk0OTQyMTkxNjU3MzMsInkiOjYyLjIxMzIzNzc2MjQ1MTE3fSx7IngiOjgxMiwieSI6MTc3LjcwNzkxMjQ0NTA2ODM2fSx7IngiOjEwMjAuMDU0Njg3NSwieSI6MjA3LjY0ODA5MDA1ODE3NTJ9XQ==" data-look="classic" marker-end="url(#platzh-1_flowchart-v2-pointEnd)"></path><path d="M566.22,307.979L607.184,271.851C648.147,235.724,730.073,163.468,797.04,124.619C864.007,85.769,916.014,80.326,942.018,77.604L968.022,74.882" id="platzh-1-L_C_P_0" class="edge-thickness-normal edge-pattern-solid edge-thickness-normal edge-pattern-solid flowchart-link" style=";" data-edge="true" data-et="edge" data-id="L_C_P_0" data-points="W3sieCI6NTY2LjIyMDIwMDYzNjkxOTcsInkiOjMwNy45Nzg2OTg3MzA0Njg3NX0seyJ4Ijo4MTIsInkiOjkxLjIxMzIzNzc2MjQ1MTE3fSx7IngiOjk3MiwieSI6NzQuNDY1NTc0MjExMDQ5M31d" data-look="classic" marker-end="url(#platzh-1_flowchart-v2-pointEnd)"></path><path d="M647.127,307.979L674.606,299.414C702.085,290.849,757.042,273.72,818.538,260.019C880.033,246.319,948.066,236.047,982.083,230.911L1016.1,225.775" id="platzh-1-L_C_S_0" class="edge-thickness-normal edge-pattern-solid edge-thickness-normal edge-pattern-solid flowchart-link" style=";" data-edge="true" data-et="edge" data-id="L_C_S_0" data-points="W3sieCI6NjQ3LjEyNzE1MjAzMDQ3NzQsInkiOjMwNy45Nzg2OTg3MzA0Njg3NX0seyJ4Ijo4MTIsInkiOjI1Ni41OTA2NDI5MjkwNzcxNX0seyJ4IjoxMDIwLjA1NDY4NzUsInkiOjIyNS4xNzc4NDE3MDEwNzMwOH1d" data-look="classic" marker-end="url(#platzh-1_flowchart-v2-pointEnd)"></path><path d="M652,344.289L678.667,343.737C705.333,343.186,758.667,342.082,815.195,341.53C871.724,340.979,931.448,340.979,961.31,340.979L991.172,340.979" id="platzh-1-L_C_E1_0" class="edge-thickness-normal edge-pattern-solid edge-thickness-normal edge-pattern-solid flowchart-link" style=";" data-edge="true" data-et="edge" data-id="L_C_E1_0" data-points="W3sieCI6NjUyLCJ5IjozNDQuMjg5MDQzNTU4MDU0OTd9LHsieCI6ODEyLCJ5IjozNDAuOTc4Njk4NzMwNDY4NzV9LHsieCI6OTk1LjE3MTg3NSwieSI6MzQwLjk3ODY5ODczMDQ2ODc1fV0=" data-look="classic" marker-end="url(#platzh-1_flowchart-v2-pointEnd)"></path><path d="M626.722,385.979L657.602,397.479C688.481,408.979,750.241,431.979,809.282,443.479C868.323,454.979,924.646,454.979,952.807,454.979L980.969,454.979" id="platzh-1-L_C_E2_0" class="edge-thickness-normal edge-pattern-solid edge-thickness-normal edge-pattern-solid flowchart-link" style=";" data-edge="true" data-et="edge" data-id="L_C_E2_0" data-points="W3sieCI6NjI2LjcyMjIyMjIyMjIyMjIsInkiOjM4NS45Nzg2OTg3MzA0Njg3NX0seyJ4Ijo4MTIsInkiOjQ1NC45Nzg2OTg3MzA0Njg3NX0seyJ4Ijo5ODQuOTY4NzUsInkiOjQ1NC45Nzg2OTg3MzA0Njg3NX1d" data-look="classic" marker-end="url(#platzh-1_flowchart-v2-pointEnd)"></path><path d="M572.946,385.979L612.788,416.479C652.631,446.979,732.315,507.979,801.508,538.479C870.701,568.979,929.401,568.979,958.751,568.979L988.102,568.979" id="platzh-1-L_C_E3_0" class="edge-thickness-normal edge-pattern-solid edge-thickness-normal edge-pattern-solid flowchart-link" style=";" data-edge="true" data-et="edge" data-id="L_C_E3_0" data-points="W3sieCI6NTcyLjk0NTk0NTk0NTk0NTksInkiOjM4NS45Nzg2OTg3MzA0Njg3NX0seyJ4Ijo4MTIsInkiOjU2OC45Nzg2OTg3MzA0Njg4fSx7IngiOjk5Mi4xMDE1NjI1LCJ5Ijo1NjguOTc4Njk4NzMwNDY4OH1d" data-look="classic" marker-end="url(#platzh-1_flowchart-v2-pointEnd)"></path><path d="M972,96.365L945.333,104.589C918.667,112.813,865.333,129.26,790.333,137.484C715.333,145.708,618.667,145.708,530.134,145.708C441.602,145.708,361.203,145.708,300.09,136.722C238.977,127.736,197.148,109.764,176.234,100.778L155.32,91.792" id="platzh-1-L_P_B_0" class="edge-thickness-normal edge-pattern-dotted edge-thickness-normal edge-pattern-solid flowchart-link" style=";" data-edge="true" data-et="edge" data-id="L_P_B_0" data-points="W3sieCI6OTcyLCJ5Ijo5Ni4zNjUzMDMyODkxMTA0MX0seyJ4Ijo4MTIsInkiOjE0NS43MDc5MTI0NDUwNjgzNn0seyJ4Ijo1MjIsInkiOjE0NS43MDc5MTI0NDUwNjgzNn0seyJ4IjoyODAuODA0Njg3NSwieSI6MTQ1LjcwNzkxMjQ0NTA2ODM2fSx7IngiOjE1MS42NDUxMDc0NDE1ODM3MiwieSI6OTAuMjEzMjM3NzYyNDUxMTd9XQ==" data-look="classic" marker-end="url(#platzh-1_flowchart-v2-pointEnd)"></path></g><g class="edgeLabels"><g class="edgeLabel" transform="translate(280.8046875, 35.21323776245117)"><g class="label" data-id="L_B_V_0" transform="translate(-51.1953125, -12)"><foreignObject width="102.390625" height="24"><div xmlns="http://www.w3.org/1999/xhtml" class="labelBkg" style="display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 200px; text-align: center;"><span class="edgeLabel"><p>HTTPS + JWT</p></span></div></foreignObject></g></g><g class="edgeLabel" transform="translate(812, 35.21323776245117)"><g class="label" data-id="L_V_P_0" transform="translate(-15.34375, -12)"><foreignObject width="30.6875" height="24"><div xmlns="http://www.w3.org/1999/xhtml" class="labelBkg" style="display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 200px; text-align: center;"><span class="edgeLabel"><p>SQL</p></span></div></foreignObject></g></g><g class="edgeLabel" transform="translate(788.80178, 166.30921)"><g class="label" data-id="L_V_S_0" transform="translate(-41.109375, -12)"><foreignObject width="82.21875" height="24"><div xmlns="http://www.w3.org/1999/xhtml" class="labelBkg" style="display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 200px; text-align: center;"><span class="edgeLabel"><p>预签名 URL</p></span></div></foreignObject></g></g><g class="edgeLabel" transform="translate(812, 91.21323776245117)"><g class="label" data-id="L_C_P_0" transform="translate(-100, -24)"><foreignObject width="200" height="48"><div xmlns="http://www.w3.org/1999/xhtml" class="labelBkg" style="display: table; white-space: break-spaces; line-height: 1.5; max-width: 200px; text-align: center; width: 200px;"><span class="edgeLabel"><p>出站 TLS 轮询: SKIP LOCKED 租约</p></span></div></foreignObject></g></g><g class="edgeLabel" transform="translate(830.6472, 253.77523)"><g class="label" data-id="L_C_S_0" transform="translate(-51.9453125, -12)"><foreignObject width="103.890625" height="24"><div xmlns="http://www.w3.org/1999/xhtml" class="labelBkg" style="display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 200px; text-align: center;"><span class="edgeLabel"><p>出站: 上传产物</p></span></div></foreignObject></g></g><g class="edgeLabel" transform="translate(812, 340.97869873046875)"><g class="label" data-id="L_C_E1_0" transform="translate(-58.0546875, -12)"><foreignObject width="116.109375" height="24"><div xmlns="http://www.w3.org/1999/xhtml" class="labelBkg" style="display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 200px; text-align: center;"><span class="edgeLabel"><p>本地 Docker API</p></span></div></foreignObject></g></g><g class="edgeLabel"><g class="label" data-id="L_C_E2_0" transform="translate(0, 0)"><foreignObject width="0" height="0"><div xmlns="http://www.w3.org/1999/xhtml" class="labelBkg" style="display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 200px; text-align: center;"><span class="edgeLabel"></span></div></foreignObject></g></g><g class="edgeLabel"><g class="label" data-id="L_C_E3_0" transform="translate(0, 0)"><foreignObject width="0" height="0"><div xmlns="http://www.w3.org/1999/xhtml" class="labelBkg" style="display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 200px; text-align: center;"><span class="edgeLabel"></span></div></foreignObject></g></g><g class="edgeLabel" transform="translate(522, 145.70791244506836)"><g class="label" data-id="L_P_B_0" transform="translate(-53.6328125, -12)"><foreignObject width="107.265625" height="24"><div xmlns="http://www.w3.org/1999/xhtml" class="labelBkg" style="display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 200px; text-align: center;"><span class="edgeLabel"><p>Realtime / 轮询</p></span></div></foreignObject></g></g></g><g class="nodes"><g class="node default" id="platzh-1-flowchart-B-0" data-look="classic" transform="translate(88.8046875, 63.21323776245117)"><rect class="basic label-container" style="" x="-80.8046875" y="-27" width="161.609375" height="54"></rect><g class="label" style="" transform="translate(-50.8046875, -12)"><rect></rect><foreignObject width="101.609375" height="24"><div xmlns="http://www.w3.org/1999/xhtml" style="display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 200px; text-align: center;"><span class="nodeLabel"><p>浏览器 Next.js</p></span></div></foreignObject></g></g><g class="node default" id="platzh-1-flowchart-V-1" data-look="classic" transform="translate(522, 35.21323776245117)"><rect class="basic label-container" style="" x="-97.15625" y="-27" width="194.3125" height="54"></rect><g class="label" style="" transform="translate(-67.15625, -12)"><rect></rect><foreignObject width="134.3125" height="24"><div xmlns="http://www.w3.org/1999/xhtml" style="display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 200px; text-align: center;"><span class="nodeLabel"><p>Vercel / 控制面 API</p></span></div></foreignObject></g></g><g class="node default" id="platzh-1-flowchart-P-3" data-look="classic" transform="translate(1079.5, 63.21323776245117)"><path d="M0,15.808823529411764 a107.5,15.808823529411764 0,0,0 215,0 a107.5,15.808823529411764 0,0,0 -215,0 l0,78.80882352941177 a107.5,15.808823529411764 0,0,0 215,0 l0,-78.80882352941177" class="basic label-container outer-path" style="" transform="translate(-107.5, -55.21323529411765)"></path><g class="label" style="" transform="translate(-100, -14)"><rect></rect><foreignObject width="200" height="48"><div xmlns="http://www.w3.org/1999/xhtml" style="display: table; white-space: break-spaces; line-height: 1.5; max-width: 200px; text-align: center; width: 200px;"><span class="nodeLabel"><p>Postgres: jobs, users, usage</p></span></div></foreignObject></g></g><g class="node default" id="platzh-1-flowchart-S-5" data-look="classic" transform="translate(1079.5, 216.20258712768555)"><path d="M0,12.186879364469217 a59.4453125,12.186879364469217 0,0,0 118.890625,0 a59.4453125,12.186879364469217 0,0,0 -118.890625,0 l0,51.18687936446922 a59.4453125,12.186879364469217 0,0,0 118.890625,0 l0,-51.18687936446922" class="basic label-container outer-path" style="" transform="translate(-59.4453125, -37.78031904670382)"></path><g class="label" style="" transform="translate(-51.9453125, -2)"><rect></rect><foreignObject width="103.890625" height="24"><div xmlns="http://www.w3.org/1999/xhtml" style="display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 200px; text-align: center;"><span class="nodeLabel"><p>对象存储: 产物</p></span></div></foreignObject></g></g><g class="node default" id="platzh-1-flowchart-C-6" data-look="classic" transform="translate(522, 346.97869873046875)"><rect class="basic label-container" style="" x="-130" y="-39" width="260" height="78"></rect><g class="label" style="" transform="translate(-100, -24)"><rect></rect><foreignObject width="200" height="48"><div xmlns="http://www.w3.org/1999/xhtml" style="display: table; white-space: break-spaces; line-height: 1.5; max-width: 200px; text-align: center; width: 200px;"><span class="nodeLabel"><p>agent 虚拟机上的 conductor 守护进程</p></span></div></foreignObject></g></g><g class="node default" id="platzh-1-flowchart-E1-11" data-look="classic" transform="translate(1079.5, 340.97869873046875)"><rect class="basic label-container" style="" x="-84.328125" y="-27" width="168.65625" height="54"></rect><g class="label" style="" transform="translate(-54.328125, -12)"><rect></rect><foreignObject width="108.65625" height="24"><div xmlns="http://www.w3.org/1999/xhtml" style="display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 200px; text-align: center;"><span class="nodeLabel"><p>Hermes 执行器</p></span></div></foreignObject></g></g><g class="node default" id="platzh-1-flowchart-E2-13" data-look="classic" transform="translate(1079.5, 454.97869873046875)"><rect class="basic label-container" style="" x="-94.53125" y="-27" width="189.0625" height="54"></rect><g class="label" style="" transform="translate(-64.53125, -12)"><rect></rect><foreignObject width="129.0625" height="24"><div xmlns="http://www.w3.org/1999/xhtml" style="display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 200px; text-align: center;"><span class="nodeLabel"><p>轻量 agent 执行器</p></span></div></foreignObject></g></g><g class="node default" id="platzh-1-flowchart-E3-15" data-look="classic" transform="translate(1079.5, 568.9786987304688)"><rect class="basic label-container" style="" x="-87.3984375" y="-27" width="174.796875" height="54"></rect><g class="label" style="" transform="translate(-57.3984375, -12)"><rect></rect><foreignObject width="114.796875" height="24"><div xmlns="http://www.w3.org/1999/xhtml" style="display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 200px; text-align: center;"><span class="nodeLabel"><p>LLM 网关执行器</p></span></div></foreignObject></g></g></g></g></g><defs><filter id="platzh-1-drop-shadow" height="130%" width="130%"><feDropShadow dx="4" dy="4" stdDeviation="0" flood-opacity="0.06" flood-color="#000000"></feDropShadow></filter></defs><defs><filter id="platzh-1-drop-shadow-small" height="150%" width="150%"><feDropShadow dx="2" dy="2" stdDeviation="0" flood-opacity="0.06" flood-color="#000000"></feDropShadow></filter></defs></svg></figure>
+<p>agent 虚拟机<strong>只发起出站连接</strong>（经连接池以 TLS 连 Postgres、上传存储、通过出站代理访问 LLM API）。v1 不需要入站端口、不需要 mTLS、不需要 VPN；只为 SSH/管理加一层 Tailscale。这个模式在 Supabase、Neon、Railway-Postgres 或自建上都一样成立 —— 只有在 Postgres 没有一个像样的公网 TLS 端点时才失效（RDS 在 VPC 里，就要求虚拟机也进 VPC）。</p>
+<h3 id="b1-作业契约两个面都认的那张表" class="hd">B.1 作业契约（两个面都认的那张表）<a class="hd__anchor" href="#b1-作业契约两个面都认的那张表" aria-label="本节链接">#</a></h3>
+<blockquote class="note">
+<p><em>这只是说明性的最小草图。</em> 规范的物理 DDL 见 <a href="architecture-v0.4-zh.html">architecture v0.4</a> 第 B 章 §2 —— 同一份契约，但带上第 A 章的状态词汇与完整列集（<code>attempt</code>/<code>max_attempts</code>、<code>idempotency_key</code>、预算列）。第三部分第 2 周构建的是第 B 章那一版。</p>
+</blockquote>
+<div class="codeblock" data-lang="sql"><div class="codeblock__bar"><span class="codeblock__lang">sql</span><button class="codeblock__copy" type="button">复制</button></div><pre><code class="language-sql">create table jobs (
+  id               uuid primary key default gen_random_uuid(),
+  user_id          uuid not null,
+  kind             text not null,                  -- &#39;pack.schengen.v1&#39;
+  executor         text,                           -- &#39;hermes&#39; | &#39;thin-agent&#39; | &#39;llm-gateway&#39;（路由决定）
+  status           text not null default &#39;queued&#39;, -- queued|leased|running|awaiting_review|delivered|failed|expired
+  input            jsonb not null,
+  progress         jsonb,                          -- {stage, pct, note, updated_at}，由 conductor 写入
+  lease_owner      text,
+  lease_expires_at timestamptz,                    -- conductor 发心跳；租约过期 =&gt; 重新入队或判失败
+  deadline_at      timestamptz not null,           -- 硬性挂钟兜底（v0.3）
+  artifact_prefix  text,                           -- 交付目录（含 qa-report.json）的存储路径
+  qa_report        jsonb,
+  created_at       timestamptz not null default now(),
+  updated_at       timestamptz not null default now()
+);
+-- 认领: UPDATE jobs SET status=&#39;leased&#39;, lease_owner=$1, lease_expires_at=now()+&#39;2 min&#39;
+--   WHERE id = (SELECT id FROM jobs WHERE status=&#39;queued&#39;
+--               ORDER BY created_at FOR UPDATE SKIP LOCKED LIMIT 1) RETURNING *;
+</code></pre></div>
+<p>MVP 是单并发（v0.3），因此这个 Postgres 队列绰绰有余；不需要 Redis/SQS。</p>
+<h3 id="b2-技术栈对比" class="hd">B.2 技术栈对比<a class="hd__anchor" href="#b2-技术栈对比" aria-label="本节链接">#</a></h3>
+<p>除非标注为<em>训练知识</em>，价格均于 2026 年 8 月经网络搜索核实。MVP 负载：约 100 用户，每天 5–30 个签证包，每包约 20–50 MB → 每月新增产物约 45 GB，每月下载出流量约 45 GB。</p>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>评判维度</th>
+<th>1. Vercel + Supabase</th>
+<th>2. Vercel + Neon + Clerk + R2</th>
+<th>3. 全用 Railway</th>
+<th>4. AWS（Amplify/ECS + RDS + Cognito + S3）</th>
+<th>5. GCP（Cloud Run + Cloud SQL + Firebase Auth + GCS）</th>
+<th>6. 自建 Coolify（Next.js + Postgres + MinIO + Better-Auth）</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>首次部署耗时（单人）</td>
+<td>约 0.5 天</td>
+<td>约 1 天（要接三个控制台）</td>
+<td>约 0.5 天（仅控制面）</td>
+<td>认真做要 1–2 周（VPC、IAM、Cognito）</td>
+<td>2–4 天</td>
+<td>1–2 天，含 TLS、备份、SMTP</td>
+</tr>
+<tr>
+<td>MVP 月成本（不含 agent 虚拟机）</td>
+<td>约 $45（Vercel Pro $20 + Supabase Pro $25）</td>
+<td>约 $25–40（Vercel $20 + Neon 用量约 $5–15 + Clerk $0 + R2 约 $2）</td>
+<td>按量约 $25–45；<strong>另外仍然需要一台虚拟机</strong></td>
+<td>约 $60–120（RDS 约 $15 起、NAT 网关约 $32 的坑、Amplify）</td>
+<td>约 $15–40（Cloud SQL micro $7–10 无 SLA，Cloud Run 在免费额度内约 $0）</td>
+<td>与别的服务同机则近乎 $0；单独一台虚拟机约 $25（推荐）</td>
+</tr>
+<tr>
+<td>Postgres 质量</td>
+<td>Pro：每日备份（保留 7 天），PITR 是付费加购；分支按分支计量（<em>加购细节：训练知识</em>）</td>
+<td>同类最佳：即时写时复制分支、缩容到零、PITR（6 小时免费，更长付费），存储 $0.35/GB</td>
+<td>容器 + 卷的 Postgres；每日卷备份，无 PITR（<em>训练知识</em>） —— 托管方案里最弱的一个</td>
+<td>RDS = 黄金标准：35 天 PITR、多可用区；没有分支能力</td>
+<td>Cloud SQL 备份/PITR 扎实；最便宜的档次不含 SLA</td>
+<td>你自己搭出什么就是什么：pgBackRest→R2 加上验证过的恢复演练，否则等于没有</td>
+</tr>
+<tr>
+<td>认证（邮箱 OTP + OAuth、RBAC）</td>
+<td>内置：邮箱 OTP/魔法链接、OAuth 供应商、基于 JWT claims + RLS 的 RBAC；5 万 MAU 免费额度</td>
+<td>Clerk：开发体验最好，Next.js 预制组件，内置组织/RBAC；月留存用户 5 万以内免费（2026 年 2 月起的新政策），Pro $25/月</td>
+<td>自备（自己跑 Better-Auth 或花钱买 Clerk）</td>
+<td>Cognito：功能齐全但开发体验糟糕；2025 年新分档 —— Lite $0.0055/MAU、Essentials $0.015/MAU，1 万 MAU 免费</td>
+<td>Firebase Auth：扎实，约 5 万 MAU 免费（<em>训练知识</em>）；从非 Google 后端验证 JWKS 没问题</td>
+<td>Better-Auth 1.5：email-OTP 与 organization 插件已达生产可用；升级和安全都归你</td>
+</tr>
+<tr>
+<td>存储 + 预签名 URL</td>
+<td>Supabase Storage，预签名 URL，S3 兼容 API；Pro 含 100 GB + 250 GB 出流量</td>
+<td>R2：$0.015/GB-月，<strong>出流量 $0</strong>，S3 API，预签名 URL；MVP 阶段约 $2/月</td>
+<td>Railway 的卷不是对象存储 → 还是得再加 R2</td>
+<td>S3：业界标准，出流量约 $0.09/GB</td>
+<td>GCS：可以，出流量约 $0.12/GB</td>
+<td>MinIO：S3 API，但打补丁和监控都归你，而它存的是护照扫描件</td>
+</tr>
+<tr>
+<td>实时作业进度</td>
+<td><strong>最好</strong>：通过 Supabase Realtime 订阅 <code>jobs</code> 行（Pro：500 并发连接）；可回落到轮询</td>
+<td>无原生实时：轮询 <code>GET /jobs/:id</code>，或由 conductor 推 SSE</td>
+<td>轮询，或从某个 Railway 服务推 SSE</td>
+<td>API GW WebSockets/AppSync —— 太重</td>
+<td>Firestore 监听（等于第二个数据库）或轮询</td>
+<td>由 conductor 推 SSE（需要在虚拟机上开入站端口并做鉴权）</td>
+</tr>
+<tr>
+<td>供应商风险 / 出流量</td>
+<td>纯 Postgres + S3 兼容存储 → 退出干净；超额出流量 $0.09/GB（<em>训练知识</em>）</td>
+<td>托管方案里锁定最轻：Neon 是纯 PG，R2 是 S3 API 且零出流量费；Clerk 的用户库迁移是唯一的粘性点</td>
+<td>中等；出流量计量（<em>训练知识</em>）</td>
+<td>复杂度锁定最重；出流量 + NAT 成本</td>
+<td>中等；有出流量费</td>
+<td>零供应商风险，创始人时间风险最大</td>
+</tr>
+<tr>
+<td>与 agent 虚拟机的契合</td>
+<td>只出不进的 conductor 对上连接池化的 PG + Storage：理想</td>
+<td>同一个模式，同样干净</td>
+<td>Railway <strong>无法承载 agent 面</strong>（不支持特权/DinD 容器）→ 变成三方拆分</td>
+<td><em>如果</em> agent 虚拟机就是同 VPC 里的 EC2（私有子网、安全组），网络最干净；但现在是杀鸡用牛刀</td>
+<td>虚拟机用 GCE + Cloud SQL 连接器/公网 IP 白名单：可以</td>
+<td>把可信数据库和<strong>不可信</strong> agent 容器放在同一个内核上，与 v0.3 的信任隔离相矛盾 —— 只能另开一台虚拟机，而那会吃掉成本优势</td>
+</tr>
+</tbody></table>
+</div>
+<p>几条承重事实的备注：Vercel 的 <strong>Hobby 计划不可商用</strong> —— 第一天就按 Pro（$20/席位）做预算。Supabase 免费版闲置 7 天会暂停项目，而且没有备份 —— 第一天就上 Pro。Cognito 在 2025 年改成 Lite/Essentials/Plus 分档，超过 1 万 MAU 后成本可观。Clerk 在 2026 年 2 月改为月留存用户 5 万以内免费。</p>
+<h3 id="b3-实时进度先选无聊的方案" class="hd">B.3 实时进度：先选无聊的方案<a class="hd__anchor" href="#b3-实时进度先选无聊的方案" aria-label="本节链接">#</a></h3>
+<p>对于一个每天 5–30 个包、每个约 10 分钟的作业来说，<strong>轮询是站得住脚的 v1</strong>：每 3 秒一次 <code>GET /api/jobs/:id</code>，每个包约 200 个请求 —— 可以忽略。它对中国用户也更能优雅降级：长连的 WebSocket 打到境外端点，可靠性不如普通 HTTPS 轮询。推荐的阶梯是：</p>
+<ol>
+<li><strong>v1</strong>：conductor 写 <code>progress</code> JSONB（阶段机：<code>intake → research → documents → qa → awaiting_review</code>）；前端每 3 秒轮询一次。</li>
+<li><strong>v1.1（仅方案 1）</strong>：把 Supabase Realtime 对作业行的订阅当作渐进增强，轮询作为兜底。后端零工作量 —— conductor 的那次 UPDATE 就是事件。</li>
+<li>从虚拟机推 SSE：只有在离开 Supabase 时才考虑；它会强迫 agent 虚拟机开一个带鉴权的入站端点，而这正是「只出不进」模型刻意回避的。</li>
+</ol>
+<h3 id="b4-工作流引擎放在哪里" class="hd">B.4 工作流引擎放在哪里？<a class="hd__anchor" href="#b4-工作流引擎放在哪里" aria-label="本节链接">#</a></h3>
+<p>沿着「请求/响应」与「长时运行」的分界线来切：</p>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>组件</th>
+<th>落位</th>
+<th>为什么</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>认证、用户 CRUD、提交签证包（插入 <code>jobs</code> 行）、预签名下载 URL、复核门的 UI 操作</td>
+<td><strong>Vercel 上 <code>/api/v1/**</code> 之下的 Next.js 路由处理器，作为服务层（<code>lib/services/</code>）之上的薄适配器</strong> —— Web UI 只是这份契约的一个客户端；Server Actions 不承载任何核心业务操作（ADR-004）</td>
+<td>纯请求/响应，适配 serverless，零额外基础设施 —— 而且同一份契约还能服务未来的移动 App 或微信小程序，未来抽出独立后端时也只是把 <code>lib/services/</code> 换个家，而不是重写</td>
+</tr>
+<tr>
+<td>编排器（&quot;conductor&quot;）：队列租约、执行器路由（按适配器契约在 hermes / thin-agent / llm-gateway 之间选）、经 Docker API 管容器生命周期、基于产物的完成判定（<code>qa-report.json</code> + 交付目录）、挂钟看门狗、重试、token 预算记账</td>
+<td><strong>常驻的 Node 服务，与 agent 虚拟机同机</strong>（systemd 或 compose 服务）</td>
+<td>它需要 Docker socket、文件系统守候，以及比任何 serverless 调用都活得久的定时器；ADR-002 说的确定性工作流引擎，就是这个进程</td>
+</tr>
+<tr>
+<td>确定性业务规则（&quot;西班牙旅游签需要护照 + 银行流水 + 在职证明&quot;）</td>
+<td><strong>共享的 TypeScript 包</strong>，两边都引</td>
+<td>UI 里即时表单校验，conductor 里权威强制 —— 一个事实来源，符合 ADR-002</td>
+</tr>
+</tbody></table>
+</div>
+<p><strong>不要</strong>把引擎只放在 Next.js 路由里（没有常驻进程、有时长上限，Vercel 的 cron/队列同样受函数限制约束），也不要把它做成第三个托管位置 —— 与 agent 虚拟机同机可以让 Docker 控制留在本地，且不新增任何网络暴露面。</p>
+<h3 id="b5-排序后的建议" class="hd">B.5 排序后的建议<a class="hd__anchor" href="#b5-排序后的建议" aria-label="本节链接">#</a></h3>
+<ol>
+<li><strong>Vercel + Supabase</strong> —— 一家供应商替掉四家（Postgres + Auth + Storage + Realtime），jobs 表的模式让 agent 虚拟机可以只出不进，约 $45/月 + 虚拟机是单人最快的可信路径。</li>
+<li><strong>Vercel + Neon + Clerk + R2</strong> —— 略便宜，Postgres 分支能力最好、存储零出流量费、认证开发体验最好；代价是第三、第四个控制台，以及没有原生实时。这是 Supabase 让人失望时的指定逃生口。</li>
+<li><strong>全用 Railway</strong> —— 控制面的开发体验讨喜，但它托管不了 agent 面，于是你要跑三个平台而不是两个，而且用的是这里最弱的托管 Postgres。</li>
+<li><strong>自建 Coolify</strong> —— 最便宜、零锁定，但签证包里是护照和银行流水这类 PII：把手搓备份和 MinIO 压在一个单人创始人的注意力预算上是错误的风险；而与不可信 agent 同机也破坏了 v0.3 的隔离。</li>
+<li><strong>GCP</strong> —— 平台本身不错，但最便宜的可用 Cloud SQL 档次在 SLA 之外；IAM 管线活多过 MVP 阶段能拿到的回报。</li>
+<li><strong>AWS</strong> —— 规模放大 50 倍时的正确答案；在 MVP 阶段它意味着一张 NAT 网关账单和两周你没有的 VPC/Cognito 工作量。</li>
+</ol>
+<p><em>（Azure 被刻意排除在控制面短名单之外：没有 Vercel 级别的 Next.js 托管体验，Entra External ID 是 Cognito 同级的认证负担，而且它会加进第三朵云却没有任何独有的控制面优势 —— 它的 agent 面版本在第一部分 §6 已被排除。）</em></p>
+<p><strong>迁移舒适度</strong>：上面这条线之上的东西都是可移植的 —— 纯 Postgres schema、S3 兼容存储、JWT 认证。从 1 换到 2（或者规模上来后换到 4/AWS）是一次数据迁移，不是重写。</p>
+<p>资料来源：<a href="https://uibakery.io/blog/supabase-pricing">Supabase 价格拆解</a>、<a href="https://makerkit.dev/blog/saas/supabase-pricing">Supabase 真实成本</a>、<a href="https://www.promptstoproduct.com/vercel-free-tier-limits">Vercel 免费额度限制</a>、<a href="https://vercel.com/docs/functions/limitations">Vercel 函数限制</a>、<a href="https://neon.com/docs/introduction/plans">Neon 套餐</a>、<a href="https://vela.simplyblock.io/articles/neon-serverless-postgres-pricing-2026/">Neon 2026 价格变动</a>、<a href="https://clerk.com/pricing">Clerk 价格 / 5 万免费变更</a>、<a href="https://saasprices.net/blog/clerk-free-plan-changes">Clerk 免费版变更说明</a>、<a href="https://www.srvrlss.io/provider/railway/">Railway 价格</a>、<a href="https://www.budgetforge.dev/tools/cloudflare-r2-pricing-2026">Cloudflare R2 价格</a>、<a href="https://aws.amazon.com/cognito/pricing/">Cognito 价格</a>、<a href="https://www.thestack.technology/awss-new-cognito-pricing-complicated-potentially-costly/">Cognito 调价分析</a>、<a href="https://www.usage.ai/blogs/gcp/cloud-sql/pricing/">Cloud SQL 价格</a>、<a href="https://cloud.google.com/run/pricing">Cloud Run 价格</a>、<a href="https://better-auth.com/blog/1-5">Better Auth 1.5</a>、<a href="https://better-auth.com/docs/plugins/email-otp">Better Auth email OTP 插件</a>。</p>
+<h2 id="第三部分-最终选型与-8-周开发计划" class="hd">第三部分 —— 最终选型与 8 周开发计划<a class="hd__anchor" href="#第三部分-最终选型与-8-周开发计划" aria-label="本节链接">#</a></h2>
+<h3 id="1-最终选型" class="hd">1. 最终选型<a class="hd__anchor" href="#1-最终选型" aria-label="本节链接">#</a></h3>
+<p>两份研究各自的首选可以干净地组合起来，并按其排序采纳：可信控制面用 <strong>Vercel + Supabase</strong>，agent 面用<strong>一台跑 docker compose 的 Hetzner arm64 虚拟机</strong>，两者以「<strong>数据库即接口，虚拟机只出不进</strong>」模式衔接 —— 虚拟机上的 conductor 通过 TLS 轮询 <code>jobs</code> 表，并把产物上传到 Supabase Storage；虚拟机<strong>不开放任何入站端口</strong>。有一处需要调和：研究 A 把虚拟机定价为 <strong>CAX21（4 vCPU / 8 GB，约 €8.50/月）</strong>，那是只按作业容器本身估的；而研究 B 为一台还要同时跑 conductor 和出站代理的机器预算了「$25–40/月」。我们在规格上采纳 B、在供应商上采纳 A：<strong>Hetzner CAX31（8 vCPU / 16 GB arm64，€15.99 + €0.50 IPv4 ≈ $19/月）</strong>，这样 Hermes 作业容器可以保住完整的 4 vCPU / 8 GB（<code>--cpus 4 --memory 8g</code>），同时给 Docker daemon、Squid 代理、conductor 以及 LibreOffice 渲染尖峰留下真实的余量。已在 arm64 验证过的 <code>visa-master-hermes:latest</code> 镜像原样就能跑，也与 Apple Silicon 的开发环路一致。依据 ADR-002，<strong>conductor 就是那个确定性的工作流引擎</strong> —— 控制面长时运行的那一半 —— 而创始人需求里的三种服务器（Hermes、轻量 agent、LLM 网关）在其中是<strong>同一份适配器契约背后的可插拔执行器</strong>；在 V1 里这些「服务器」只是这台机器上的进程/容器，而这份契约正是它们日后能变成独立服务器、却不需要改 schema 或前端的原因。</p>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>组件</th>
+<th>跑在哪</th>
+<th>由谁提供</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>前端（Next.js App Router，以 zh-CN 为主）</td>
+<td>Vercel Pro</td>
+<td><code>apps/web</code></td>
+<td>每个 PR 一个预览；<code>main</code> 上线生产</td>
+</tr>
+<tr>
+<td>请求/响应 API（鉴权后的 CRUD、提交作业、预签名 URL、复核操作）</td>
+<td>Vercel serverless —— <strong><code>/api/v1/**</code> 之下的路由处理器，位于 <code>lib/services/</code> 之上（API-first，ADR-004；核心操作不用 Server Actions）</strong></td>
+<td><code>apps/web</code></td>
+<td>从不接触 Docker 或 LLM 密钥；线上契约只传目录键，绝不传句子</td>
+</tr>
+<tr>
+<td>工作流引擎 / 编排器（&quot;conductor&quot;）</td>
+<td>Hetzner CAX31，由 systemd 管理的 compose 服务</td>
+<td><code>apps/conductor</code>（Node 22，TS）</td>
+<td>队列租约、执行器路由、容器生命周期、产物守候、看门狗、token 记账</td>
+</tr>
+<tr>
+<td>执行器：<strong>hermes</strong>（完整签证包生产者，当下即可用）</td>
+<td>虚拟机上每作业一个即抛容器，<code>internal: true</code> 网络</td>
+<td><code>packages/executors/hermes</code> + <code>visa-master-hermes:latest</code></td>
+<td>第 3 周上线</td>
+</tr>
+<tr>
+<td>执行器：<strong>llm-gateway</strong>（无状态步骤：动机信、清单、翻译）</td>
+<td>conductor 中的适配器 + <strong>版本锁定的 LiteLLM 代理容器</strong>（compose 服务 <code>gateway</code>，第 3 周上线）</td>
+<td><code>packages/executors/llm-gateway</code></td>
+<td>步骤库第 5 周上线；网关容器从第 3 周起就是唯一的推理咽喉 —— Hermes 的供应商配置指向它，因此<strong>供应商密钥绝不进入作业容器</strong>（架构 C §3.2）</td>
+</tr>
+<tr>
+<td>执行器：<strong>thin-agent</strong>（讨论 01 的迁移目标）</td>
+<td>未来同契约下的容器</td>
+<td><code>packages/executors/thin-agent</code></td>
+<td><strong>推迟 —— 见 §6</strong></td>
+</tr>
+<tr>
+<td>出站代理</td>
+<td>Squid 容器，双网卡（内部网 + 外部网）</td>
+<td><code>infra/compose.vm.yml</code></td>
+<td>v0.3 §5.2 规则 1–3 + 审计日志；作业容器唯一的出口</td>
+</tr>
+<tr>
+<td>Postgres（jobs、users、usage、cases）</td>
+<td>Supabase Pro</td>
+<td><code>packages/db</code> 迁移</td>
+<td>conductor 经 Supavisor 连接池以 TLS 连接，只出不进</td>
+</tr>
+<tr>
+<td>认证（邮箱 OTP + 可选 OAuth，RLS）</td>
+<td>Supabase Auth</td>
+<td>——</td>
+<td>JWT 在 Next.js 中校验；所有面向用户的表都开 RLS</td>
+</tr>
+<tr>
+<td>对象存储（上传件 + 产物包）</td>
+<td>Supabase Storage，私有桶 <code>uploads</code>、<code>artifacts</code></td>
+<td>——</td>
+<td>由 API 签发上传/下载 URL；conductor 用 service-role key</td>
+</tr>
+<tr>
+<td>实时进度</td>
+<td>v1 每 3 秒轮询 <code>GET /api/jobs/:id</code>；后续增强为对作业行订阅 Supabase Realtime</td>
+<td>——</td>
+<td>轮询对中国用户能优雅降级（B.3）</td>
+</tr>
+<tr>
+<td>业务规则（如西班牙旅游签材料要求）</td>
+<td>共享包，Web <strong>和</strong> conductor 都引</td>
+<td><code>packages/core</code>（zod schema + <code>rules/</code>）</td>
+<td>ADR-002：规则是代码，不是 LLM 的判断</td>
+</tr>
+<tr>
+<td>虚拟机的管理/SSH 访问</td>
+<td>Tailscale（只经 tailnet SSH；公网入站一律拒绝）</td>
+<td>——</td>
+<td>数据通路不需要 VPN —— 它本来就是只出不进</td>
+</tr>
+<tr>
+<td>密钥</td>
+<td>Vercel 环境变量（Web：anon key、Sentry DSN）；虚拟机：root 所有的 <code>/etc/visa-master/{conductor,gateway,proxy}.env</code>，权限 0600</td>
+<td>以 1Password 为事实来源；由部署脚本下发</td>
+<td><strong>供应商 LLM 密钥只存在于网关容器的环境里，<code>service_role</code> key 只存在于 conductor 的环境里。</strong> 作业容器完全不持有供应商密钥 —— 它唯一的推理通路是内部网络上的网关端点（架构 C §3.2，取代 v0.3 §6 中「密钥放容器里」的姿态）</td>
+</tr>
+</tbody></table>
+</div>
+<figure class="diagram" data-mermaid="platzh-2"><svg style="background-color: transparent;" id="platzh-2" xmlns="http://www.w3.org/2000/svg" class="flowchart" viewBox="0 0 2177.140625 529.16943359375" role="graphics-document document" aria-roledescription="flowchart-v2" width="100%" preserveAspectRatio="xMidYMid meet" data-diagram-id="platzh-2" data-intrinsic-width="2177.140625" data-intrinsic-height="529.16943359375"><style>#platzh-2{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;font-size:16px;fill:#333;}@keyframes edge-animation-frame{from{stroke-dashoffset:0;}}@keyframes dash{to{stroke-dashoffset:0;}}#platzh-2 .edge-animation-slow{stroke-dasharray:9,5!important;stroke-dashoffset:900;animation:dash 50s linear infinite;stroke-linecap:round;}#platzh-2 .edge-animation-fast{stroke-dasharray:9,5!important;stroke-dashoffset:900;animation:dash 20s linear infinite;stroke-linecap:round;}#platzh-2 .error-icon{fill:#552222;}#platzh-2 .error-text{fill:#552222;stroke:#552222;}#platzh-2 .edge-thickness-normal{stroke-width:1px;}#platzh-2 .edge-thickness-thick{stroke-width:3.5px;}#platzh-2 .edge-pattern-solid{stroke-dasharray:0;}#platzh-2 .edge-thickness-invisible{stroke-width:0;fill:none;}#platzh-2 .edge-pattern-dashed{stroke-dasharray:3;}#platzh-2 .edge-pattern-dotted{stroke-dasharray:2;}#platzh-2 .marker{fill:#333333;stroke:#333333;}#platzh-2 .marker.cross{stroke:#333333;}#platzh-2 svg{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;font-size:16px;}#platzh-2 p{margin:0;}#platzh-2 .label{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;color:#333;}#platzh-2 .cluster-label text{fill:#333;}#platzh-2 .cluster-label span{color:#333;}#platzh-2 .cluster-label span p{background-color:transparent;}#platzh-2 .label text,#platzh-2 span{fill:#333;color:#333;}#platzh-2 .node rect,#platzh-2 .node circle,#platzh-2 .node ellipse,#platzh-2 .node polygon,#platzh-2 .node path{fill:#ECECFF;stroke:#9370DB;stroke-width:1px;}#platzh-2 .rough-node .label text,#platzh-2 .node .label text,#platzh-2 .image-shape .label,#platzh-2 .icon-shape .label{text-anchor:middle;}#platzh-2 .node .katex path{fill:#000;stroke:#000;stroke-width:1px;}#platzh-2 .rough-node .label,#platzh-2 .node .label,#platzh-2 .image-shape .label,#platzh-2 .icon-shape .label{text-align:center;}#platzh-2 .node.clickable{cursor:pointer;}#platzh-2 .root .anchor path{fill:#333333!important;stroke-width:0;stroke:#333333;}#platzh-2 .arrowheadPath{fill:#333333;}#platzh-2 .edgePaths .path{stroke:#333333;stroke-width:1px;}#platzh-2 .flowchart-link{stroke:#333333;fill:none;}#platzh-2 .edgeLabel{background-color:rgba(232,232,232, 0.8);text-align:center;}#platzh-2 .edgeLabel p{background-color:rgba(232,232,232, 0.8);}#platzh-2 .edgeLabel rect{opacity:0.5;background-color:rgba(232,232,232, 0.8);fill:rgba(232,232,232, 0.8);}#platzh-2 .labelBkg{background-color:rgba(232, 232, 232, 0.5);}#platzh-2 .cluster rect{fill:#ffffde;stroke:#aaaa33;stroke-width:1px;}#platzh-2 .cluster text{fill:#333;}#platzh-2 .cluster span{color:#333;}#platzh-2 .node .collapsed-indicator{fill:#aaaa33;stroke:none;opacity:0.6;}#platzh-2 .node .collapsed-separator{stroke:#aaaa33;stroke-width:0.75px;}#platzh-2 div.mermaidTooltip{position:absolute;text-align:center;max-width:200px;padding:2px;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;font-size:12px;background:hsl(80, 100%, 96.2745098039%);border:1px solid #aaaa33;border-radius:2px;pointer-events:none;z-index:100;}#platzh-2 .flowchartTitleText{text-anchor:middle;font-size:18px;fill:#333;}#platzh-2 rect.text{fill:none;stroke-width:0;}#platzh-2 .icon-shape,#platzh-2 .image-shape{background-color:rgba(232,232,232, 0.8);text-align:center;}#platzh-2 .icon-shape p,#platzh-2 .image-shape p{background-color:rgba(232,232,232, 0.8);padding:2px;}#platzh-2 .icon-shape .label rect,#platzh-2 .image-shape .label rect{opacity:0.5;background-color:rgba(232,232,232, 0.8);fill:rgba(232,232,232, 0.8);}#platzh-2 .label-icon{display:inline-block;height:1em;overflow:visible;vertical-align:-0.125em;}#platzh-2 .node .label-icon path{fill:currentColor;stroke:revert;stroke-width:revert;}#platzh-2 .node .neo-node{stroke:#9370DB;}#platzh-2 [data-look="neo"].node rect,#platzh-2 [data-look="neo"].cluster rect,#platzh-2 [data-look="neo"].node polygon{stroke:#9370DB;filter:drop-shadow(1px 2px 2px rgba(185, 185, 185, 1));}#platzh-2 [data-look="neo"].swimlane.cluster rect{filter:none;}#platzh-2 [data-look="neo"].node path{stroke:#9370DB;stroke-width:1px;}#platzh-2 [data-look="neo"].node .outer-path{filter:drop-shadow(1px 2px 2px rgba(185, 185, 185, 1));}#platzh-2 [data-look="neo"].node .neo-line path{stroke:#9370DB;filter:none;}#platzh-2 [data-look="neo"].node circle{stroke:#9370DB;filter:drop-shadow(1px 2px 2px rgba(185, 185, 185, 1));}#platzh-2 [data-look="neo"].node circle .state-start{fill:#000000;}#platzh-2 [data-look="neo"].icon-shape .icon{fill:#9370DB;filter:drop-shadow(1px 2px 2px rgba(185, 185, 185, 1));}#platzh-2 [data-look="neo"].icon-shape .icon-neo path{stroke:#9370DB;filter:drop-shadow(1px 2px 2px rgba(185, 185, 185, 1));}#platzh-2 :root{--mermaid-font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;}</style><g><marker id="platzh-2_flowchart-v2-pointEnd" class="marker flowchart-v2" viewBox="0 0 10 10" refX="5" refY="5" markerUnits="userSpaceOnUse" markerWidth="8" markerHeight="8" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" class="arrowMarkerPath" style="stroke-width: 1; stroke-dasharray: 1, 0;"></path></marker><marker id="platzh-2_flowchart-v2-pointStart" class="marker flowchart-v2" viewBox="0 0 10 10" refX="4.5" refY="5" markerUnits="userSpaceOnUse" markerWidth="8" markerHeight="8" orient="auto"><path d="M 0 5 L 10 10 L 10 0 z" class="arrowMarkerPath" style="stroke-width: 1; stroke-dasharray: 1, 0;"></path></marker><marker id="platzh-2_flowchart-v2-pointEnd-margin" class="marker flowchart-v2" viewBox="0 0 11.5 14" refX="11.5" refY="7" markerUnits="userSpaceOnUse" markerWidth="10.5" markerHeight="14" orient="auto"><path d="M 0 0 L 11.5 7 L 0 14 z" class="arrowMarkerPath" style="stroke-width: 0; stroke-dasharray: 1, 0;"></path></marker><marker id="platzh-2_flowchart-v2-pointStart-margin" class="marker flowchart-v2" viewBox="0 0 11.5 14" refX="1" refY="7" markerUnits="userSpaceOnUse" markerWidth="11.5" markerHeight="14" orient="auto"><polygon points="0,7 11.5,14 11.5,0" class="arrowMarkerPath" style="stroke-width: 0; stroke-dasharray: 1, 0;"></polygon></marker><marker id="platzh-2_flowchart-v2-circleEnd" class="marker flowchart-v2" viewBox="0 0 10 10" refX="11" refY="5" markerUnits="userSpaceOnUse" markerWidth="11" markerHeight="11" orient="auto"><circle cx="5" cy="5" r="5" class="arrowMarkerPath" style="stroke-width: 1; stroke-dasharray: 1, 0;"></circle></marker><marker id="platzh-2_flowchart-v2-circleStart" class="marker flowchart-v2" viewBox="0 0 10 10" refX="-1" refY="5" markerUnits="userSpaceOnUse" markerWidth="11" markerHeight="11" orient="auto"><circle cx="5" cy="5" r="5" class="arrowMarkerPath" style="stroke-width: 1; stroke-dasharray: 1, 0;"></circle></marker><marker id="platzh-2_flowchart-v2-circleEnd-margin" class="marker flowchart-v2" viewBox="0 0 10 10" refY="5" refX="12.25" markerUnits="userSpaceOnUse" markerWidth="14" markerHeight="14" orient="auto"><circle cx="5" cy="5" r="5" class="arrowMarkerPath" style="stroke-width: 0; stroke-dasharray: 1, 0;"></circle></marker><marker id="platzh-2_flowchart-v2-circleStart-margin" class="marker flowchart-v2" viewBox="0 0 10 10" refX="-2" refY="5" markerUnits="userSpaceOnUse" markerWidth="14" markerHeight="14" orient="auto"><circle cx="5" cy="5" r="5" class="arrowMarkerPath" style="stroke-width: 0; stroke-dasharray: 1, 0;"></circle></marker><marker id="platzh-2_flowchart-v2-crossEnd" class="marker cross flowchart-v2" viewBox="0 0 11 11" refX="12" refY="5.2" markerUnits="userSpaceOnUse" markerWidth="11" markerHeight="11" orient="auto"><path d="M 1,1 l 9,9 M 10,1 l -9,9" class="arrowMarkerPath" style="stroke-width: 2; stroke-dasharray: 1, 0;"></path></marker><marker id="platzh-2_flowchart-v2-crossStart" class="marker cross flowchart-v2" viewBox="0 0 11 11" refX="-1" refY="5.2" markerUnits="userSpaceOnUse" markerWidth="11" markerHeight="11" orient="auto"><path d="M 1,1 l 9,9 M 10,1 l -9,9" class="arrowMarkerPath" style="stroke-width: 2; stroke-dasharray: 1, 0;"></path></marker><marker id="platzh-2_flowchart-v2-crossEnd-margin" class="marker cross flowchart-v2" viewBox="0 0 15 15" refX="17.7" refY="7.5" markerUnits="userSpaceOnUse" markerWidth="12" markerHeight="12" orient="auto"><path d="M 1,1 L 14,14 M 1,14 L 14,1" class="arrowMarkerPath" style="stroke-width: 2.5;"></path></marker><marker id="platzh-2_flowchart-v2-crossStart-margin" class="marker cross flowchart-v2" viewBox="0 0 15 15" refX="-3.5" refY="7.5" markerUnits="userSpaceOnUse" markerWidth="12" markerHeight="12" orient="auto"><path d="M 1,1 L 14,14 M 1,14 L 14,1" class="arrowMarkerPath" style="stroke-width: 2.5; stroke-dasharray: 1, 0;"></path></marker><g class="root"><g class="clusters"><g class="cluster" id="platzh-2-vm" data-look="classic"><rect style="" x="322" y="8" width="1382.140625" height="268"></rect><g class="cluster-label" transform="translate(865.0703125, 8)"><foreignObject width="296" height="24"><div xmlns="http://www.w3.org/1999/xhtml" style="display: table-cell; white-space: nowrap; line-height: 1.5;"><span class="nodeLabel"><p>Hetzner CAX31 - 只出不进, Tailscale 管理</p></span></div></foreignObject></g></g></g><g class="edgePaths"><path d="M169.609,422.3L182.309,422.3C195.008,422.3,220.406,422.3,245.805,422.3C271.203,422.3,296.602,422.3,315.936,422.3C335.271,422.3,348.542,422.3,355.177,422.3L361.813,422.3" id="platzh-2-L_B_V_0" class="edge-thickness-normal edge-pattern-solid edge-thickness-normal edge-pattern-solid flowchart-link" style=";" data-edge="true" data-et="edge" data-id="L_B_V_0" data-points="W3sieCI6MTY5LjYwOTM3NSwieSI6NDIyLjMwMDM1MDE4OTIwOX0seyJ4IjoyNDUuODA0Njg3NSwieSI6NDIyLjMwMDM1MDE4OTIwOX0seyJ4IjozMjIsInkiOjQyMi4zMDAzNTAxODkyMDl9LHsieCI6MzY1LjgxMjUsInkiOjQyMi4zMDAzNTAxODkyMDl9XQ==" data-look="classic" marker-end="url(#platzh-2_flowchart-v2-pointEnd)"></path><path d="M573.914,395.3L600.262,387.96C626.609,380.62,679.305,365.939,733.345,358.598C787.385,351.258,842.771,351.258,870.464,351.258L898.156,351.258" id="platzh-2-L_V_P_0" class="edge-thickness-normal edge-pattern-solid edge-thickness-normal edge-pattern-solid flowchart-link" style=";" data-edge="true" data-et="edge" data-id="L_V_P_0" data-points="W3sieCI6NTczLjkxNDAxMjM2MTI3MDgsInkiOjM5NS4zMDAzNTAxODkyMDl9LHsieCI6NzMyLCJ5IjozNTEuMjU3OTkxNzkwNzcxNX0seyJ4Ijo5MDIuMTU2MjUsInkiOjM1MS4yNTc5OTE3OTA3NzE1fV0=" data-look="classic" marker-end="url(#platzh-2_flowchart-v2-pointEnd)"></path><path d="M588.188,448.045L612.156,453.594C636.125,459.144,684.063,470.243,736.31,475.793C788.557,481.343,845.115,481.343,873.393,481.343L901.672,481.343" id="platzh-2-L_V_S_0" class="edge-thickness-normal edge-pattern-solid edge-thickness-normal edge-pattern-solid flowchart-link" style=";" data-edge="true" data-et="edge" data-id="L_V_S_0" data-points="W3sieCI6NTg4LjE4NzUsInkiOjQ0OC4wNDQ1NTQ5OTA4ODA2fSx7IngiOjczMiwieSI6NDgxLjM0MjcwODU4NzY0NjV9LHsieCI6OTA1LjY3MTg3NSwieSI6NDgxLjM0MjcwODU4NzY0NjV9XQ==" data-look="classic" marker-end="url(#platzh-2_flowchart-v2-pointEnd)"></path><path d="M580.594,127L605.828,117.5C631.063,108,681.531,89,726.932,79.5C772.333,70,812.667,70,832.833,70L853,70" id="platzh-2-L_C_J_0" class="edge-thickness-normal edge-pattern-solid edge-thickness-normal edge-pattern-solid flowchart-link" style=";" data-edge="true" data-et="edge" data-id="L_C_J_0" data-points="W3sieCI6NTgwLjU5Mzc1LCJ5IjoxMjd9LHsieCI6NzMyLCJ5Ijo3MH0seyJ4Ijo4NTcsInkiOjcwfV0=" data-look="classic" marker-end="url(#platzh-2_flowchart-v2-pointEnd)"></path><path d="M607,154.784L627.833,152.987C648.667,151.19,690.333,147.595,752.441,145.797C814.549,144,897.099,144,966.952,144C1036.805,144,1093.961,144,1130.012,144.669C1166.063,145.337,1181.008,146.674,1188.481,147.343L1195.953,148.012" id="platzh-2-L_C_G_0" class="edge-thickness-normal edge-pattern-solid edge-thickness-normal edge-pattern-solid flowchart-link" style=";" data-edge="true" data-et="edge" data-id="L_C_G_0" data-points="W3sieCI6NjA3LCJ5IjoxNTQuNzg0MzEzNzI1NDkwMn0seyJ4Ijo3MzIsInkiOjE0NH0seyJ4Ijo5NzkuNjQ4NDM3NSwieSI6MTQ0fSx7IngiOjExNTEuMTE3MTg3NSwieSI6MTQ0fSx7IngiOjExOTkuOTM3NSwieSI6MTQ4LjM2ODIxMTgwNDc5NzA2fV0=" data-look="classic" marker-end="url(#platzh-2_flowchart-v2-pointEnd)"></path><path d="M1012.717,97L1035.784,115.833C1058.851,134.667,1104.984,172.333,1135.545,189.071C1166.107,205.809,1181.096,201.618,1188.591,199.522L1196.085,197.426" id="platzh-2-L_J_G_0" class="edge-thickness-normal edge-pattern-solid edge-thickness-normal edge-pattern-solid flowchart-link" style=";" data-edge="true" data-et="edge" data-id="L_J_G_0" data-points="W3sieCI6MTAxMi43MTc0MTA3MTQyODU3LCJ5Ijo5N30seyJ4IjoxMTUxLjExNzE4NzUsInkiOjIxMH0seyJ4IjoxMTk5LjkzNzUsInkiOjE5Ni4zNDkzMzgxMTAwMDkxN31d" data-look="classic" marker-end="url(#platzh-2_flowchart-v2-pointEnd)"></path><path d="M1102.297,70L1110.434,70C1118.57,70,1134.844,70,1172.784,70C1210.724,70,1270.331,70,1325.967,70C1381.604,70,1433.271,70,1462.631,71.03C1491.991,72.059,1499.044,74.119,1502.571,75.148L1506.098,76.178" id="platzh-2-L_J_X_0" class="edge-thickness-normal edge-pattern-solid edge-thickness-normal edge-pattern-solid flowchart-link" style=";" data-edge="true" data-et="edge" data-id="L_J_X_0" data-points="W3sieCI6MTEwMi4yOTY4NzUsInkiOjcwfSx7IngiOjExNTEuMTE3MTg3NSwieSI6NzB9LHsieCI6MTMyOS45Mzc1LCJ5Ijo3MH0seyJ4IjoxNDg0LjkzNzUsInkiOjcwfSx7IngiOjE1MDkuOTM3NSwieSI6NzcuMjk5MTY2MDEzMjU4MjZ9XQ==" data-look="classic" marker-end="url(#platzh-2_flowchart-v2-pointEnd)"></path><path d="M1459.938,160L1464.104,160C1468.271,160,1476.604,160,1489.945,155.145C1503.286,150.29,1521.634,140.581,1530.808,135.726L1539.982,130.871" id="platzh-2-L_G_X_0" class="edge-thickness-normal edge-pattern-solid edge-thickness-normal edge-pattern-solid flowchart-link" style=";" data-edge="true" data-et="edge" data-id="L_G_X_0" data-points="W3sieCI6MTQ1OS45Mzc1LCJ5IjoxNjB9LHsieCI6MTQ4NC45Mzc1LCJ5IjoxNjB9LHsieCI6MTU0My41MTc2NDU0NzQxMzgsInkiOjEyOX1d" data-look="classic" marker-end="url(#platzh-2_flowchart-v2-pointEnd)"></path><path d="M607,177.216L627.833,179.013C648.667,180.81,690.333,184.405,741.714,207.211C793.095,230.018,854.19,272.035,884.737,293.044L915.285,314.053" id="platzh-2-L_C_P_0" class="edge-thickness-normal edge-pattern-solid edge-thickness-normal edge-pattern-solid flowchart-link" style=";" data-edge="true" data-et="edge" data-id="L_C_P_0" data-points="W3sieCI6NjA3LCJ5IjoxNzcuMjE1Njg2Mjc0NTA5OH0seyJ4Ijo3MzIsInkiOjE4OH0seyJ4Ijo5MTguNTgwNTAwNDYwNTEwMiwieSI6MzE2LjMxOTQ3NjQ2NzQ2Nzh9XQ==" data-look="classic" marker-end="url(#platzh-2_flowchart-v2-pointEnd)"></path><path d="M604.5,205L625.75,211.5C647,218,689.5,231,744.62,270.345C799.74,309.69,867.481,375.381,901.351,408.226L935.221,441.071" id="platzh-2-L_C_S_0" class="edge-thickness-normal edge-pattern-solid edge-thickness-normal edge-pattern-solid flowchart-link" style=";" data-edge="true" data-et="edge" data-id="L_C_S_0" data-points="W3sieCI6NjA0LjUsInkiOjIwNX0seyJ4Ijo3MzIsInkiOjI0NH0seyJ4Ijo5MzguMDkyMzg0MzI2MTA4MywieSI6NDQzLjg1NjEzNjQ3NzQzMzA0fV0=" data-look="classic" marker-end="url(#platzh-2_flowchart-v2-pointEnd)"></path><path d="M1679.141,102L1683.307,102C1687.474,102,1695.807,102,1720.807,102C1745.807,102,1787.474,102,1828.474,102C1869.474,102,1909.807,102,1929.974,102L1950.141,102" id="platzh-2-L_X_I_0" class="edge-thickness-normal edge-pattern-solid edge-thickness-normal edge-pattern-solid flowchart-link" style=";" data-edge="true" data-et="edge" data-id="L_X_I_0" data-points="W3sieCI6MTY3OS4xNDA2MjUsInkiOjEwMn0seyJ4IjoxNzA0LjE0MDYyNSwieSI6MTAyfSx7IngiOjE4MjkuMTQwNjI1LCJ5IjoxMDJ9LHsieCI6MTk1NC4xNDA2MjUsInkiOjEwMn1d" data-look="classic" marker-end="url(#platzh-2_flowchart-v2-pointEnd)"></path></g><g class="edgeLabels"><g class="edgeLabel" transform="translate(245.8046875, 422.300350189209)"><g class="label" data-id="L_B_V_0" transform="translate(-51.1953125, -12)"><foreignObject width="102.390625" height="24"><div xmlns="http://www.w3.org/1999/xhtml" class="labelBkg" style="display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 200px; text-align: center;"><span class="edgeLabel"><p>HTTPS + JWT</p></span></div></foreignObject></g></g><g class="edgeLabel" transform="translate(732, 351.2579917907715)"><g class="label" data-id="L_V_P_0" transform="translate(-31.8359375, -12)"><foreignObject width="63.671875" height="24"><div xmlns="http://www.w3.org/1999/xhtml" class="labelBkg" style="display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 200px; text-align: center;"><span class="edgeLabel"><p>SQL RLS</p></span></div></foreignObject></g></g><g class="edgeLabel" transform="translate(732, 481.3427085876465)"><g class="label" data-id="L_V_S_0" transform="translate(-41.109375, -12)"><foreignObject width="82.21875" height="24"><div xmlns="http://www.w3.org/1999/xhtml" class="labelBkg" style="display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 200px; text-align: center;"><span class="edgeLabel"><p>预签名 URL</p></span></div></foreignObject></g></g><g class="edgeLabel" transform="translate(732, 70)"><g class="label" data-id="L_C_J_0" transform="translate(-39.1875, -12)"><foreignObject width="78.375" height="24"><div xmlns="http://www.w3.org/1999/xhtml" class="labelBkg" style="display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 200px; text-align: center;"><span class="edgeLabel"><p>docker API</p></span></div></foreignObject></g></g><g class="edgeLabel"><g class="label" data-id="L_C_G_0" transform="translate(0, 0)"><foreignObject width="0" height="0"><div xmlns="http://www.w3.org/1999/xhtml" class="labelBkg" style="display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 200px; text-align: center;"><span class="edgeLabel"></span></div></foreignObject></g></g><g class="edgeLabel" transform="translate(1101.55075, 169.53023)"><g class="label" data-id="L_J_G_0" transform="translate(-23.8203125, -12)"><foreignObject width="47.640625" height="24"><div xmlns="http://www.w3.org/1999/xhtml" class="labelBkg" style="display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 200px; text-align: center;"><span class="edgeLabel"><p>仅推理</p></span></div></foreignObject></g></g><g class="edgeLabel" transform="translate(1329.9375, 70)"><g class="label" data-id="L_J_X_0" transform="translate(-31.7578125, -12)"><foreignObject width="63.515625" height="24"><div xmlns="http://www.w3.org/1999/xhtml" class="labelBkg" style="display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 200px; text-align: center;"><span class="edgeLabel"><p>唯一出口</p></span></div></foreignObject></g></g><g class="edgeLabel"><g class="label" data-id="L_G_X_0" transform="translate(0, 0)"><foreignObject width="0" height="0"><div xmlns="http://www.w3.org/1999/xhtml" class="labelBkg" style="display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 200px; text-align: center;"><span class="edgeLabel"></span></div></foreignObject></g></g><g class="edgeLabel" transform="translate(773.60218, 216.61162)"><g class="label" data-id="L_C_P_0" transform="translate(-100, -24)"><foreignObject width="200" height="48"><div xmlns="http://www.w3.org/1999/xhtml" class="labelBkg" style="display: table; white-space: break-spaces; line-height: 1.5; max-width: 200px; text-align: center; width: 200px;"><span class="edgeLabel"><p>出站 TLS: SKIP LOCKED 租约 + 心跳</p></span></div></foreignObject></g></g><g class="edgeLabel" transform="translate(787.18792, 297.51796)"><g class="label" data-id="L_C_S_0" transform="translate(-51.9453125, -12)"><foreignObject width="103.890625" height="24"><div xmlns="http://www.w3.org/1999/xhtml" class="labelBkg" style="display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 200px; text-align: center;"><span class="edgeLabel"><p>出站: 上传产物</p></span></div></foreignObject></g></g><g class="edgeLabel" transform="translate(1829.140625, 102)"><g class="label" data-id="L_X_I_0" transform="translate(-100, -24)"><foreignObject width="200" height="48"><div xmlns="http://www.w3.org/1999/xhtml" class="labelBkg" style="display: table; white-space: break-spaces; line-height: 1.5; max-width: 200px; text-align: center; width: 200px;"><span class="edgeLabel"><p>80/443 白名单, 限制 POST, 全程审计</p></span></div></foreignObject></g></g></g><g class="nodes"><g class="node default" id="platzh-2-flowchart-B-0" data-look="classic" transform="translate(88.8046875, 422.300350189209)"><rect class="basic label-container" style="" x="-80.8046875" y="-27" width="161.609375" height="54"></rect><g class="label" style="" transform="translate(-50.8046875, -12)"><rect></rect><foreignObject width="101.609375" height="24"><div xmlns="http://www.w3.org/1999/xhtml" style="display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 200px; text-align: center;"><span class="nodeLabel"><p>浏览器 Next.js</p></span></div></foreignObject></g></g><g class="node default" id="platzh-2-flowchart-V-1" data-look="classic" transform="translate(477, 422.300350189209)"><rect class="basic label-container" style="" x="-111.1875" y="-27" width="222.375" height="54"></rect><g class="label" style="" transform="translate(-81.1875, -12)"><rect></rect><foreignObject width="162.375" height="24"><div xmlns="http://www.w3.org/1999/xhtml" style="display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 200px; text-align: center;"><span class="nodeLabel"><p>Vercel: web + API 路由</p></span></div></foreignObject></g></g><g class="node default" id="platzh-2-flowchart-P-3" data-look="classic" transform="translate(979.6484375, 351.2579917907715)"><path d="M0,13.838662871812044 a77.4921875,13.838662871812044 0,0,0 154.984375,0 a77.4921875,13.838662871812044 0,0,0 -154.984375,0 l0,52.83866287181205 a77.4921875,13.838662871812044 0,0,0 154.984375,0 l0,-52.83866287181205" class="basic label-container outer-path" style="" transform="translate(-77.4921875, -40.257994307718064)"></path><g class="label" style="" transform="translate(-69.9921875, -2)"><rect></rect><foreignObject width="139.984375" height="24"><div xmlns="http://www.w3.org/1999/xhtml" style="display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 200px; text-align: center;"><span class="nodeLabel"><p>Supabase Postgres</p></span></div></foreignObject></g></g><g class="node default" id="platzh-2-flowchart-S-5" data-look="classic" transform="translate(979.6484375, 481.3427085876465)"><path d="M0,13.55114774743832 a73.9765625,13.55114774743832 0,0,0 147.953125,0 a73.9765625,13.55114774743832 0,0,0 -147.953125,0 l0,52.55114774743832 a73.9765625,13.55114774743832 0,0,0 147.953125,0 l0,-52.55114774743832" class="basic label-container outer-path" style="" transform="translate(-73.9765625, -39.82672162115748)"></path><g class="label" style="" transform="translate(-66.4765625, -2)"><rect></rect><foreignObject width="132.953125" height="24"><div xmlns="http://www.w3.org/1999/xhtml" style="display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 200px; text-align: center;"><span class="nodeLabel"><p>Supabase Storage</p></span></div></foreignObject></g></g><g class="node default" id="platzh-2-flowchart-C-6" data-look="classic" transform="translate(477, 166)"><rect class="basic label-container" style="" x="-130" y="-39" width="260" height="78"></rect><g class="label" style="" transform="translate(-100, -24)"><rect></rect><foreignObject width="200" height="48"><div xmlns="http://www.w3.org/1999/xhtml" style="display: table; white-space: break-spaces; line-height: 1.5; max-width: 200px; text-align: center; width: 200px;"><span class="nodeLabel"><p>conductor systemd/compose</p></span></div></foreignObject></g></g><g class="node default" id="platzh-2-flowchart-J-7" data-look="classic" transform="translate(979.6484375, 70)"><rect class="basic label-container" style="" x="-122.6484375" y="-27" width="245.296875" height="54"></rect><g class="label" style="" transform="translate(-92.6484375, -12)"><rect></rect><foreignObject width="185.296875" height="24"><div xmlns="http://www.w3.org/1999/xhtml" style="display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 200px; text-align: center;"><span class="nodeLabel"><p>hermes 作业容器 - 内部网</p></span></div></foreignObject></g></g><g class="node default" id="platzh-2-flowchart-G-9" data-look="classic" transform="translate(1329.9375, 160)"><rect class="basic label-container" style="" x="-130" y="-39" width="260" height="78"></rect><g class="label" style="" transform="translate(-100, -24)"><rect></rect><foreignObject width="200" height="48"><div xmlns="http://www.w3.org/1999/xhtml" style="display: table; white-space: break-spaces; line-height: 1.5; max-width: 200px; text-align: center; width: 200px;"><span class="nodeLabel"><p>llm-gateway: LiteLLM 代理 + 步骤执行器</p></span></div></foreignObject></g></g><g class="node default" id="platzh-2-flowchart-X-13" data-look="classic" transform="translate(1594.5390625, 102)"><rect class="basic label-container" style="" x="-84.6015625" y="-27" width="169.203125" height="54"></rect><g class="label" style="" transform="translate(-54.6015625, -12)"><rect></rect><foreignObject width="109.203125" height="24"><div xmlns="http://www.w3.org/1999/xhtml" style="display: table-cell; white-space: nowrap; line-height: 1.5; max-width: 200px; text-align: center;"><span class="nodeLabel"><p>Squid 出站代理</p></span></div></foreignObject></g></g><g class="node default" id="platzh-2-flowchart-I-21" data-look="classic" transform="translate(2061.640625, 102)"><path d="M0,15.808823529411764 a107.5,15.808823529411764 0,0,0 215,0 a107.5,15.808823529411764 0,0,0 -215,0 l0,78.80882352941177 a107.5,15.808823529411764 0,0,0 215,0 l0,-78.80882352941177" class="basic label-container outer-path" style="" transform="translate(-107.5, -55.21323529411765)"></path><g class="label" style="" transform="translate(-100, -14)"><rect></rect><foreignObject width="200" height="48"><div xmlns="http://www.w3.org/1999/xhtml" style="display: table; white-space: break-spaces; line-height: 1.5; max-width: 200px; text-align: center; width: 200px;"><span class="nodeLabel"><p>互联网: LLM API, 使馆/BLS/EU 站点</p></span></div></foreignObject></g></g></g></g></g><defs><filter id="platzh-2-drop-shadow" height="130%" width="130%"><feDropShadow dx="4" dy="4" stdDeviation="0" flood-opacity="0.06" flood-color="#000000"></feDropShadow></filter></defs><defs><filter id="platzh-2-drop-shadow-small" height="150%" width="150%"><feDropShadow dx="2" dy="2" stdDeviation="0" flood-opacity="0.06" flood-color="#000000"></feDropShadow></filter></defs></svg></figure>
+<p>Monorepo（<code>pnpm</code> + Turborepo）：<code>apps/web</code>（UI + <code>/api/v1</code> 控制面 API + <code>lib/services/</code>）、<code>apps/conductor</code>、<code>packages/core</code>、<code>packages/db</code>、<code>packages/executors</code>、<code>infra/</code>（compose 文件、Squid 配置、systemd unit、部署脚本）。</p>
+<h4 id="执行器适配器契约承重的那个接口" class="hd">执行器适配器契约（承重的那个接口）<a class="hd__anchor" href="#执行器适配器契约承重的那个接口" aria-label="本节链接">#</a></h4>
+<div class="codeblock" data-lang="ts"><div class="codeblock__bar"><span class="codeblock__lang">ts</span><button class="codeblock__copy" type="button">复制</button></div><pre><code class="language-ts">// packages/executors/contract.ts
+export interface Executor {
+  kind: &#39;hermes&#39; | &#39;llm-gateway&#39; | &#39;thin-agent&#39;;
+  start(job: JobRow, ctx: RunContext): Promise&lt;RunHandle&gt;;      // 起容器 / 开始步骤
+  poll(h: RunHandle): Promise&lt;&#39;running&#39; | &#39;artifact_ready&#39; | &#39;failed&#39;&gt;; // hermes: 守候产物，绝不看进程退出
+  collect(h: RunHandle): Promise&lt;{ artifactPrefix: string; qaReport: unknown }&gt;; // 上传到 Storage
+  destroy(h: RunHandle): Promise&lt;void&gt;;                          // 容器 + 暂存卷，永远执行
+}
+</code></pre></div>
+<p>路由在 conductor 里是一个纯函数：<code>pack.schengen.v1 → hermes</code>，<code>step.cover_letter.v1 | step.checklist.v1 | step.translate.v1 → llm-gateway</code>。前端和 schema 永远不需要知道跑的是哪个执行器。</p>
+<blockquote class="note">
+<p>这个 4 个方法的接口，是架构里那份适配器契约（v0.4 第 C 章 §1）的 <strong>V1 进程内实现</strong>：<code>running</code>→<code>running</code>，<code>artifact_ready</code>→<code>completed</code>（+ 清单），<code>failed</code>→<code>failed</code>。<code>awaiting_user</code>、<code>/answers</code>、<code>cancel</code> 以及 webhook 事件流在 V1 中被刻意不实现 —— 结构化信息采集已把每个问题前置，因此没有运行中途的交互需要表达。等到第一个执行器搬离这台虚拟机时（例如 §6 里的 Fly.io 触发条件），C §1 的 HTTP 接口（以及一个 <code>awaiting_input</code> 轮询状态）才会实现。</p>
+</blockquote>
+<h3 id="2-逐周计划8-周单人做到可收费的-beta" class="hd">2. 逐周计划（8 周，单人，做到可收费的 beta）<a class="hd__anchor" href="#2-逐周计划8-周单人做到可收费的-beta" aria-label="本节链接">#</a></h3>
+<p>排期原则：结构化采集先行（v1 没有运行中途的交互 —— 表单一次性拿齐 agent 需要的一切），Hermes 执行器早上，因为它是今天唯一能产出可售签证包的东西；LLM 网关次之，作为廉价步骤的主力；轻量 agent 推迟。</p>
+<h4 id="第-1-周-地基仓库认证虚拟机" class="hd">第 1 周 —— 地基：仓库、认证、虚拟机<a class="hd__anchor" href="#第-1-周-地基仓库认证虚拟机" aria-label="本节链接">#</a></h4>
+<ul>
+<li><strong>目标：</strong> 所有账号和骨架都到位；用户能注册。</li>
+<li><strong>任务：</strong> 搭出 monorepo；创建 Supabase 项目 <code>visa-master-staging</code> 与 <code>visa-master-prod</code>；Vercel 项目关联 GitHub；迁移 <code>0001_profiles.sql</code>（<code>auth.users</code> 的镜像 + 角色枚举 <code>user|operator|admin</code>）、<code>0002_jobs.sql</code>（架构第 B 章的 <code>jobs</code> 表 —— 上面 B.1 只是它的最小草图；保留第 B 章的状态名，加上 <code>attempt</code>/<code>max_attempts</code>、<code>idempotency_key</code>、预算列，并补上 <code>failure_reason text</code>、<code>tokens_in bigint</code>、<code>tokens_out bigint</code>）、<code>0003_usage_events.sql</code>；配好 Supabase Auth 的邮箱 OTP；<code>apps/web</code> 的登录/登出 + RLS 保护下的空仪表盘。<code>apps/web</code> 的骨架要<strong>随第一个界面一起交付 i18n 骨架</strong>（2026-08-10 修订，来自设计阶段审查 —— <a href="../design/product/04_MVP_Scope_V1_V2.md">design/product/04</a>）：用 <code>next-intl</code> 做带 locale 前缀的路由（<code>/zh/…</code>、<code>/en/…</code>）、一份同时装着两种语言的 ICU 消息目录，以及一个构建检查 —— 只要出现硬编码的用户可见字符串，或任一语言缺 key，就构建失败。登录页和仪表盘本身就带用户可见文案，所以目录必须先于任何界面存在；等代码长大了再补，等于重写（<a href="../design/guidelines/internationalization-zh.md">国际化</a> §3、§8）。开通 CAX31：Ubuntu 24.04 LTS、<code>ufw</code> 拒绝所有入站、Tailscale SSH、unattended-upgrades、Docker + compose 插件、0600 权限的 env 文件。</li>
+<li><strong>完成定义：</strong> 在 Vercel 生产 URL 上，注册 → OTP → 仪表盘走得通，<strong>且 <code>/zh</code> 与 <code>/en</code> 两条路径下每个字符串都从目录解析</strong>；任一语言缺 key 则构建失败；从虚拟机 <code>psql</code> 连 Supabase 连接池成功；虚拟机没有任何公网端口（从外部 <code>nmap</code> 什么都扫不到）。</li>
+<li><strong>演示：</strong> 在手机上注册；展示空仪表盘和关闭的虚拟机。</li>
+</ul>
+<h4 id="第-2-周-结构化信息采集-上传" class="hd">第 2 周 —— 结构化信息采集 + 上传<a class="hd__anchor" href="#第-2-周-结构化信息采集-上传" aria-label="本节链接">#</a></h4>
+<blockquote class="note">
+<p><strong>实建说明（v2）：</strong> 第 1–2 周是按 ADR-004 的 API-first 形态交付的 —— 下文提到的端点以 <code>/api/v1/**</code> 路由处理器的形式存在于 <code>lib/services/</code> 之上，Web 页面作为 API 客户端消费它们。</p>
+</blockquote>
+<ul>
+<li><strong>目标：</strong> 在任何 agent 出现之前，先把完整的申根旅游签采集变成经过校验的结构化数据。</li>
+<li><strong>任务：</strong> <code>packages/core</code>：<code>IntakeSchengenTourismV1</code> zod schema（申请人、护照、在职、行程日期与路线、财力、既往签证）+ <code>rules/schengen-spain.ts</code>（确定性的必需材料计算 —— 即 ADR-002 说的代码检查）。<strong>校验问题携带消息 key 加参数</strong>（例如 <code>passport.expiry.tooSoon</code> + <code>{monthsRequired: 3}</code>），绝不是句子 —— 由前端按当前语言解析（<a href="../design/guidelines/internationalization-zh.md">国际化</a> §3）；这条从第一个 schema 起就有约束力，因为它是 i18n 里唯一一件补不回来的事。<code>apps/web</code> 里做多步表单，客户端校验用同一个 schema，另加<strong>草稿持久化</strong>（2026-08-10 修订，来自设计阶段审查 —— <a href="../design/product/04_MVP_Scope_V1_V2.md">design/product/04</a>）：一行草稿记录（<code>jobs.status=&#39;draft&#39;</code> 或专门的草稿表），按步自动保存，保存逻辑由共享 schema 的 partial 生成，登录后能从上次未完成的那一步精确恢复 —— 在微信 webview 里，被打断才是会话的中位数，因此没有服务端草稿的采集流程会丢用户（<a href="../design/guidelines/mobile-parity-zh.md">移动端一致性</a> §3.3）。<code>POST /api/uploads/sign</code> → 签发上传 URL，写入私有的 <code>uploads/{user_id}/{upload_id}</code>（护照扫描、银行流水、在职证明）；<code>POST /api/jobs</code> 做服务端校验，冻结脱敏后的 <code>input</code> 快照（载荷里没有 user_id/email —— v0.3 §11），插入 <code>status=&#39;queued&#39;</code>、<code>kind=&#39;pack.schengen.v1&#39;</code>（挂钟 <code>deadline_at</code> 在<strong>取得租约时</strong>设置，而不是入队时 —— 排队等待绝不能吃掉运行预算）；<code>GET /api/jobs/:id</code>（受 RLS 限制）供轮询。</li>
+<li><strong>完成定义：</strong> 非法采集会被共享 schema 的字段级错误挡回，<strong>且两种语言下都由消息 key 渲染</strong>；中途放弃的采集在登出再登录后能从同一步带着数据继续；一次完成的采集会产出一行 <code>queued</code> 作业和 Storage 里的文件；此时还没有任何东西消费队列。</li>
+<li><strong>演示：</strong> 在手机上端到端走一遍采集 —— 包括中途杀掉页签、登录后继续；展示 <code>jobs</code> 行和已上传的对象。</li>
+</ul>
+<h4 id="第-3-周-conductor-hermes-执行器第一个云端产出的签证包" class="hd">第 3 周 —— conductor + Hermes 执行器：第一个云端产出的签证包<a class="hd__anchor" href="#第-3-周-conductor-hermes-执行器第一个云端产出的签证包" aria-label="本节链接">#</a></h4>
+<p>这是成败攸关的一周；这里的一切在本地都已验证过，现在只是搬家。</p>
+<ul>
+<li><strong>目标：</strong> 一个排队中的作业能变成 Storage 里的交付目录，全程无人碰虚拟机。</li>
+<li><strong>任务：</strong> <code>apps/conductor</code> 的模块：<code>lease.ts</code>（B.1 的 <code>FOR UPDATE SKIP LOCKED</code> 认领 + 2 分钟心跳）、<code>router.ts</code>、<code>executors/hermes.ts</code>（<code>docker run --rm --cpus 4 --memory 8g --pids-limit 512 --security-opt no-new-privileges --network egress-internal</code>，每作业一个全新暂存卷，按 v0.3 §4a 只读挂载 profile/venv，模型密钥只读注入）、<code>artifact-watch.ts</code>（轮询暂存目录找 <code>qa-report.json</code> 与交付目录 —— <strong>绝不</strong>等待退出；<code>workspace open</code> 那一步会让无头运行挂住）、<code>collect.ts</code>（上传到 <code>artifacts/{job_id}/</code>，写入 <code>qa_report</code> 与 <code>artifact_prefix</code>，置为 <code>awaiting_review</code>）；<code>lease.ts</code> 设置 <code>deadline_at = leased_at + 60 分钟</code>（beta 阶段上限；等方差数据积累起来后向 20 分钟的路由默认值收紧），<code>watchdog.ts</code> 在超期后强制销毁（同时清理死租约）。<code>infra/compose.vm.yml</code>：<code>egress-internal</code>（<code>internal: true</code>）+ 双网卡 Squid，带 v0.3 §5.2 规则 1–3（封禁 RFC1918 + 169.254.0.0/16 + 非 80/443；对非白名单主机的 POST 一律拒绝；开访问日志），再加一个<strong>版本锁定的 LiteLLM <code>gateway</code> 容器</strong>（架构 C §2.1），像 Squid 一样双网卡：作业容器经内部网络访问它，供应商密钥只存在于 <code>/etc/visa-master/gateway.env</code>，而 Squid 的 LLM 主机白名单收缩到只剩网关本身。<strong>关键路径：把 Codex 的设备码 OAuth 换成真正的 API key</strong>（先接 Anthropic 或 OpenAI，放在网关的 env 里），并把 Hermes 的供应商配置指向网关的 OpenAI 兼容端点；验证一次完整的签证包运行。<code>tokens_in/out</code> 与每作业成本来自网关按作业虚拟 key 的花费日志 —— 调用时的预算强制按架构 A §2.2。</li>
+<li><strong>完成定义：</strong> 在浏览器提交采集 → 约 10 分钟后 <code>status=&#39;awaiting_review&#39;</code>，产物在 Storage 里，容器与暂存卷都已销毁（<code>docker ps -a</code> 干净）；被强制超期的作业会被杀掉并标记 <code>expired</code>；在作业容器里 <code>curl http://169.254.169.254</code> 失败；作业容器里 <code>env</code> <strong>看不到任何供应商密钥</strong>（只能经网关推理）。</li>
+<li><strong>演示：</strong> 从浏览器实时提交，一路走到 Storage 里的 <code>qa-report.json</code>；展示这次运行的 Squid 审计日志。</li>
+</ul>
+<h4 id="第-4-周-进度复核门交付" class="hd">第 4 周 —— 进度、复核门、交付<a class="hd__anchor" href="#第-4-周-进度复核门交付" aria-label="本节链接">#</a></h4>
+<ul>
+<li><strong>目标：</strong> 打通人的环路：用户看进度，运营审批，用户下载。</li>
+<li><strong>任务：</strong> conductor 写 <code>progress</code> JSONB 阶段机（<code>intake → research → documents → qa → awaiting_review</code>），阶段由工作台的文件系统标记推断；作业页每 3 秒轮询并渲染阶段时间线；运营界面 <code>/admin/review</code>（按角色限制）：<code>awaiting_review</code> 队列、内嵌 QA 报告、经短时效预签名 URL 预览 PDF、<strong>批准 → <code>delivered</code></strong>（通知用户）、<strong>驳回 → <code>failed</code> + <code>failure_reason</code></strong>；用户交付页提供 7 天有效的签名下载链接；<code>POST /api/admin/jobs/:id/approve|reject</code>；迁移 <code>0004_packs_reviews_audit.sql</code>（按架构第 B 章的 <code>packs</code>、<code>reviews</code>、<code>audit_log</code>）—— 批准/驳回会写一行 <code>reviews</code> 和一条 <code>audit_log</code>，以维持「交付必须有一次已批准的复核」这条不变式。在作业进入 <code>awaiting_review</code> 之前，<code>collect.ts</code> 先跑最小校验器 —— 架构 A §3.3 的第 1–4 步（清单角色完备性对照 <code>packages/core</code> 规则、存在性 + 重算 sha256、格式合理性、qa-report 解析）；第 5 步（预算/期限对账）用第 3 周的网关计量。人工门是强制的 —— 没有任何东西会自动交付（v0.3 §8）。</li>
+<li><strong>完成定义：</strong> 由创始人当运营，完整旅程走得通；被驳回的作业会把原因呈现给用户；签名 URL 会过期。</li>
+<li><strong>演示：</strong> 完整用户旅程，开两个浏览器窗口（用户 + 运营）。</li>
+</ul>
+<h4 id="第-5-周-llm-网关执行器-预算-缓存" class="hd">第 5 周 —— LLM 网关执行器 + 预算 + 缓存<a class="hd__anchor" href="#第-5-周-llm-网关执行器-预算-缓存" aria-label="本节链接">#</a></h4>
+<ul>
+<li><strong>目标：</strong> 第二类执行器上线；廉价步骤不再需要一个 10 分钟的容器。</li>
+<li><strong>任务：</strong> <code>packages/executors/llm-gateway</code>：在<strong>第 3 周那个 LiteLLM 网关</strong>之上做步骤库 —— 不自己手搓供应商层；模型路由、回退和按 key 的预算都是 LiteLLM 的配置（起草用前沿模型，翻译/排版用小模型），依据架构 C §2.1 的决定；步骤种类 <code>step.cover_letter.v1</code>、<code>step.checklist.v1</code>、<code>step.translate.v1</code> 在 conductor 里进程内执行（同一张 jobs 表、同一个租约循环 —— 一个 20–60 秒的作业配 3 秒轮询延迟完全可以接受，而且把每一次 LLM 调用都留在虚拟机上，就保住了单一的出站/审计/计量点）；按用户的 token 预算在取租约前强制；迁移 <code>0005_requirements_cache.sql</code>（使馆材料要求快照 + 模板，按路线 + 签证类型作键，TTL 30 天 —— ADR-002 说的缓存杠杆）；交付页上的「重新生成动机信」按钮，作为第一个面向用户的网关功能；重试策略 + 错误分类（<code>retryable_provider</code>、<code>budget_exceeded</code>、<code>deadline</code>、<code>qa_failed</code>）。</li>
+<li><strong>完成定义：</strong> 重新生成一封动机信能在 60 秒内完成且不起任何容器；超预算的用户会得到干净的拒绝；第二次相同路线命中材料要求缓存。</li>
+<li><strong>演示：</strong> 现场重新生成一封动机信；展示 <code>usage_events</code> 在累加，以及路由表把翻译派给了小模型。</li>
+</ul>
+<h4 id="第-6-周-cicdstagingprod加固可观测性" class="hd">第 6 周 —— CI/CD、staging/prod、加固、可观测性<a class="hd__anchor" href="#第-6-周-cicdstagingprod加固可观测性" aria-label="本节链接">#</a></h4>
+<ul>
+<li><strong>目标：</strong> 部署变得无聊；出故障会呼你。</li>
+<li><strong>任务：</strong> 下面 §3 的全部内容；容器加固走一遍（非 root agent 用户、除暂存目录外根文件系统只读、丢弃 capabilities；评估 arm64 上的 gVisor <code>runsc</code> 并把结论无论正反都写进 ADR）；Web 与 conductor 接 Sentry（每个事件都打 <code>job_id</code> 标签）；Better Stack 心跳（conductor 每 60 秒 ping 一次；漏掉即告警）；看门狗告警规则（§5）；每晚一次 <code>pg_dump</code> 作为双保险。</li>
+<li><strong>完成定义：</strong> PR → 预览 → 合并 → 两个面都自动部署，全程不用手工 SSH；杀掉 conductor 进程后 3 分钟内呼到创始人；故意卡死一个作业，5 分钟内告警。</li>
+<li><strong>演示：</strong> 把一行改动走完整条流水线；拔掉网线（停掉 conductor）并展示告警。</li>
+</ul>
+<h4 id="第-7-周-beta-打磨本地化通知pii-生命周期恢复演练" class="hd">第 7 周 —— Beta 打磨：本地化、通知、PII 生命周期、恢复演练<a class="hd__anchor" href="#第-7-周-beta-打磨本地化通知pii-生命周期恢复演练" aria-label="本节链接">#</a></h4>
+<ul>
+<li><strong>目标：</strong> 能拿给陌生人看；数据处理站得住脚。</li>
+<li><strong>任务：</strong> 用 <code>next-intl</code> 把 zh-CN 作为主语言（en 次之）；用 Resend 发事务邮件（&quot;签证包已就绪&quot;、&quot;签证包被驳回&quot;）；服务条款/隐私页写明留存期；按架构第 B 章 §3 在 conductor 的每日扫描里执行留存策略 —— 上传件在案件关闭后 90 天、作业中间产物 30 天、已交付签证包 180 天；暂存卷本来就每作业销毁；开通 Supabase PITR 加购并做一次<strong>恢复到 staging 的演练</strong>（记录 RTO）；连续跑 3 个签证包以确认串行队列行为，并用实测的每包 token 数对照 §4 的估算；修掉自测中最扎手的 5 个 UX 毛刺。</li>
+<li><strong>完成定义：</strong> 一个中文用户不碰英文也能走完整个旅程；恢复演练笔记已提交；实测的每包成本数字取代估算值。</li>
+<li><strong>演示：</strong> 全中文走完整旅程，含&quot;签证包已就绪&quot;邮件；展示恢复演练日志。</li>
+</ul>
+<h4 id="第-8-周-可收费的-beta-上线" class="hd">第 8 周 —— 可收费的 beta 上线<a class="hd__anchor" href="#第-8-周-可收费的-beta-上线" aria-label="本节链接">#</a></h4>
+<ul>
+<li><strong>目标：</strong> 收到钱，来第一批外部用户。</li>
+<li><strong>任务：</strong> 最小支付 —— <strong>开通支付宝与银行卡的 Stripe Payment Link</strong>，一个商品（&quot;申根签证包复核 —— ¥X&quot;）；一个 20 行的 webhook 路由翻转 <code>profiles</code> 上的 <code>pack_credits</code>（完整自助计费推迟，见 §6）；定价页；招募 5–10 位手选的 beta 用户（成都 → 西班牙画像）；创始人每天做运营复核；把运行手册（§5）定稿到 <code>doc/runbook.md</code>。</li>
+<li><strong>完成定义：</strong> 一个陌生人能付款、提交并拿到已批准的签证包，全程除复核门外不需要创始人介入；§5 的每条告警都有经过验证的处置方案。</li>
+<li><strong>演示：</strong> 第一个付费签证包。</li>
+</ul>
+<p><strong>缓冲说明：</strong> 第 3 周承担着排期风险（换 API key + 代理 + 第一次云端运行）。若它延误，第 5 周与第 7 周压缩 —— 网关执行器和本地化是可以让步的项，复核门和加固不是。</p>
+<h3 id="3-cicd-与环境" class="hd">3. CI/CD 与环境<a class="hd__anchor" href="#3-cicd-与环境" aria-label="本节链接">#</a></h3>
+<p><strong>环境。</strong></p>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th></th>
+<th>Web</th>
+<th>数据库/认证/存储</th>
+<th>conductor + agent 面</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>预览</td>
+<td>每个 PR 一个 Vercel 预览</td>
+<td>staging 的 Supabase</td>
+<td>不参与（用种子数据模拟作业状态）</td>
+</tr>
+<tr>
+<td>Staging</td>
+<td>Vercel 预览晋升 / <code>staging</code> 分支</td>
+<td><code>visa-master-staging</code> 项目</td>
+<td>同一台虚拟机上的第二个 conductor systemd unit，独立 env 文件，指向 staging 数据库，与生产共用 Docker daemon 和代理（单人单租户阶段可接受的取舍；已记录待日后处理）</td>
+</tr>
+<tr>
+<td>生产</td>
+<td><code>main</code> → Vercel 生产</td>
+<td><code>visa-master-prod</code></td>
+<td>生产 conductor unit</td>
+</tr>
+</tbody></table>
+</div>
+<p><strong>流水线（GitHub Actions）。</strong></p>
+<ul>
+<li><code>ci.yml</code>（每个 PR）：<code>pnpm turbo lint typecheck test</code>，外加 <code>supabase db diff</code> 检查迁移已提交且是线性的。</li>
+<li>Web：由 Vercel 的 Git 集成处理预览与生产部署；不写自定义 action。</li>
+<li><code>db.yml</code>：合并到 <code>main</code> 时自动 <code>supabase db push</code> 到 staging；生产迁移放在需要人工审批的环境门之后。<strong>只做「扩展—收缩」</strong>（先加列/表、回填、以后再删），这样部署过程中 Web 与 conductor 的版本可以错开。</li>
+<li><code>conductor.yml</code>：<code>docker buildx build --platform linux/arm64</code> → 推送 <code>ghcr.io/…/conductor:{gitsha}</code> → 经 Tailscale 用 <code>appleboy/ssh-action</code> 执行 <code>docker compose pull conductor &amp;&amp; docker compose up -d conductor</code>。compose 文件锁定 sha 标签；保留最近 5 个标签。</li>
+<li><code>agent-image.yml</code>：<code>visa-master-hermes</code> 只在打发布标签时重建（它很少变）；推到 GHCR，每个版本在虚拟机上拉一次 —— 绝不按作业拉。</li>
+<li><strong>明确拒绝 Watchtower</strong> 用于 agent 面：无人值守地自动拉取一个安全边界镜像，是拿可审计性换方便。部署必须是显式的、有日志的 Actions 运行。</li>
+</ul>
+<p><strong>回滚。</strong> Web：Vercel 即时回滚（一键）。conductor：用上一个 sha 标签 <code>compose up -d</code>（虚拟机上有个 <code>deploy.sh --rollback</code> 封装）。Agent 镜像：把 compose 的标签指回去。数据库：绝不原地回滚迁移 —— 只向前滚；Supabase PITR 只用于灾难场景。回滚演练是第 6 周完成定义的一部分。</p>
+<h3 id="4-mvp-每月成本" class="hd">4. MVP 每月成本<a class="hd__anchor" href="#4-mvp-每月成本" aria-label="本节链接">#</a></h3>
+<p>固定平台成本：</p>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>服务</th>
+<th>$/月</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Vercel Pro（1 个席位）</td>
+<td>20</td>
+</tr>
+<tr>
+<td>Supabase Pro（含每日备份、100 GB 存储、250 GB 出流量）</td>
+<td>25</td>
+</tr>
+<tr>
+<td>Supabase PITR 加购（从第 7 周起）</td>
+<td>约 10</td>
+</tr>
+<tr>
+<td>Hetzner CAX31（8 vCPU / 16 GB arm64）+ IPv4</td>
+<td>约 19</td>
+</tr>
+<tr>
+<td>Sentry（开发档）/ Better Stack / Tailscale / Resend / GHCR</td>
+<td>0（免费额度）</td>
+</tr>
+<tr>
+<td>域名</td>
+<td>约 1</td>
+</tr>
+<tr>
+<td><strong>固定合计</strong></td>
+<td><strong>约 $75</strong></td>
+</tr>
+</tbody></table>
+</div>
+<p><strong>每个签证包的 LLM 成本 —— 算式（用第 3 周的计量去核对）。</strong> 一次签证包运行约 10 分钟，主要是串行往返：假设约 50 次 LLM 调用，每次平均上下文约 15k 输入 token（技能 + 工作台摘要），约 1k 输出 → <strong>每个签证包约 750k 输入 / 约 50k 输出 token</strong>。</p>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>模型档次</th>
+<th>$/百万 输入 / 输出</th>
+<th>每包成本</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>前沿（Claude Sonnet 档）</td>
+<td>约 3 / 15</td>
+<td>750k×$3 + 50k×$15 ≈ <strong>$3.00</strong></td>
+</tr>
+<tr>
+<td>前沿 + 提示缓存（重复的技能/系统前缀）</td>
+<td>——</td>
+<td>约 <strong>$1.80–2.20</strong></td>
+</tr>
+<tr>
+<td>Kimi 档的经济型模型</td>
+<td>约 0.6 / 2.5</td>
+<td>≈ <strong>$0.60</strong></td>
+</tr>
+<tr>
+<td>最坏情况（60 分钟运行，6 倍）</td>
+<td>——</td>
+<td>约 <strong>$18</strong> 上限 → 这就是 token 预算存在的理由</td>
+</tr>
+</tbody></table>
+</div>
+<p>规划口径：<strong>每包 $1–4，保守取 $3</strong>。网关步骤（重生成动机信等）约 20k 输入 / 2k 输出 ≈ 每次 <strong>$0.09</strong> —— 是舍入误差。</p>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>量级</th>
+<th>包/月</th>
+<th>LLM $/月（$0.6–4/包）</th>
+<th>全包含 $/月</th>
+<th>每包全包含成本</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>5/天</td>
+<td>150</td>
+<td>90–600</td>
+<td><strong>165–675</strong></td>
+<td>$1.10–4.50</td>
+</tr>
+<tr>
+<td>15/天</td>
+<td>450</td>
+<td>270–1,800</td>
+<td>345–1,875</td>
+<td>$0.77–4.17</td>
+</tr>
+<tr>
+<td>30/天</td>
+<td>900</td>
+<td>540–3,600</td>
+<td>615–3,675</td>
+<td>$0.68–4.08</td>
+</tr>
+</tbody></table>
+</div>
+<p>读法：基础设施是噪声；<strong>LLM 支出是全部的可变成本项</strong> —— 这正是 token 计量落在第 3 周、模型路由落在第 5 周，以及每包定价必须留出 $5 以上余量的原因。按 ¥199–399（约 $28–55）这样一个说得过去的包价，即便按保守的 token 估算，毛利率也 &gt;85%。</p>
+<h3 id="5-运维-运行手册基础" class="hd">5. 运维 / 运行手册基础<a class="hd__anchor" href="#5-运维-运行手册基础" aria-label="本节链接">#</a></h3>
+<p><strong>监控与告警。</strong></p>
+<ul>
+<li>Sentry：<code>apps/web</code>（浏览器 + 服务端）与 <code>apps/conductor</code>，conductor 的每个事件都打上 <code>job_id</code> / <code>executor</code> / <code>stage</code> 标签。</li>
+<li>Better Stack：对 Web 应用做 HTTPS 检查，外加 conductor 循环每 60 秒一次的<strong>心跳</strong>（连漏 3 次即呼人）。这是「只出不进的虚拟机还活着吗」的唯一信号，因为没有任何东西能从入站探测它。</li>
+<li>作业级看门狗（在 conductor 内，每 60 秒一次，告警到 Telegram + Sentry）：<ul>
+<li>conductor 空闲时 <code>queued</code> 超过 15 分钟 → 租约循环坏了；</li>
+<li><code>leased</code> 且 <code>lease_expires_at &lt; now()</code> → 认领中途崩了；重新入队一次，再失败就判失败；</li>
+<li><code>running</code> 超过 <code>deadline_at</code> → 强制销毁、标记 <code>expired</code>、告警；</li>
+<li><code>awaiting_review</code> 超过 12 小时 → 催运营（就是你）；</li>
+<li>Squid 审计日志：某个作业出现被拒绝的 POST 突发 → 带 <code>job_id</code> 告警（提示注入的早期绊线）。</li>
+</ul>
+</li>
+</ul>
+<p><strong>备份与数据生命周期。</strong></p>
+<ul>
+<li>Postgres：第 1 天起用 Supabase Pro 的每日备份（保留 7 天）；第 7 周起加 PITR；每晚由 GitHub Actions 定时 <code>pg_dump</code> 到另一个私有桶作为双保险；<strong>第 7 周做一次恢复演练，之后每季度一次</strong>。</li>
+<li>存储：留存按架构第 B 章 §3 —— 上传件（护照/银行 PII）在案件关闭后 90 天、作业中间产物 30 天、已交付签证包 180 天；由 conductor 的每日扫描执行，并写在隐私页上。每作业的暂存卷在作业结束时销毁（v0.3 §4b）—— 两次作业之间，虚拟机上不静态存留任何 PII。</li>
+<li>虚拟机：可从 <code>infra/</code> 完全复现（compose + 来自 1Password 的 env）；按设计不需要虚拟机磁盘备份 —— 把它当牲口而不是宠物。</li>
+</ul>
+<p><strong>事件处理基础。</strong></p>
+<ul>
+<li>Sev1 = 签证包无法完成，或怀疑 PII 泄露；Sev2 = 降级（复核受阻、某个供应商挂了）；Sev3 = 毛刺。</li>
+<li>前 15 分钟清单：Better Stack 面板 → Supabase 状态页 → <code>journalctl -u conductor</code> → <code>docker ps -a</code> + 暂存卷数量 → jobs 表状态直方图 → Squid 访问日志尾部。</li>
+<li>常见处置：供应商故障 → 把路由表切到备用供应商（改 env、重新部署 conductor）；作业卡死 → 看门狗已经杀掉了，从管理后台重新入队；虚拟机死了 → 用 <code>infra/</code> 在一台新的 CAX31 上重建（约 30 分钟，演练一次）。</li>
+<li>疑似外泄（Sev1）：停掉 conductor，保全 Squid 日志与容器，轮换 LLM 密钥，在对外沟通之前先审阅该作业的出站审计。</li>
+<li>每一次 Sev1/Sev2 都要在 <code>doc/incidents/</code> 里写半页复盘。</li>
+</ul>
+<h3 id="6-明确推迟的事项-附触发条件" class="hd">6. 明确推迟的事项 —— 附触发条件<a class="hd__anchor" href="#6-明确推迟的事项-附触发条件" aria-label="本节链接">#</a></h3>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>事项</th>
+<th>何时启动</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Stripe 自助计费</strong>（订阅/点数、发票、退款流程 —— 取代 Payment Link + webhook）</td>
+<td>付费用户 &gt;10 人，或人工处理权益每周超过约 30 分钟</td>
+</tr>
+<tr>
+<td><strong>账号注销 / PII 清除流水线</strong>（架构 B §4：<code>pending_deletion</code>、清除 worker、S3 前缀删除；PIPL 的删除权）</td>
+<td>在把注册开放到手选 beta 用户之外以前；过渡期：运行手册里的人工清除条目</td>
+</tr>
+<tr>
+<td><strong>并发 &gt; 1</strong>（conductor 信号量 → 2–3 个作业槽；虚拟机升一档或加第二台）</td>
+<td>高峰期队列 p95 等待 &gt; 30 分钟，或按最坏时长计算虚拟机利用率 &gt; 60%（研究 A 的触发条件集）</td>
+</tr>
+<tr>
+<td><strong>迁移到 Fly.io Machines</strong>（停机实例池、每虚拟机隔离）</td>
+<td>与并发相同的触发条件，外加：第一个客户或安全评审要求比共享 daemon 更强的隔离；并把「Fly 的出站管控在客户机内部」这条注意事项带下去</td>
+</tr>
+<tr>
+<td><strong>出站 DLP</strong>（用 TLS 拦截的 mitmproxy 扫描出站报文中该作业的 PII token —— v0.3 §5.2 规则 4）</td>
+<td>第一次 B2B/安全评审，或 Squid 审计中出现任何可疑 POST 的事件</td>
+</tr>
+<tr>
+<td><strong>轻量自研 agent 服务器</strong>（讨论 01 的折中路线，跑在现有执行器契约上）</td>
+<td>LLM 网关步骤库覆盖了 &gt;50% 的签证包内容<strong>并且</strong>（在用完路由与缓存杠杆之后，每包成本或时延仍未达标），或者跟进 Hermes 升级本身变成一种税 —— 按 ADR-002，这是 V5 的重估提前到来，且只有在挣得起时才提前</td>
+</tr>
+<tr>
+<td><strong><code>VISA_MASTER_SERVER_MODE</code></strong> 干净跳过 <code>workspace open</code>（需改镜像）</td>
+<td>下一次计划中的 agent 镜像重建；产物守候 + 期限已经让它不再阻塞</td>
+</tr>
+<tr>
+<td><strong>Supabase Realtime 进度</strong>（作为渐进增强取代轮询）</td>
+<td>轮询成本或用户体验开始被抱怨 —— 在 MVP 量级上大概永远不会</td>
+</tr>
+<tr>
+<td><strong>多区域执行</strong>（为时延取靠近中国的区域；按作业计费的平台白送）</td>
+<td>中国用户持续抱怨时延，或某个合作方要求区域内处理</td>
+</tr>
+<tr>
+<td><strong>类 SOC2 加固</strong>（访问审阅、审计轨迹、供应商 DPA、渗透测试）</td>
+<td>第一份提出该要求的企业/B2B 合同；在那之前，v0.3 的控制项 + 运行手册就是安全叙事</td>
+</tr>
+<tr>
+<td><strong>2–3 台 Hetzner 节点上的 k3s</strong></td>
+<td>持续每天 &gt;50 个签证包，或第二位工程师加入（研究 A 的 K8s 阈值）</td>
+</tr>
+<tr>
+<td><strong>抽出独立后端服务</strong>（把 <code>lib/services/</code> 换个家，放到同样的 <code>/api/v1</code> 路径之后作为独立服务；框架届时再定 —— NestJS 能继续引用 <code>packages/core</code>，FastAPI 则需要把它移植过去）</td>
+<td>请求路径上需要某个只有 Python 才有的库；来了一位 Python 优先的协作者；或者第一个执行器搬离虚拟机，从而激活第 C 章 §1 的私网 HTTP 接口（ADR-004）</td>
+</tr>
+</tbody></table>
+</div>
+<hr class="rule">
+<h2 id="结语" class="hd">结语<a class="hd__anchor" href="#结语" aria-label="本节链接">#</a></h2>
+<p>第三部分的技术栈，是第一部分与第二部分各自排名第一的选项的组合，只有一处显式调和（虚拟机升到 CAX31，好让作业容器保住完整的 4 vCPU / 8 GB）。每一项推迟的事都带着触发条件（第三部分 §6）；每一条迁移路径 —— agent 面去 Fly Machines，控制面去 Neon/Clerk 或 AWS —— 都是照着「搬数据而不是重写」来选的。挂钟预算（beta 阶段 60 分钟上限，对比稳态路由默认的 20 分钟）属于按任务的配置；见 <a href="architecture-v0.4-zh.html">architecture-v0.4</a> 第二部分中的调和说明。</p>
+<p><em>平台选型与开发计划 完</em></p>
+</article></main>
+  </div>
+  <button id="to-top" class="to-top" aria-label="回到顶部"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 13V3.5M3.75 7.75L8 3.5l4.25 4.25"/></svg></button>
+</body>
+</html>

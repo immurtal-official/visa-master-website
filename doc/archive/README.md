@@ -19,7 +19,7 @@ still in force is.
 | `architecture-v0.3-slides.html` (+ five images) | — | A presentation of v0.3. The v0.3 *text* is still current and lives in `doc/` |
 | `platform-and-dev-plan-en.md` | [`platform-and-dev-plan-v2-en.md`](../platform-and-dev-plan-v2-en.md) | Superseded by ADR-004, which made the control plane API-first |
 | `platform-and-dev-plan-en.html` | — | The generated reader for the above, and behind it by two revisions |
-| `platform-and-dev-plan-zh.md` | — | The 1:1 Chinese mirror of the v1 plan. No v2 mirror has been generated yet |
+| `platform-and-dev-plan-zh.md` | [`platform-and-dev-plan-v2-zh.md`](../platform-and-dev-plan-v2-zh.md) | The 1:1 Chinese mirror of the v1 plan |
 | `EXECUTION-PLAN-week1-2.md` | [`STATUS.md`](../../STATUS.md) for state; the v2 plan for what is next | The commit-by-commit plan weeks 1–2 executed. Still the primary source for *why* the root configuration looks the way it does (§3), the first three migrations (§7), and the two i18n gates (§5.3–5.4) |
 
 Architecture versions are additive here: a new version supersedes the framing of

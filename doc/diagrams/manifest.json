@@ -1,0 +1,66 @@
+{
+  "arch-0": {
+    "doc": "arch-en",
+    "sha256": "0595bb4a7f14152c"
+  },
+  "arch-1": {
+    "doc": "arch-en",
+    "sha256": "3be63a69084be421"
+  },
+  "arch-2": {
+    "doc": "arch-en",
+    "sha256": "30610252ba114884"
+  },
+  "arch-3": {
+    "doc": "arch-en",
+    "sha256": "ab3f89f93221e1b2"
+  },
+  "arch-4": {
+    "doc": "arch-en",
+    "sha256": "bab09005c57a39d9"
+  },
+  "archzh-0": {
+    "doc": "arch-zh",
+    "sha256": "7a050294edea2f1c"
+  },
+  "archzh-1": {
+    "doc": "arch-zh",
+    "sha256": "427f6b09b83fa97d"
+  },
+  "archzh-2": {
+    "doc": "arch-zh",
+    "sha256": "db3e18fbde694bb8"
+  },
+  "archzh-3": {
+    "doc": "arch-zh",
+    "sha256": "fc06eabf17a43ed7"
+  },
+  "archzh-4": {
+    "doc": "arch-zh",
+    "sha256": "e555ac14a0ed63ed"
+  },
+  "plat-0": {
+    "doc": "plan-en",
+    "sha256": "63d118e499f0c7ab"
+  },
+  "plat-1": {
+    "doc": "plan-en",
+    "sha256": "7964ec3912107a73"
+  },
+  "plat-2": {
+    "doc": "plan-en",
+    "sha256": "563be2325ff72db2"
+  },
+  "platzh-0": {
+    "doc": "plan-zh",
+    "sha256": "76ee07784a86b380"
+  },
+  "platzh-1": {
+    "doc": "plan-zh",
+    "sha256": "d797b51b84a8767b"
+  },
+  "platzh-2": {
+    "doc": "plan-zh",
+    "sha256": "cd2d70a50e564d52"
+  }
+}

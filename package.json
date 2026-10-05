@@ -17,10 +17,16 @@
     "db:status": "pnpm --filter @visa-master/db db:status",
     "db:reset": "pnpm --filter @visa-master/db db:reset",
     "db:test": "pnpm --filter @visa-master/db db:test",
-    "format": "prettier --write ."
+    "format": "prettier --write .",
+    "doc:toc": "node scripts/doc-reader/toc.mjs",
+    "doc:html": "node scripts/doc-reader/build.mjs",
+    "doc:diagrams": "node scripts/doc-reader/diagrams.mjs",
+    "doc:check": "node scripts/doc-reader/toc.mjs --check && node scripts/doc-reader/diagrams.mjs --check && node scripts/doc-reader/build.mjs --check"
   },
   "devDependencies": {
     "@formatjs/icu-messageformat-parser": "^3.5.0",
+    "github-slugger": "^2.0.0",
+    "marked": "^18.0.11",
     "prettier": "^3.9.0",
     "tsx": "^4.19.0",
     "turbo": "^2.10.9"

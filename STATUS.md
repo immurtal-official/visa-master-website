@@ -221,7 +221,9 @@ current milestone.
   delivery page with signed URLs. The `artifacts` bucket it delivers from already exists.
 - **Gateway executor, budgets, requirements cache** (week 5) — including the budget predicate
   that would make the metering columns mean something.
-- **CI/CD, hardening, observability** (week 6) — there is no `.github/` at all; container
+- **CI/CD, hardening, observability** (week 6) — `.github/workflows/docs.yml` is the only
+  workflow, and it guards the generated documents rather than the code: there is no `ci.yml`
+  running lint/typecheck/test, no migration check, and no deploy pipeline. Container
   hardening has four flags and no non-root user, read-only rootfs, or dropped capabilities.
   Note what the Vercel build is and is not: it runs the app's own `build` script, so the
   catalogue gate runs on every deploy, but the hardcoded-string lint rule does not — that
@@ -248,8 +250,8 @@ current milestone.
   Program consumes the same contract and a future backend extraction is a re-homing, not a
   rewrite. This is now implemented and binding, not planned: the decision is
   [ADR-004](discussion/ADR-004-api-first-control-plane.md), the rules are [AGENTS.md](AGENTS.md),
-  and the plan revision is [v2](doc/platform-and-dev-plan-v2-en.md). The Chinese mirror of the
-  plan has not been regenerated for v2.
+  and the plan revision is [v2](doc/platform-and-dev-plan-v2-en.md), which now also exists
+  in [Chinese](doc/platform-and-dev-plan-v2-zh.md).
 - The agent plane stays one VM until a written trigger fires (isolation review → per-job
   microVMs; capacity → second VM). The gateway stays co-located with the conductor: it
   holds the provider keys and is the job containers' only inference route.
