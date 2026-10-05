@@ -17,7 +17,8 @@ from app.auth import JwksCache
 from app.config import Settings, get_settings
 from app.db import Database
 from app.errors import ApiError, ValidationFailure
-from app.routers import health
+from app.routers import applications, auth, health, routes
+from app.supabase import Supabase
 
 logger = logging.getLogger(__name__)
 
@@ -50,6 +51,7 @@ def create_app(settings: Settings | None = None, database: Database | None = Non
     application.state.settings = settings
     application.state.db = database
     application.state.jwks = JwksCache(settings)
+    application.state.supabase = Supabase(settings)
 
     application.add_middleware(
         CORSMiddleware,
@@ -60,7 +62,8 @@ def create_app(settings: Settings | None = None, database: Database | None = Non
         max_age=600,
     )
 
-    application.include_router(health.router, prefix=API_PREFIX)
+    for router in (health.router, auth.router, routes.router, applications.router):
+        application.include_router(router, prefix=API_PREFIX)
 
     @application.exception_handler(ValidationFailure)
     async def on_validation(_: Request, exc: ValidationFailure) -> JSONResponse:

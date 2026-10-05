@@ -34,13 +34,17 @@ class Settings(BaseSettings):
 
     # --- Supabase -------------------------------------------------------
     supabase_url: str | None = None
-    # Sent as `apikey` to Supabase Auth and Storage on a user's behalf.
+    # Sent as `apikey` to Supabase Auth and Storage on a user's behalf. There is
+    # no secret key: the product's own authority is the `service_role` database
+    # role (app/db.py), and every Storage call is made as the user.
     supabase_publishable_key: str | None = None
-    # Acts on the product's authority (Storage admin). Never leaves this process.
-    supabase_secret_key: str | None = None
     supabase_jwt_audience: str = "authenticated"
     jwks_cache_seconds: int = 600
     jwks_min_refresh_seconds: int = 60
+
+    # Off unless "on": reading a document costs a model call, and with nothing
+    # in the conductor to run it a queued job only fails.
+    document_extraction: str = "off"
 
     # --- CORS -----------------------------------------------------------
     # Comma separated. The web's own server calls this service server to
@@ -50,6 +54,14 @@ class Settings(BaseSettings):
     @property
     def is_production(self) -> bool:
         return self.environment.lower() in {"production", "prod"}
+
+    @property
+    def supabase_configured(self) -> bool:
+        return bool(self.supabase_url and self.supabase_publishable_key)
+
+    @property
+    def extraction_on(self) -> bool:
+        return self.document_extraction.strip().lower() == "on"
 
     @property
     def jwks_url(self) -> str | None:

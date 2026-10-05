@@ -44,7 +44,7 @@ class FakeDatabase(Database):
     async def ping(self) -> bool:
         return False
 
-    async def account_is_active(self, user_id: str) -> bool:
+    async def account_is_active(self, user_id: str, session_id: str | None = None) -> bool:
         return user_id in self.active
 
 
