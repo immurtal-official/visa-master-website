@@ -1,4 +1,6 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "framework": "fastapi"
+  "framework": "fastapi",
+  "installCommand": "",
+  "buildCommand": "echo 'apps/api: nothing to build; the Python runtime installs requirements.txt and packages app/'"
 }
