@@ -68,13 +68,40 @@ export const FIELD_BEHAVIOUR: Record<string, FieldBehaviour> = {
   "history.refused": { kind: "choice" },
 };
 
-/** The options a choice question offers, in the order they are shown. */
-export const QUESTION_OPTIONS: Record<string, readonly string[]> = {
-  "companions.travellingWith": TRAVELLING_WITH,
-  "companions.whoPays": WHO_PAYS,
-  "history.schengenBefore": YES_NO_UNSURE,
-  "history.refused": YES_NO_UNSURE,
+/**
+ * The option sets, by the name their labels are filed under.
+ *
+ * A set's labels live at `intake.option.<group>.<option>`. Yes/no/not-sure is
+ * one set shared by several questions, because the same three words should
+ * read the same wherever they are offered.
+ */
+export const OPTION_GROUPS = {
+  travellingWith: TRAVELLING_WITH,
+  whoPays: WHO_PAYS,
+  yesNoUnsure: YES_NO_UNSURE,
+} as const satisfies Record<string, readonly string[]>;
+
+export type OptionGroup = keyof typeof OPTION_GROUPS;
+
+/**
+ * Which option set each choice question offers.
+ *
+ * Stated rather than guessed from the path: the form used to infer the set
+ * from how the path ended, which silently gave any new choice question the
+ * yes/no labels — written for "have you been before" and wrong in Chinese for
+ * almost anything else.
+ */
+export const QUESTION_OPTION_GROUP: Record<string, OptionGroup> = {
+  "companions.travellingWith": "travellingWith",
+  "companions.whoPays": "whoPays",
+  "history.schengenBefore": "yesNoUnsure",
+  "history.refused": "yesNoUnsure",
 };
+
+/** The options a choice question offers, in the order they are shown. */
+export const QUESTION_OPTIONS: Record<string, readonly string[]> = Object.fromEntries(
+  Object.entries(QUESTION_OPTION_GROUP).map(([path, group]) => [path, OPTION_GROUPS[group]]),
+);
 
 /** A date as three numbers, which is how it is entered and stored. */
 const dateString = z
@@ -274,32 +301,6 @@ export const intakeSchengenTourismV1 = z
 export type IntakeSchengenTourismV1 = z.infer<typeof intakeSchengenTourismV1>;
 
 /**
- * Validate one answer, as it is given.
- *
- * The step schemas are picked out of the whole rather than written twice, so a
- * rule cannot be stricter on its own page than it is at submission.
- */
-const QUESTION_SCHEMAS: Record<string, z.ZodType> = {
-  "applicant.name": applicantSchema.shape.name,
-  "applicant.pinyin": applicantSchema.shape.pinyin,
-  "applicant.birthDate": applicantSchema.shape.birthDate,
-  "applicant.phone": applicantSchema.shape.phone,
-  "residence.city": residenceSchema.shape.city,
-  "residence.address": residenceSchema.shape.address,
-  "employment.employer": employmentSchema.shape.employer,
-  "employment.position": employmentSchema.shape.position,
-  "employment.startDate": employmentSchema.shape.startDate,
-  "employment.monthlyIncome": employmentSchema.shape.monthlyIncome,
-  "travel.cities": z.string().trim().min(2).max(200),
-  "travel.departureDate": dateString,
-  "travel.returnDate": dateString,
-  "companions.travellingWith": companionsSchema.shape.travellingWith,
-  "companions.whoPays": companionsSchema.shape.whoPays,
-  "history.schengenBefore": historySchema.shape.schengenBefore,
-  "history.refused": historySchema.shape.refused,
-};
-
-/**
  * The expiry date, checked on its own.
  *
  * Whether a passport has enough validity left does not depend on any other
@@ -324,6 +325,38 @@ const expiresAtSchema = dateString.superRefine((value, ctx) => {
 });
 
 /**
+ * Validate one answer, as it is given.
+ *
+ * The step schemas are picked out of the whole rather than written twice, so a
+ * rule cannot be stricter on its own page than it is at submission.
+ *
+ * The passport fields are checked for their own shape only; the relationships
+ * between them wait for parsePassport, once all three are present.
+ */
+export const QUESTION_SCHEMAS: Record<string, z.ZodType> = {
+  "applicant.name": applicantSchema.shape.name,
+  "applicant.pinyin": applicantSchema.shape.pinyin,
+  "applicant.birthDate": applicantSchema.shape.birthDate,
+  "applicant.phone": applicantSchema.shape.phone,
+  "passport.number": passportFieldsSchema.shape.number,
+  "passport.issuedAt": dateString,
+  "passport.expiresAt": expiresAtSchema,
+  "residence.city": residenceSchema.shape.city,
+  "residence.address": residenceSchema.shape.address,
+  "employment.employer": employmentSchema.shape.employer,
+  "employment.position": employmentSchema.shape.position,
+  "employment.startDate": employmentSchema.shape.startDate,
+  "employment.monthlyIncome": employmentSchema.shape.monthlyIncome,
+  "travel.cities": z.string().trim().min(2).max(200),
+  "travel.departureDate": dateString,
+  "travel.returnDate": dateString,
+  "companions.travellingWith": companionsSchema.shape.travellingWith,
+  "companions.whoPays": companionsSchema.shape.whoPays,
+  "history.schengenBefore": historySchema.shape.schengenBefore,
+  "history.refused": historySchema.shape.refused,
+};
+
+/**
  * Validate one answer with the same rules the whole form uses.
  *
  * Only rules that need another answer are held back until it exists.
@@ -332,14 +365,8 @@ export function parseQuestion(path: string, value: unknown): ValidationResult<un
   const schema = QUESTION_SCHEMAS[path];
   if (schema) return toResult(schema.safeParse(value), value);
 
-  // Passport fields: validate the field's own shape now; the relationships
-  // between them are checked by parsePassport once all three are present.
-  if (path === "passport.number") {
-    return toResult(passportFieldsSchema.shape.number.safeParse(value), value);
-  }
-  if (path === "passport.issuedAt") return toResult(dateString.safeParse(value), value);
-  if (path === "passport.expiresAt") return toResult(expiresAtSchema.safeParse(value), value);
-
+  // A path with no schema is accepted unchanged. Nothing in the intake should
+  // reach this: questionnaire.test.ts fails for any question without a schema.
   return { ok: true, data: value };
 }
 

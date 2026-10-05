@@ -77,7 +77,10 @@ export {
   parseQuestion,
   passportSchema,
   parseIntake,
+  OPTION_GROUPS,
+  QUESTION_OPTION_GROUP,
   QUESTION_OPTIONS,
+  QUESTION_SCHEMAS,
   residenceSchema,
   employmentSchema,
   travelSchema,
@@ -87,6 +90,7 @@ export {
   WHO_PAYS,
   YES_NO_UNSURE,
   type FieldBehaviour,
+  type OptionGroup,
   type IntakeSchengenTourismV1,
 } from "./intake/schengen-tourism-v1";
 
