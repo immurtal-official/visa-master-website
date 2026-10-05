@@ -58,7 +58,7 @@ export default async function ReviewPage({
       </p>
 
       <div style={{ display: "grid", gap: "var(--space-4)" }}>
-        {INTAKE_SECTIONS.filter((section) => section.questions.length > 0).map((section) => (
+        {INTAKE_SECTIONS.filter((section) => section.kind === "questions").map((section) => (
           <Card key={section.id} padding="var(--space-5)">
             <h2
               style={{

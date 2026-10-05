@@ -1,3 +1,5 @@
+import { QUESTIONNAIRE, type SectionDefinition } from "./questionnaire";
+
 /**
  * The intake, as a list of sections and the questions inside them.
  *
@@ -5,7 +7,7 @@
  * to be data rather than a sequence of hand-written pages: the hub needs to
  * know what is done, the resume path needs to know where someone stopped, and
  * the completeness check needs to know what "finished" means. One definition
- * answers all three.
+ * answers all three — questionnaire.ts — and this is the navigable view of it.
  *
  * Sections that are not built yet are listed anyway, marked unavailable. The
  * design system is explicit that a section which cannot be entered must say
@@ -16,84 +18,37 @@
 export interface IntakeQuestion {
   /** Stable id. Used in the URL and stored as the resume point. */
   id: string;
-  /** Dot-path into `applications.answers`. */
+  /** Dot-path into `applications.answers`: `<section>.<question>`. */
   path: string;
 }
 
 export interface IntakeSection {
   id: string;
+  /**
+   * "review" is the reading of everything answered at the end. It is stated,
+   * not inferred from having no questions: a section emptied by mistake must
+   * not turn into a second review card.
+   */
+  kind: "questions" | "review";
   questions: IntakeQuestion[];
   /** False while the section has not been built. */
   available: boolean;
 }
 
-export const INTAKE_SECTIONS: IntakeSection[] = [
-  {
-    id: "applicant",
-    available: true,
-    questions: [
-      { id: "name", path: "applicant.name" },
-      { id: "pinyin", path: "applicant.pinyin" },
-      { id: "birthDate", path: "applicant.birthDate" },
-      { id: "phone", path: "applicant.phone" },
-    ],
-  },
-  {
-    id: "passport",
-    available: true,
-    questions: [
-      { id: "number", path: "passport.number" },
-      { id: "issuedAt", path: "passport.issuedAt" },
-      { id: "expiresAt", path: "passport.expiresAt" },
-    ],
-  },
-  {
-    id: "residence",
-    available: true,
-    questions: [
-      { id: "city", path: "residence.city" },
-      { id: "address", path: "residence.address" },
-    ],
-  },
-  {
-    id: "employment",
-    available: true,
-    questions: [
-      { id: "employer", path: "employment.employer" },
-      { id: "position", path: "employment.position" },
-      { id: "startDate", path: "employment.startDate" },
-      { id: "monthlyIncome", path: "employment.monthlyIncome" },
-    ],
-  },
-  {
-    id: "travel",
-    available: true,
-    questions: [
-      { id: "departureDate", path: "travel.departureDate" },
-      { id: "returnDate", path: "travel.returnDate" },
-      { id: "cities", path: "travel.cities" },
-    ],
-  },
-  {
-    id: "companions",
-    available: true,
-    questions: [
-      { id: "travellingWith", path: "companions.travellingWith" },
-      { id: "whoPays", path: "companions.whoPays" },
-    ],
-  },
-  {
-    id: "history",
-    available: true,
-    questions: [
-      { id: "schengenBefore", path: "history.schengenBefore" },
-      { id: "refused", path: "history.refused" },
-    ],
-  },
-  // The last section is not questions but a reading of everything answered,
-  // and the one place the whole form is checked at once.
-  { id: "review", available: true, questions: [] },
-];
+export const INTAKE_SECTIONS: IntakeSection[] = (QUESTIONNAIRE.sections as SectionDefinition[]).map(
+  (section) =>
+    section.kind === "review"
+      ? { id: section.id, kind: "review", questions: [], available: true }
+      : {
+          id: section.id,
+          kind: "questions",
+          questions: section.questions.map((question) => ({
+            id: question.id,
+            path: `${section.id}.${question.id}`,
+          })),
+          available: section.available ?? true,
+        },
+);
 
 export type SectionState = "done" | "inProgress" | "todo" | "unavailable";
 
@@ -113,7 +68,7 @@ export function sectionState(section: IntakeSection, answers: unknown): SectionS
   if (!section.available) return "unavailable";
   // The review section has nothing of its own to answer; it is ready exactly
   // when everything before it is.
-  if (section.questions.length === 0) {
+  if (section.kind === "review") {
     const rest = intakeProgress(answers);
     return rest.answered === rest.total ? "done" : "todo";
   }
