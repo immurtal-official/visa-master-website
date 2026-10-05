@@ -13,7 +13,6 @@ afterwards. Skipped — never silently passed — without a database.
 from __future__ import annotations
 
 import json
-import os
 import uuid
 from collections.abc import AsyncIterator, Callable
 from datetime import UTC, date, datetime, timedelta
@@ -29,8 +28,7 @@ from app.db import Database
 from app.main import create_app
 from app.supabase import Supabase
 from tests.conftest import SUPABASE_URL
-
-DSN = os.environ.get("TEST_DATABASE_URL", "postgresql://postgres:postgres@127.0.0.1:54322/postgres")
+from tests.database import API_DSN, admin
 
 ROUTE_OK = {
     "residenceArea": "sichuan",
@@ -73,9 +71,11 @@ class SupabaseDouble:
 @pytest.fixture
 async def db() -> AsyncIterator[Database]:
     database = Database()
-    await database.connect(Settings(_env_file=None, database_url=DSN))
+    await database.connect(Settings(_env_file=None, database_url=API_DSN))
     if not await database.ping():
-        pytest.skip(f"no database at {DSN.split('@')[-1]} — start the local stack (pnpm db:start)")
+        pytest.skip(
+            f"no database at {API_DSN.split('@')[-1]} — start the local stack (pnpm db:start)"
+        )
     yield database
     await database.close()
 
@@ -110,7 +110,7 @@ async def api(db, api_settings, jwks_transport, supabase) -> AsyncIterator[httpx
 
 async def sql(db: Database, query: str, *args: Any) -> Any:
     """As the connecting role — fixtures only, as pgTAP sets up its own rows."""
-    async with db._require_pool().acquire() as connection:
+    async with admin() as connection:
         return await connection.fetch(query, *args)
 
 
@@ -136,7 +136,7 @@ async def person(db, make_token) -> AsyncIterator[Callable[..., Any]]:
 
     yield make
 
-    async with db._require_pool().acquire() as connection, connection.transaction():
+    async with admin() as connection, connection.transaction():
         await connection.execute("set local storage.allow_delete_query = 'true'")
         await connection.execute(
             "delete from storage.objects"

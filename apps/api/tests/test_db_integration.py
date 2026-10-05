@@ -7,7 +7,6 @@ Reported as skipped — never silently passed — when it cannot be reached.
 
 from __future__ import annotations
 
-import os
 import uuid
 
 import asyncpg
@@ -16,16 +15,17 @@ import pytest
 from app.auth import Caller
 from app.config import Settings
 from app.db import Database
-
-DSN = os.environ.get("TEST_DATABASE_URL", "postgresql://postgres:postgres@127.0.0.1:54322/postgres")
+from tests.database import API_DSN, admin
 
 
 @pytest.fixture
 async def db():
     database = Database()
-    await database.connect(Settings(_env_file=None, database_url=DSN))
+    await database.connect(Settings(_env_file=None, database_url=API_DSN))
     if not await database.ping():
-        pytest.skip(f"no database at {DSN.split('@')[-1]} — start the local stack (pnpm db:start)")
+        pytest.skip(
+            f"no database at {API_DSN.split('@')[-1]} — start the local stack (pnpm db:start)"
+        )
     yield database
     await database.close()
 
@@ -37,7 +37,7 @@ async def people(db):
     Set up as the connecting role, as pgTAP does: auth.users is not something
     even the service role may write.
     """
-    async with db._require_pool().acquire() as connection:
+    async with admin() as connection:
         ids = []
         for _ in range(2):
             user = await connection.fetchval(
@@ -53,7 +53,7 @@ async def people(db):
             )
             ids.append((user, application))
     yield ids
-    async with db._require_pool().acquire() as connection:
+    async with admin() as connection:
         await connection.execute(
             "delete from auth.users where id = any($1::uuid[])", [u for u, _ in ids]
         )
@@ -100,7 +100,7 @@ async def test_the_identity_ends_with_the_transaction(db, people) -> None:
         pass
     # The pool hands the same connection back out; it must carry no identity.
     async with db._require_pool().acquire() as connection:
-        assert await connection.fetchval("select current_user") == "postgres"
+        assert await connection.fetchval("select current_user") == "visa_api"
         assert await connection.fetchval("select current_setting('request.jwt.claims', true)") in (
             None,
             "",
@@ -117,8 +117,28 @@ async def test_a_deleted_account_is_not_active(db, people) -> None:
     (alice, _), _ = people
     assert await db.account_is_active(alice)
     assert not await db.account_is_active(str(uuid.uuid4()))
-    async with db._require_pool().acquire() as connection:
+    async with admin() as connection:
         await connection.execute(
             "update auth.users set deleted_at = now() where id = $1::uuid", alice
         )
     assert not await db.account_is_active(alice)
+
+
+async def test_the_login_role_is_nothing_until_it_switches(db) -> None:
+    async with db._require_pool().acquire() as connection:
+        assert await connection.fetchval("select current_user") == "visa_api"
+        for query in (
+            "select 1 from public.applications limit 1",
+            "select 1 from public.jobs limit 1",
+            "select email from auth.users limit 1",
+        ):
+            with pytest.raises(asyncpg.InsufficientPrivilegeError):
+                await connection.fetch(query)
+
+
+async def test_the_login_role_cannot_become_an_administrator(db) -> None:
+    async with db._require_pool().acquire() as connection:
+        for role in ("postgres", "supabase_admin", "supabase_auth_admin"):
+            with pytest.raises(asyncpg.InsufficientPrivilegeError):
+                async with connection.transaction():
+                    await connection.execute(f"set local role {role}")

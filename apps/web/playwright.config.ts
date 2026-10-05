@@ -59,7 +59,8 @@ export default defineConfig({
       timeout: 60_000,
       env: {
         DATABASE_URL:
-          process.env.DATABASE_URL ?? "postgresql://postgres:postgres@127.0.0.1:54322/postgres",
+          process.env.DATABASE_URL ??
+          "postgresql://visa_api:visa-api-local@127.0.0.1:54322/postgres",
         ...(process.env.NEXT_PUBLIC_SUPABASE_URL
           ? { SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL }
           : {}),
