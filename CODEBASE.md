@@ -170,8 +170,9 @@ single gap in the product — see §7.
 | Validation emits keys, never sentences | `packages/core/src/validation/issue.ts`; `MESSAGE_KEYS` registry; `scripts/check-i18n.mjs` fails the build on a missing key or a parameter mismatch |
 | No hardcoded copy in components | ESLint `i18next/no-literal-string` (Latin) and the CJK sweep in `check-i18n.mjs`; `turbo.json` makes `build` depend on `lint`, so both are build failures |
 | Web is one client of `/api/v1` | ADR-004; zero `use server` in the repo; Server Components read through `lib/api/server.ts`, Client Components through `lib/api/client.ts` |
-| Ownership is row-level security, not `where` clauses | Services use the request-scoped Supabase client; pgTAP asserts the policies |
-| Server authority for what costs money or means "true" | `uploads.status = 'stored'` and job enqueue go through `lib/supabase/admin.ts`; column grants exclude those columns from `authenticated` |
+| Ownership is row-level security, not `where` clauses | apps/api runs every user-scoped query as `authenticated` with the caller's claims (`app/db.py` `as_user`); pgTAP asserts the policies; `tests/test_endpoints.py` exercises them through every endpoint |
+| Server authority for what costs money or means "true" | `uploads.status = 'stored'`, answer sources and job enqueue are written under `service_role`, asked for by name (`as_service`, `with_service_authority`); column grants exclude those columns from `authenticated`. The web holds no server credential at all |
+| One set of rules, in two languages | `packages/core` exports the rules' data and conformance vectors (`pnpm intake:export`); `apps/api/tests/test_conformance*.py` replays every vector |
 | The container gets no identity and no credential | Sanitized `input` at enqueue; constructed env in `docker.ts`; `egress.test.ts` asserts it from inside the network |
 | Completion is evidence | `artifactReady` requires both artifacts; `qa.ts` reads the verdict; `poll` never reads an exit code |
 | Generated files are not edited | `doc/*.html` and `design/system/` are exports; `.prettierignore` and README say so |
@@ -236,41 +237,29 @@ Migrations run in order; each pgTAP file pairs with one of them (except
 
 #### The library (`src/lib`) — read this before the routes
 
-- **`api/http.ts`** — the wire protocol in 51 lines. `handle(fn)` is the only place a failure picks a status: `ValidationFailure` → 422 `{issues:[{path,key,params?}]}`, `ServiceError` → its own status with `{error:{key,…}}`, anything else → a logged 500 `{error:{key:"errors.request"}}`. An unmapped exception can never leak a stack trace or an English sentence. `body()` swallows JSON parse errors and returns `{}`, pushing "the body was garbage" into the service's own validation.
-- **`api/server.ts`** — `apiGet<T>` for Server Components: rebuilds its own origin from request headers, forwards the caller's cookies, `no-store`. This is the loopback hop that keeps the contract honest by making us its first consumer.
+The web holds no business logic and no server credential (ADR-005): every
+`/api/v1` call ends at apps/api (§5.6).
+
+- **`api/backend.ts`** — where the backend is (`API_URL`, default `http://127.0.0.1:8000`) and the one place the cookie session becomes `Authorization: Bearer`: `getSession()` reads (and if need be refreshes) the session, and its access token is sent; whether it is any good is the backend's call.
+- **`api/server.ts`** — `apiGet<T>` for Server Components: calls the backend directly as the request's session, `no-store`, and returns `{status, data, error}` with the backend's key.
 - **`api/client.ts`** — the browser twin. Never throws: a failed fetch becomes `status: 0` with `errors.request`, a 204 becomes `{ok:true}`, and a failure splits into `issues` (422) or `error`. It never interprets a key.
-- **`services/errors.ts`** — the only two things a service may throw. `ServiceError`'s `extra` is how `route.unsupported.title` ships `{reasons}` and `intake.review.documentsMissing` ships `{missingDocuments}`.
-- **`services/auth-service.ts`** — `requireUser()` is the single authorization chokepoint; it returns a *request-scoped* client, which is why no service writes an ownership filter. Sign-in and sign-up are the same call. A wrong code and an expired code collapse into one 401, because telling them apart tells an attacker the same thing.
-- **`services/application-service.ts`** — list, get, create. `get()` answers 404 for someone else's row: "no such thing" is the honest answer, not "you may not". `create()` re-runs the route gate server-side.
-- **`services/intake-service.ts`** — saves one answer at a dot-path without clobbering the JSONB, validates it with the same schema the whole form uses, and writes `last_step` from `nextQuestion(...)` — the resume point is where the reader is *going*. `saveDraft` is its counterpart for typing that is not an answer yet: no validation, no resume point, stored flat by path in `draft_answers` and dropped as soon as the real answer lands.
-- **`services/route-service.ts`** — the pure gate plus the waiting list. Signing in is not required to be counted, and the list cannot be read back by anyone.
-- **`services/upload-service.ts`** — announce / confirm / remove. `storagePath` is `userId/applicationId/uploadId.ext`, so ownership is a prefix the storage policies compare rather than a lookup. `remove` deletes the object first and the row second, because an object with no row is a passport scan nobody will ever delete.
-- **`services/submission-service.ts`** — the most decision-dense file in the app: the completeness gate, the idempotency key, `deadline_seconds: 3600`, and the sanitized `{route, intake}` payload. If the follow-up application update fails it is logged rather than thrown — the job exists, and the idempotency key stops a retry double-billing.
-- **`supabase/config.ts`** — env reader plus `isSupabaseConfigured()`. The app has to build and run with no Supabase project at all, so services answer 503 `auth.notConfigured` instead of crashing.
-- **`supabase/server.ts`** — the request-scoped client. Never hoist it to a module singleton: that hands one visitor another visitor's session.
-- **`supabase/client.ts`** — the browser client; its only consumer is the uploader, which needs the session token.
-- **`supabase/admin.ts`** — the service-role client. `import "server-only"` turns "this must never reach the browser" into a build error.
-- **`supabase/session.ts`** — three states, not two: signed-in, signed-out, *unavailable*. It calls `getUser()` rather than `getClaims()` because a deleted user's token stays cryptographically valid until it expires, and a page gating on claims shows a working product where every write fails.
+- **`supabase/config.ts`** — env reader plus `isSupabaseConfigured()`. The app has to build and run with no Supabase project at all.
+- **`supabase/server.ts`** — the request-scoped client, which owns the session cookies. Never hoist it to a module singleton: that hands one visitor another visitor's session.
+- **`supabase/client.ts`** — the browser client; its only consumer is the uploader, which needs the session token to stream bytes straight to Storage.
+- **`supabase/session.ts`** — three states, not two: signed-in, signed-out, *unavailable*. It calls `getUser()` rather than `getClaims()` because a deleted user's token stays cryptographically valid until it expires.
 - **`supabase/proxy.ts`** — session refresh for the middleware, writing refreshed cookies onto both request and response and copying Supabase's cache-control headers (without them a CDN can cache somebody's session).
-- **`uploads/resumable.ts`** — tus in 6 MiB chunks with `findPreviousUploads`/`resume`. The reason is stated plainly: a monolithic upload that dies at 90% either fails outright or, worse, reports success for a passport scan that never arrived.
+- **`uploads/resumable.ts`** — tus in 6 MiB chunks with `findPreviousUploads`/`resume`. A monolithic upload that dies at 90% either fails outright or, worse, reports success for a passport scan that never arrived.
 
-#### The API (`src/app/api/v1`) — fourteen handlers, each 6–13 lines
+#### The API (`src/app/api/v1/[...path]/route.ts`) — one forwarder
 
-| Route | Methods | Service | Notable outcomes |
-|---|---|---|---|
-| `/applications` | GET, POST | `applicationService.list` / `.create` | 201 `{application:{id}}`; 422 `{error:{key:"route.unsupported.title", reasons}}` |
-| `/applications/{id}` | GET | `.get` | 200 `{application, job:{state}|null}`; 404 for someone else's row |
-| `/applications/{id}/answers` | POST | `intakeService.saveAnswer` | 200 `{next}`; `null` means the questions are exhausted |
-| `/applications/{id}/draft-answers` | POST | `intakeService.saveDraft` | 204; keeps unvalidated typing, moves no resume point |
-| `/applications/{id}/documents` | GET | `uploadService.listForApplication` | the checklist plus `completeness` |
-| `/applications/{id}/uploads` | POST | `.announce` | 201 `{uploadId, storagePath}` |
-| `/applications/{id}/uploads/{uploadId}` | DELETE | `.remove` | 204, idempotent by design |
-| `…/uploads/{uploadId}/confirm` | POST | `.confirm` | 204; 409 when the object is not in storage |
-| `/applications/{id}/submit` | POST | `submissionService.submit` | 204; 409 already submitted; 422 issues or missing documents |
-| `/auth/otp`, `/auth/verify`, `/auth/signout` | POST | `authService` | 200 `{email}` / 204 / 204 |
-| `/me` | GET | `requireUser` | the smallest working example of the auth path |
-| `/route-checks` | POST | `routeService.check` | pure, unauthenticated, no database |
-| `/waitlist` | POST | `.joinWaitlist` | 204, open to signed-out visitors |
+Every `/api/v1` path the browser calls is forwarded to apps/api unchanged —
+method, path, query, body — with the session's access token as Bearer, and the
+backend's status and body come back unchanged. Two answers are translated,
+because the session is the web's to keep: a verified sign-in code comes back as
+tokens, which are stored as the session cookies while the browser gets a 204;
+and a sign-out the backend carried out also clears the cookies. A backend that
+cannot be reached is `503 {error:{key:"errors.request"}}`. No rule may be
+decided here: the mobile app calls the backend directly and would never meet it.
 
 #### The pages (`src/app/[locale]`)
 
@@ -296,7 +285,22 @@ the result to a small `"use client"` form that POSTs back.
 - **`components/ui/*`** — `button` + `button-style` (variants and sizes as tables; interaction state in React rather than CSS pseudo-classes), `link-button`, `input`, `date-input` (three numeric fields plus a hidden ISO value), `radio-group` (full-width tappable rows), `callout` (five tones), `card`, `error-summary` (takes focus on mount and links to the offending field), `icon` (CSS-mask over self-hosted Lucide SVGs).
 - **`src/styles/tokens/*`** and **`app/globals.css`** — the design-token layer copied verbatim from the design system; `globals.css` re-exports tokens to Tailwind with every value dereferencing a custom property, because a raw hex here would be a second source of truth.
 - **`messages/en.json` and `messages/zh-CN.json`** — 243 keys each, identical shape and order. Every user-facing sentence in the product is in these two files.
-- **`next.config.ts`** (next-intl plugin, `transpilePackages`, `globalNotFound`, `distDir` so the e2e suite can run a second server), **`eslint.config.mjs`** (the `no-literal-string` rule), **`playwright.config.ts`** (two projects, two dev servers), **`tsconfig.json`**, **`postcss.config.mjs`**, **`.env.example`**.
+- **`next.config.ts`** (next-intl plugin, `transpilePackages`, `globalNotFound`, `distDir` so the e2e suite can run a second server), **`eslint.config.mjs`** (the `no-literal-string` rule), **`playwright.config.ts`** (two projects; the backend and two web dev servers), **`tsconfig.json`**, **`postcss.config.mjs`**, **`.env.example`**.
+
+### 5.6 `apps/api` — the backend (FastAPI, ADR-005)
+
+Every `/api/v1` endpoint. Routers parse and call one service; services hold the
+logic, each mirroring the Next.js service it replaced check for check and key
+for key, so the contract suite that described those describes these.
+
+- **`app/main.py`** — the app factory: settings, database, JWKS, Supabase client, routers, and the exception handlers that are the wire format — `ValidationFailure` → 422 `{issues}`, `ApiError` → its status with `{error:{key,…}}`, anything else → a logged 500 `errors.request`.
+- **`app/auth.py`, `app/deps.py`** — Bearer only, ES256/RS256 only, verified against the project's JWKS; then the account must exist, not be banned, and — when the token names its session — that session must still exist, so a signed-out token stops working at once. Every refusal is `401 route.sessionExpired`. `Session` resolves the caller only when the service asks, so a malformed request is told what is malformed with or without a session.
+- **`app/db.py`** — asyncpg. `as_user(caller)` is a transaction under `authenticated` with the caller's claims (what PostgREST does), so RLS and the column grants still apply; `as_anonymous()` for the waiting list; `as_service()` and `with_service_authority(connection)` for the writes only the server may make, the latter inside the caller's transaction so an answer and its source row land together.
+- **`app/supabase.py`** — the two HTTP calls left: Auth (send a code, verify it, sign out) and Storage (delete an object, as the caller).
+- **`app/services/`** — `auth`, `routes`, `applications`, `intake`, `uploads`, `submission`. Two strengthenings over the Next.js versions, both atomic where those were not: an answer and its `answer_sources` row commit together, and a job and the application's `submitted` mark commit together. An id that is not a UUID is a 404, not a 502.
+- **`app/rules/`** — the rules as this service runs them: data from `generated/intake.json`, named rules and evaluators re-implemented, held to packages/core by the conformance vectors.
+- **`tests/`** — wire format, token verification, the OpenAPI snapshot, conformance, and `test_endpoints.py`: every endpoint against the real local Postgres, with Auth and Storage as recording doubles.
+- **`openapi.json`** — the contract, generated (`pnpm --filter @visa-master/api openapi`) and checked by the test suite.
 
 #### The end-to-end suite (`apps/web/e2e`)
 

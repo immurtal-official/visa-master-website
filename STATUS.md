@@ -89,21 +89,32 @@ The questionnaire rework has its own stage table below, under
   yet, so a pack can still pass this gate missing a document the applicant needs. Until the
   week-4 human gate exists this stops only the case where the machine already knew.
 
-### API-first control plane (ADR-004, complete)
+### The backend as its own service (ADR-005)
 
-- Fourteen route handlers under `/api/v1/**` over six services in `apps/web/src/lib/services/`
-  (seven modules — the seventh holds the two error classes). Handlers are thin — parse, call
-  one service, map the result; the longest route file is 13 lines.
-- **Zero `use server` directives remain anywhere in the repo.** Server Components read through
-  `lib/api/server.ts`, Client Components call through `lib/api/client.ts`; no page or component
-  imports a service or touches the database directly.
-- The wire protocol carries catalogue keys, never sentences: `422 {issues:[{path,key,params?}]}`
-  for rule failures, `{error:{key}}` otherwise, produced in one place (`lib/api/http.ts`).
-- `apps/web/e2e/api-contract.spec.ts` pins the contract, including the whole journey
-  (create → answer → gate → submit, exactly once) driven headlessly with no browser UI.
-- [AGENTS.md](AGENTS.md) states the discipline as six rules under a heading that points at its
-  record; [ADR-004](discussion/ADR-004-api-first-control-plane.md) is the decision itself, in
-  ten numbered points, and the v2 plan carries the revision.
+- **Every `/api/v1` endpoint now runs in `apps/api` (FastAPI, Python 3.12)** — fifteen, the
+  same paths, bodies and keys as before. `apps/web/src/lib/services/` and the fourteen Next.js
+  route handlers are gone; the web's one route handler forwards `/api/v1/**` to the backend
+  with the cookie session's access token as `Authorization: Bearer`, and holds no server
+  credential at all. Server Components call the backend directly as the request's session.
+- The backend accepts Bearer tokens only (ES256/RS256 against the project's JWKS), then
+  requires the account to exist and — new — the token's session to still exist, so a signed-
+  out token stops working at once rather than at expiry.
+- Postgres directly (asyncpg), every user-scoped query as `authenticated` with the caller's
+  claims, so row-level security and the column grants are still the second line. Two writes
+  that were separate are now atomic: an answer with its `answer_sources` row, and a job with
+  the application's `submitted` mark.
+- The rules stay written once, in `packages/core`: their data is exported to
+  `apps/api/app/rules/generated/intake.json`, the named rules are re-implemented in
+  `apps/api/app/rules/`, and 6,910 conformance vectors (1,764 of them a branching probe) are
+  replayed by the Python suite.
+- Zero `use server` directives anywhere. The wire protocol is unchanged:
+  `422 {issues:[{path,key,params?}]}` for rule failures, `{error:{key}}` otherwise.
+- `apps/web/e2e/api-contract.spec.ts` still pins the contract through the web; the Playwright
+  config now starts the backend too. `apps/api/tests/test_endpoints.py` exercises every
+  endpoint against the real local Postgres. `apps/api/openapi.json` is the committed contract.
+- **Not deployed yet.** Hosting `apps/api` needs its own Vercel project (root directory
+  `apps/api`, its own domain) and the web's `API_URL` pointed at it — account work, listed
+  under Not done yet.
 
 ### Agent plane packaged to run (PR #14)
 
@@ -352,6 +363,11 @@ Elsewhere:
   are the Hetzner VM, `infra/compose.vm.yml`, and the systemd units — and, before anyone
   outside the team uses it, Vercel Pro (Hobby is non-commercial) and Supabase Pro (Free has
   no backups and pauses when idle). Blockers are accounts and spend, not code.
+- **Deploy the backend**: `apps/api` needs its own Vercel project (Python runtime, root
+  directory `apps/api`), its environment (`DATABASE_URL` as a role that can
+  `SET ROLE authenticated`, `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY`,
+  `ENVIRONMENT=production`), a domain, and `API_URL` set on the web project. Until then the
+  hosted web cannot reach a backend. The web project no longer needs `SUPABASE_SECRET_KEY`.
 - **Deploy on push**: Vercel could not connect the GitHub repository — the account lacks
   write access to `immurtal-official/visa-master-website` — so every deploy is a manual
   `vercel deploy --prod` and pull requests get no preview. Granting that access and running
@@ -370,6 +386,10 @@ Elsewhere:
   [ADR-004](discussion/ADR-004-api-first-control-plane.md), the rules are [AGENTS.md](AGENTS.md),
   and the plan revision is [v2](doc/platform-and-dev-plan-v2-en.md), which now also exists
   in [Chinese](doc/platform-and-dev-plan-v2-zh.md).
+- **The backend became its own service** ([ADR-005](discussion/ADR-005-fastapi-backend-service.md)):
+  FastAPI in `apps/api`, on the grounds of visible ownership and one house pattern with
+  nihao-pet/platform rather than ADR-004's triggers. The contract did not change; the rules
+  still have one home, held to it by conformance vectors.
 - The agent plane stays one VM until a written trigger fires (isolation review → per-job
   microVMs; capacity → second VM). The gateway stays co-located with the conductor: it
   holds the provider keys and is the job containers' only inference route.

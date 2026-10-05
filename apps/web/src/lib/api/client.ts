@@ -5,7 +5,7 @@ import type { ValidationIssue } from "@visa-master/core";
 /**
  * How the browser reaches the API.
  *
- * One wire protocol for every outcome, mirroring lib/api/http.ts: rule
+ * One wire protocol for every outcome, as the backend (apps/api) sends it: rule
  * failures arrive as issues (message keys the screen resolves against the
  * active locale), everything else as one error key. Nothing here interprets a
  * message — that is the screen's job, in the reader's language.

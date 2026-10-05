@@ -12,13 +12,15 @@ The web UI is **one client** of `/api/v1/**`. Concretely:
 2. **No Server Actions for core business operations.** There are zero in the
    codebase; do not add the first one.
 3. Server Components never touch the database or a service directly — they
-   fetch through the API (`lib/api/server.ts`). Client Components call
-   `/api/v1/**` (`lib/api/client.ts`).
-4. Route handlers are thin HTTP adapters: parse, call **one** service, map the
-   result. The backend is moving to its own service (ADR-005): new endpoints go
-   in `apps/api` (FastAPI) — routers in `app/routers/`, business logic in
-   `app/services/`. Until an endpoint has moved, its logic stays in
-   `apps/web/src/lib/services/`; do not add new logic there.
+   fetch through the API (`lib/api/server.ts`, which calls the backend as the
+   request's session). Client Components call `/api/v1/**`
+   (`lib/api/client.ts`), which the web forwards to the backend unchanged.
+4. Every endpoint lives in `apps/api` (FastAPI): routers in `app/routers/` are
+   thin HTTP adapters — parse, call **one** service, map the result — and
+   business logic lives in `app/services/`. The web's only route handler is the
+   forwarder in `app/api/v1/[...path]/route.ts`; never put a rule or a query in
+   it, and never add another handler under `/api/v1`. The web holds no server
+   credential.
 5. The wire protocol carries **catalogue keys, never sentences**:
    `422 {issues:[{path,key,params?}]}` for rule failures, `{error:{key}}` for
    everything else. Each client resolves keys against its own locale.
@@ -65,5 +67,5 @@ The bar before any commit: `pnpm turbo lint typecheck test` (which includes
 `apps/api`; create its Python environment once with `pnpm --filter
 @visa-master/api venv`), `pnpm --filter
 web build`, `pnpm db:test`, and the Playwright suite (`pnpm --filter web
-e2e`, needs Docker + `pnpm db:start`). Failures are fixed, not skipped;
+e2e`, needs Docker + `pnpm db:start`; it starts the backend itself). Failures are fixed, not skipped;
 tests scope their cleanup to their own data.
