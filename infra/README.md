@@ -40,7 +40,11 @@ than the one being made:
   invocation (same network, same bind mount, same `HERMES_JOB_DIR`, same
   `--security-opt no-new-privileges`). It reads the staged `input.json` and
   writes `qa-report.json` plus `delivery/`, which is the entire contract
-  `apps/conductor/src/executors/docker.ts` has with any image.
+  `apps/conductor/src/executors/docker.ts` has with any image. When the job
+  names the applicant's documents, the conductor has already put them in
+  `documents/` beside `documents.json` (which file is which checklist item and
+  page) before the container starts — downloaded with the conductor's own
+  credential, so the container holds none (`apps/conductor/src/documents.ts`).
 - **The egress boundary still denies**, checked from a container on
   `vm-egress-internal`: `169.254.169.254` is *Network is unreachable*, a direct
   request gets *bad address* (no external DNS), and `proxy:3128` is reachable.

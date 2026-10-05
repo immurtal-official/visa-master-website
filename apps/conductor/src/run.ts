@@ -1,6 +1,8 @@
+import { mkdir, rm } from "node:fs/promises";
 import type { Pool } from "pg";
 import type { Executor } from "@visa-master/executors/contract";
 import type { ConductorConfig } from "./config";
+import { stageDocuments, type DocumentStore } from "./documents";
 import { scratchDirFor } from "./executors/fake";
 import {
   claimNextJob,
@@ -33,6 +35,7 @@ export async function runJob(
   job: JobRow,
   registry: ExecutorRegistry,
   config: ConductorConfig,
+  documents: DocumentStore | null = null,
 ): Promise<RunOutcome> {
   const executor: Executor | null = routeToExecutor(job.task_type, registry);
 
@@ -54,6 +57,26 @@ export async function runJob(
   const scratchDir = scratchDirFor(job.id, job.attempt);
   const deadline = Date.now() + job.deadline_seconds * 1000;
   const controller = new AbortController();
+
+  // The applicant's documents go into the scratch before anything runs, with
+  // the conductor's credential. If they cannot all be staged nothing starts,
+  // and the scratch — which may already hold some of them — goes with it.
+  try {
+    await mkdir(scratchDir, { recursive: true });
+    await stageDocuments(pool, job, scratchDir, documents);
+  } catch (error) {
+    await rm(scratchDir, { recursive: true, force: true });
+    const { requeued } = await failJob(
+      pool,
+      job.id,
+      config.leaseOwner,
+      "input_unavailable",
+      error instanceof Error && error.name === "DocumentUnavailable"
+        ? error.message
+        : `the documents could not be staged (${errorName(error)})`,
+    );
+    return { jobId: job.id, state: requeued ? "queued" : "failed" };
+  }
 
   const handle = await executor.start(job, {
     scratchDir,
@@ -163,10 +186,11 @@ export async function runOnce(
   pool: Pool,
   registry: ExecutorRegistry,
   config: ConductorConfig,
+  documents: DocumentStore | null = null,
 ): Promise<RunOutcome | null> {
   const job = await claimNextJob(pool, config);
   if (!job) return null;
-  return runJob(pool, job, registry, config);
+  return runJob(pool, job, registry, config, documents);
 }
 
 /**
