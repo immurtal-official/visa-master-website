@@ -1,5 +1,6 @@
 import { execFileSync } from "node:child_process";
 import { expect, test, type APIRequestContext } from "@playwright/test";
+import { answerFor, completeAnswers, QUESTIONS } from "./support/intake";
 import { clearInbox, readSignInCode, uniqueEmail } from "./support/mailpit";
 
 /**
@@ -41,21 +42,6 @@ const ROUTE_OK = {
   destination: "ES",
   purpose: "tourism",
   employment: "employed",
-};
-
-const FULL_ANSWERS = {
-  applicant: { name: "陈静", pinyin: "CHEN JING", birthDate: "1990-04-12", phone: "13800000000" },
-  passport: { number: "E12345678", issuedAt: "2020-06-01", expiresAt: "2031-06-01" },
-  residence: { city: "成都", address: "天府大道 1 号 2 单元 301" },
-  employment: {
-    employer: "某某科技",
-    position: "架构师",
-    startDate: "2020-03-01",
-    monthlyIncome: "6000",
-  },
-  travel: { departureDate: "2027-01-10", returnDate: "2027-01-30", cities: "Madrid" },
-  companions: { travellingWith: "alone", whoPays: "self" },
-  history: { schengenBefore: "no", refused: "no" },
 };
 
 test("rule failures arrive as issues with keys, never sentences", async ({ request }) => {
@@ -165,14 +151,15 @@ test("the whole journey, as a headless client: create, answer, gate, submit, onl
     "validation.pinyin.invalid",
   );
 
-  // A good answer advances and lands in the stored draft.
+  // A good answer advances to the next question and lands in the stored draft.
+  const [first, second] = QUESTIONS;
   const goodAnswer = await request.post(`/api/v1/applications/${id}/answers`, {
-    data: { sectionId: "applicant", questionId: "name", value: "陈静" },
+    data: { sectionId: first!.sectionId, questionId: first!.id, value: answerFor(first!.path) },
   });
   expect(goodAnswer.status()).toBe(200);
-  expect(((await goodAnswer.json()) as { next: { questionId: string } }).next.questionId).toBe(
-    "pinyin",
-  );
+  expect((await goodAnswer.json()) as { next: unknown }).toEqual({
+    next: { sectionId: second!.sectionId, questionId: second!.id },
+  });
 
   // Submitting an unfinished form is refused with the unanswered fields.
   const early = await request.post(`/api/v1/applications/${id}/submit`);
@@ -181,7 +168,7 @@ test("the whole journey, as a headless client: create, answer, gate, submit, onl
 
   // Finish the form the way the form would have; then the document gate holds.
   query(
-    `update public.applications set answers = '${JSON.stringify(FULL_ANSWERS)}'::jsonb
+    `update public.applications set answers = '${JSON.stringify(completeAnswers())}'::jsonb
      where id = '${id}'`,
   );
   const noDocs = await request.post(`/api/v1/applications/${id}/submit`);
