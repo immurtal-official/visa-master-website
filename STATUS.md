@@ -1,6 +1,7 @@
 # Status — where the build stands
 
-**As of:** 2026-10-05 · everything described here is on `main`, through PR #16. Weeks 1–2 arrived in PR #4;
+**As of:** 2026-10-05 · everything described here is on `main`, through PR #31 (#32 merged a branch
+already contained in `main` and changed nothing). Weeks 1–2 arrived in PR #4;
 the API-first work — six commits, `22cbfe1` through `fa36fbd` — missed that crossing, because
 PR #5 merged into a base that had already been merged, and followed in PR #6.
 Companion documents: [doc/archive/EXECUTION-PLAN-week1-2.md](doc/archive/EXECUTION-PLAN-week1-2.md) (the plan weeks 1–2
@@ -89,7 +90,7 @@ The questionnaire rework has its own stage table below, under
   yet, so a pack can still pass this gate missing a document the applicant needs. Until the
   week-4 human gate exists this stops only the case where the machine already knew.
 
-### The backend as its own service (ADR-005)
+### The backend as its own service (ADR-005, PRs #28–#31)
 
 - **Every `/api/v1` endpoint now runs in `apps/api` (FastAPI, Python 3.12)** — fifteen, the
   same paths, bodies and keys as before. `apps/web/src/lib/services/` and the fourteen Next.js
@@ -154,11 +155,10 @@ document-sourced and unconfirmed, so the stage-8 gate holds the submission until
 confirms each. The job keeps a count of what was done, never the values read.
 `pnpm --filter @visa-master/conductor run:job <id>` runs one queued job by hand.
 
-### Layout for the mobile app and a future API service (PR #15)
+### Layout for the mobile app (PR #15)
 
-`apps/app` (React Native + Expo, a client of `/api/v1`) and `apps/api` (empty on purpose:
-ADR-004 keeps the backend in Next.js) hold only READMEs. Neither has a `package.json`, so
-neither is a workspace yet.
+`apps/app` (React Native + Expo, a client of `/api/v1`) holds only a README and is not a
+workspace yet. `apps/api` started the same way and is now the backend (above).
 
 ### Questionnaire gate (PR #16)
 
@@ -214,32 +214,33 @@ not the proxy: no credential reaches the container and nothing inside it knows w
 
 | Layer | What it is | Needs |
 |---|---|---|
-| Playwright end-to-end, 10 spec files, **40 cases at runtime** (37 `test()` calls, 3 of them looped over both locales) | real sign-in via the Mailpit API, real uploads into the bucket, full journey to a queued job, plus the headless API contract | Docker + the local Supabase stack; Playwright starts both dev servers |
-| `packages/core` unit tests, **59** | schemas, the route gate, the Schengen-Spain document rules, the questionnaire gate | nothing — the only layer that runs without Docker (`pnpm check:intake`) |
-| `apps/conductor` tests, **47** | lease and run-loop races against real Postgres; the QA gate's verdicts as a pure table; the docker executor and the egress denials against real containers | local Postgres; 10 of them also need Docker, and 5 of those the `visa-master-hermes` image |
-| pgTAP, 7 files, **52 assertions** | row-level security and privilege grants, one file per migration except `job_lease_owner`, which adds a column and has none | the local stack (`pnpm db:test`) |
+| Playwright end-to-end, 12 spec files, **45 cases at runtime** | real sign-in via the Mailpit API, real uploads into the bucket, full journey to a queued job, the headless API contract — all through the web's forwarder to the backend. `extraction.spec.ts` runs only with `DOCUMENT_EXTRACTION=on` and is skipped otherwise | Docker + the local Supabase stack + `apps/api/.venv`; Playwright starts the backend and both web dev servers |
+| `packages/core` unit tests, **113** | schemas, the route gate, the document rules, the questionnaire gate, branching, extraction decisions, and the check that the exported rules and conformance vectors are current | nothing — runs without Docker (`pnpm check:intake`) |
+| `apps/api` tests, **91** | token verification and the wire format; 6,910 conformance vectors replayed against the Python rules; every endpoint against real Postgres with Auth and Storage as doubles (`test_endpoints.py`, 35) | the database tests need the local stack and are reported as skipped without it |
+| `apps/conductor` tests, **61** | lease and run-loop races against real Postgres; document staging and extraction write-back; the QA gate's verdicts as a pure table; the docker executor and the egress denials against real containers | local Postgres; the container cases also need Docker, and some the `visa-master-hermes` image |
+| pgTAP, 9 files, **84 assertions** | row-level security and privilege grants, including the client-grant baseline and the provenance tables | the local stack (`pnpm db:test`) |
 
 Plus the two i18n build gates: `pnpm --filter web build` runs the catalogue check directly,
 and the hardcoded-string rule reaches a build only through turbo, whose `build` depends on
 `lint` — so `pnpm build` runs both and the filtered form runs one.
 
-**Last full run: 2026-08-21**, against the local stack on the founder's machine, after the QA
-gate landed — `lint` and `typecheck` 5/5 workspaces, `packages/core` 49 passed,
-`apps/conductor` 47 passed, the web build through the i18n gate, pgTAP 52 of 52, and
-Playwright 40 passed with none flaky. Two things that run is worth knowing for:
+**Last full run: 2026-10-05**, on `main` after PR #31, against the local stack in a cloud
+container — `lint`, `typecheck` and `test` 15/15 turbo tasks (`packages/core` 113 passed,
+`apps/api` 91 passed, `apps/conductor` 60 passed and 1 skipped), the web build through the
+i18n gate, pgTAP 84 of 84, and Playwright 44 passed and 1 skipped (`extraction.spec.ts`,
+without `DOCUMENT_EXTRACTION=on`; with it, that spec passed on the PR #31 branch, conductor
+included). Two things worth knowing about it:
 
-- **The container path was genuinely exercised this time.** `docker.test.ts` booted the real
-  `visa-master-hermes` image, staged input into it, killed a run that outlived its deadline,
-  and asserted the container carries no provider key and reaches nothing directly. That is not
-  guaranteed on another machine: those five cases **return early rather than skipping** when
-  the 5 GB image is absent, so elsewhere the suite can go green without testing anything.
-- **One case flaked earlier in the day and has not reproduced.** The headless journey in
-  `api-contract.spec.ts` got a 500 where the contract says 422 (`validation.pinyin.invalid`),
-  on the first request of an otherwise clean run, and passed on retry; three repeats with
-  retries disabled passed 18 of 18, and the run above was clean. Still unexplained, and worth
-  explaining before the contract is anyone else's to depend on.
+- **The container cases prove less than they look.** The `docker.test.ts` cases that need the
+  5 GB `visa-master-hermes` image **return early rather than skipping** when it is absent, so a
+  machine without the image goes green without exercising the container path. The last run
+  known to have exercised it is 2026-08-21, on the founder's machine.
+- **The contract-suite flake of 2026-08-21 has not been seen since,** and the code it was in is
+  gone: the headless journey in `api-contract.spec.ts` once got a 500 where the contract says
+  422, on the first request of a run, under the Next.js handlers PR #31 removed. The same
+  journey now runs through the forwarder and the FastAPI backend, and has passed every run.
 
-## Staging deployment (control plane only)
+## Staging deployment (control plane only, before the backend moved)
 
 The trusted half of the system is now hosted, at **https://app.wdnx.world**. What that
 covers, and what it does not:
@@ -251,8 +252,9 @@ covers, and what it does not:
   which is what [architecture v0.4](doc/architecture-v0.4-en.md) §B.4 asks for on the
   China-reachability grounds recorded there.
 - **Supabase** (project `rmsdyqmuztydicfintbs`, `us-west-2`, Free plan) carries Postgres,
-  Auth and Storage. All eight migrations are applied, and both private buckets were created
-  by them rather than by hand — the `storage.buckets` inserts run unmodified against a
+  Auth and Storage. All eleven migrations are applied — the last three, including the
+  client-grant baseline and the provenance tables, pushed on 2026-10-05 and checked by
+  reading the grants back — and both private buckets were created by them rather than by hand — the `storage.buckets` inserts run unmodified against a
   hosted project.
 - **The hosted project's auth configuration lives in `config.toml`**, in a
   `[remotes.staging]` block pushed with `supabase config push`, not in the dashboard. That
@@ -268,7 +270,14 @@ works under Vercel's proxy headers, and `/api/v1/applications` returned an RLS-f
 result. The `profiles` row follows from the `on_auth_user_created` trigger, whose failure
 would have aborted the signup itself.
 
-What is **not** deployed: the whole agent plane. No conductor, no Hetzner VM, no egress
+**That verification predates ADR-005.** It exercised the Next.js backend that PR #31 removed.
+`main` now needs `apps/api` running somewhere: the web forwards every `/api/v1` call to
+`API_URL`, so a web deploy of `main` before the backend is deployed and `API_URL` is set
+answers every call with `503 errors.request` — sign-in included. Deploys are manual (see Not
+done yet), so the live site is whatever was last deployed by hand; deploy the backend first,
+then the web.
+
+What is **not** deployed: the backend (`apps/api`) and the whole agent plane. No conductor, no Hetzner VM, no egress
 proxy, no job containers. A pack cannot be produced by anything running in the cloud today,
 and submitting an application there enqueues a job that nothing will claim.
 
@@ -276,8 +285,10 @@ and submitting an application there enqueues a job that nothing will claim.
 
 The full journey runs locally end to end: sign up → route check → create application →
 20-question intake → upload documents → review → submit → conductor claims the job → status
-reaches "being reviewed by a person". Hosted, only the front half of that runs: sign-in
-works, and everything from the conductor rightwards has nowhere to execute. Spend so far is
+reaches "being reviewed by a person", with the web, the FastAPI backend and the
+conductor as three processes. Hosted, the backend is not deployed yet, so a web deploy of
+`main` cannot serve even sign-in until it is; everything from the conductor rightwards has
+nowhere to execute either. Spend so far is
 zero — Vercel Hobby and Supabase Free — which is also why the staging database has no
 backups and pauses after seven idle days.
 
@@ -290,14 +301,21 @@ current milestone.
 `anon`/`authenticated` no DML; current Supabase images give them `arwdDxtm`, which let a
 signed-in client set its own upload to `stored` and write the submission columns on its own
 application. PR #18 (`20261005134359_client_grants_baseline`) restates every client grant and
-closes the default ACL, and `008_client_grants.sql` asserts it. Fixed on `main` and locally;
-the hosted project has it only once the migrations are pushed there.
+closes the default ACL, and `008_client_grants.sql` asserts it. Fixed on `main`, locally, and
+on the hosted project since the push of 2026-10-05.
 
 - **A new column on `applications` needs its own column grant.** Inserts and updates there are
   granted per column, and Postgres does not extend a grant to a column added later; the symptom
   is a 42501 on first write. `20260910022332_intake_draft_answers.sql` is the worked example.
 
 Elsewhere:
+
+- **The backend connects as a role that can become anyone.** User-scoped requests need
+  `SET ROLE authenticated`, and the documented `DATABASE_URL` is the project's `postgres`
+  role, which can do that and much more. PostgREST's answer is a dedicated login role
+  (`authenticator`: `noinherit`, granted only `anon`, `authenticated` and `service_role`);
+  the backend should connect as one like it before it holds production data. A migration in
+  `packages/db` and a changed `DATABASE_URL`, no code.
 
 - **The egress tripwire is cleartext-only.** Rule 3 denies POST/PUT/PATCH/DELETE off the
   allowlist, but Squid cannot see a method inside a `CONNECT` tunnel, and tunnels to any
