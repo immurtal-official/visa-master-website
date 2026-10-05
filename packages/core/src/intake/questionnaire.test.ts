@@ -27,6 +27,7 @@ import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import { SCHENGEN_SPAIN_DOCUMENTS } from "../rules/schengen-spain";
+import { comparisonsOf } from "./condition";
 import { contractDifferences, currentContract, type IntakeContract } from "./contract";
 import { declarationProblems } from "./declaration";
 import {
@@ -346,6 +347,49 @@ describe("questionnaire gate", () => {
         `首页会出现一张点进去打不开的卡片。\n` +
         `请给这一节至少留一道题，或者把整节删掉（连同 intake.section.${section.id} 的文案）。`,
     );
+    expectNoProblems(problems);
+  });
+
+  // 10 — the checklist's conditions name answers that exist and values they
+  //      can take. Before conditions were data, renaming an option made one
+  //      silently never true, and the document it guarded stopped being asked for.
+  it("材料清单里的条件都对得上问卷", () => {
+    const problems: string[] = [];
+    const paths = new Set(questions.map((question) => question.path));
+    const groups = OPTION_GROUPS as Record<string, readonly string[]>;
+
+    for (const document of SCHENGEN_SPAIN_DOCUMENTS) {
+      if (!document.appliesWhen) continue;
+      for (const { answer, values } of comparisonsOf(document.appliesWhen)) {
+        const where = `${DOCUMENTS_FILE} 里材料「${document.id}」的 appliesWhen`;
+        if (!paths.has(answer)) {
+          problems.push(
+            `${where} 用到了答案 "${answer}"，但问卷里没有这道题（可能被删掉或改了 id）。\n` +
+              `答案路径的写法是 "<节 id>.<题 id>"，例如 "companions.whoPays"。`,
+          );
+          continue;
+        }
+        if (answer.startsWith("extra.")) {
+          problems.push(
+            `${where} 用到了补充题 "${answer}"。补充题可以随时改动，材料清单不能依赖它。\n` +
+              `请改用核心题；如果确实需要，请找工程师把这道题变成核心题。`,
+          );
+          continue;
+        }
+        const group = QUESTION_OPTION_GROUP[answer];
+        if (!group) {
+          problems.push(`${where} 用到了 "${answer}"，但它不是选择题。条件只能比较选择题的答案。`);
+          continue;
+        }
+        for (const value of values) {
+          if (groups[group]!.includes(value)) continue;
+          problems.push(
+            `${where} 比较的是 "${answer}" 等于 "${value}"，但这道题没有 "${value}" 这个选项，条件永远不会成立。\n` +
+              `它可选的是：${groups[group]!.join("、")}。`,
+          );
+        }
+      }
+    }
     expectNoProblems(problems);
   });
 
