@@ -1,10 +1,11 @@
 /**
  * The questionnaire gate.
  *
- * A question is described in several places at once: its place in
- * INTAKE_SECTIONS, its keyboard in FIELD_BEHAVIOUR, its rule in
- * QUESTION_SCHEMAS, its options in QUESTION_OPTION_GROUP, and its wording in
- * both message catalogues. Forgetting one of them breaks nothing at build
+ * A question is declared in questionnaire.ts and worded in both message
+ * catalogues, and the tables the rest of the system reads (INTAKE_SECTIONS,
+ * FIELD_BEHAVIOUR, QUESTION_SCHEMAS, QUESTION_OPTION_GROUP) are derived from
+ * the declaration. These tests read the derived tables, so they check what the
+ * screens and the API actually see. Forgetting one of them breaks nothing at build
  * time — the page simply shows a raw key, or accepts anything, the first time
  * somebody opens it. These tests turn each of those quiet mistakes into a
  * failure, worded for whoever is editing the questionnaire rather than for an
@@ -34,8 +35,7 @@ import { INTAKE_SECTIONS } from "./sections";
 const LOCALES = ["zh-CN", "en"] as const;
 type Catalogue = Record<string, unknown>;
 
-const SECTIONS_FILE = "packages/core/src/intake/sections.ts";
-const RULES_FILE = "packages/core/src/intake/schengen-tourism-v1.ts";
+const QUESTIONNAIRE_FILE = "packages/core/src/intake/questionnaire.ts";
 const DOCUMENTS_FILE = "packages/core/src/rules/schengen-spain.ts";
 const catalogueFile = (locale: string) => `apps/web/messages/${locale}.json`;
 const BOTH_FILES = "zh-CN.json 和 en.json 两个文件";
@@ -119,7 +119,7 @@ describe("questionnaire gate", () => {
         if (!section) {
           problems.push(
             `${catalogueFile(locale)} 的 intake.question 下有一组 "${sectionId}"，` +
-              `但 ${SECTIONS_FILE} 里没有这一节。\n` +
+              `但 ${QUESTIONNAIRE_FILE} 里没有这一节。\n` +
               `如果这一节已经删掉，请把这一组文案从 ${BOTH_FILES}里一起删除；` +
               `如果是改了节的名字，请让两边一致。`,
           );
@@ -131,7 +131,7 @@ describe("questionnaire gate", () => {
           if (owned.has(key)) continue;
           problems.push(
             `${catalogueFile(locale)} 里有 intake.question.${sectionId}.${key}，` +
-              `但 ${SECTIONS_FILE} 的 "${sectionId}" 节里没有对应的题。\n` +
+              `但 ${QUESTIONNAIRE_FILE} 的 "${sectionId}" 节里没有对应的题。\n` +
               `如果这道题已经删掉，请把这条文案从 ${BOTH_FILES}里一起删除；` +
               `如果是改了题的 id，请让两边一致。提示语的键名必须是「题 id + Hint」。`,
           );
@@ -151,16 +151,14 @@ describe("questionnaire gate", () => {
       const group = QUESTION_OPTION_GROUP[question.path];
       if (isChoice && !group) {
         problems.push(
-          `\`${questionName(question)}\` 是选择题，但 ${RULES_FILE} 的 QUESTION_OPTION_GROUP ` +
-            `里没有写它用哪一组选项。\n` +
-            `请在 QUESTION_OPTION_GROUP 里加一行 "${question.path}": "<选项组名>"。`,
+          `\`${questionName(question)}\` 是选择题，但 ${QUESTIONNAIRE_FILE} 里没有写它用哪一组选项。\n` +
+            `请给这道题写上 options: "<选项组名>"，选项组见同一文件里的 OPTION_GROUPS。`,
         );
       }
       if (group && !isChoice) {
         problems.push(
-          `\`${questionName(question)}\` 在 QUESTION_OPTION_GROUP 里有选项组，` +
-            `但 FIELD_BEHAVIOUR 里没有标成选择题，页面会显示成输入框。\n` +
-            `请在 ${RULES_FILE} 的 FIELD_BEHAVIOUR 里给它写 { kind: "choice" }。`,
+          `\`${questionName(question)}\` 写了选项组，但没有标成选择题，页面会显示成输入框。\n` +
+            `请在 ${QUESTIONNAIRE_FILE} 里给这道题写 kind: "choice"。`,
         );
       }
     }
@@ -186,7 +184,7 @@ describe("questionnaire gate", () => {
         if (!options) {
           problems.push(
             `${catalogueFile(locale)} 的 intake.option 下有一组 "${group}"，` +
-              `但 ${RULES_FILE} 的 OPTION_GROUPS 里没有这一组。\n` +
+              `但 ${QUESTIONNAIRE_FILE} 的 OPTION_GROUPS 里没有这一组。\n` +
               `如果这组选项已经不用了，请把它从 ${BOTH_FILES}里一起删除。`,
           );
           continue;
@@ -195,7 +193,7 @@ describe("questionnaire gate", () => {
           if (options.includes(key)) continue;
           problems.push(
             `${catalogueFile(locale)} 里有选项文案 intake.option.${group}.${key}，` +
-              `但 ${RULES_FILE} 里这一组没有 "${key}" 这个选项。\n` +
+              `但 ${QUESTIONNAIRE_FILE} 里这一组没有 "${key}" 这个选项。\n` +
               `如果这个选项已经删掉，请把这条文案从 ${BOTH_FILES}里一起删除；` +
               `如果是改了选项的 id，请让两边一致。`,
           );
@@ -269,8 +267,7 @@ describe("questionnaire gate", () => {
       }
       problems.push(
         `\`${questionName(question)}\` 这道题没有校验规则，现在填什么都会被接受。\n` +
-          `请在 ${RULES_FILE} 的 QUESTION_SCHEMAS 里加一行 "${question.path}"，` +
-          `并在对应的整表 schema 里加上这个字段。`,
+          `请在 ${QUESTIONNAIRE_FILE} 里给这道题写 rule，规则见 packages/core/src/intake/rules.ts。`,
       );
     }
     expectNoProblems(problems);
@@ -283,8 +280,8 @@ describe("questionnaire gate", () => {
       .map(
         (question) =>
           `\`${questionName(question)}\` 这道题没有写输入方式（键盘类型、日期、选择题等）。\n` +
-          `请在 ${RULES_FILE} 的 FIELD_BEHAVIOUR 里加一行 "${question.path}"。` +
-          `普通文字题写 { inputMode: "text" } 即可。`,
+          `请在 ${QUESTIONNAIRE_FILE} 里检查这道题的写法。` +
+          `普通文字题可以写 keyboard: { inputMode: "text" }。`,
       );
     expectNoProblems(problems);
   });
@@ -297,12 +294,12 @@ describe("questionnaire gate", () => {
     ];
 
     for (const id of repeated(INTAKE_SECTIONS.map((s) => s.id))) {
-      problems.push(`${SECTIONS_FILE} 里有两节都叫 "${id}"。请给其中一节换一个 id。`);
+      problems.push(`${QUESTIONNAIRE_FILE} 里有两节都叫 "${id}"。请给其中一节换一个 id。`);
     }
     for (const section of INTAKE_SECTIONS) {
       for (const id of repeated(section.questions.map((q) => q.id))) {
         problems.push(
-          `${SECTIONS_FILE} 的 "${section.id}" 节里有两道题都叫 "${id}"。` +
+          `${QUESTIONNAIRE_FILE} 的 "${section.id}" 节里有两道题都叫 "${id}"。` +
             `题 id 会出现在网址里，同一节里必须唯一。请给其中一道换一个 id。`,
         );
       }
@@ -310,7 +307,7 @@ describe("questionnaire gate", () => {
     for (const path of repeated(questions.map((q) => q.path))) {
       const owners = questions.filter((q) => q.path === path).map(questionName);
       problems.push(
-        `${SECTIONS_FILE} 里 ${owners.map((o) => `\`${o}\``).join("、")} 都把答案存在 "${path}"，` +
+        `${QUESTIONNAIRE_FILE} 里 ${owners.map((o) => `\`${o}\``).join("、")} 都把答案存在 "${path}"，` +
           `后填的会覆盖先填的。请给每道题一个自己的 path。`,
       );
     }
@@ -323,8 +320,8 @@ describe("questionnaire gate", () => {
       (section) => section.id !== "review" && section.questions.length === 0,
     ).map(
       (section) =>
-        `${SECTIONS_FILE} 里「${section.id}」这一节没有题。\n` +
-        `没有题的节会被当成「检查并提交」，首页会多出一张点进去打不开的卡片。\n` +
+        `${QUESTIONNAIRE_FILE} 里「${section.id}」这一节没有题。\n` +
+        `首页会出现一张点进去打不开的卡片。\n` +
         `请给这一节至少留一道题，或者把整节删掉（连同 intake.section.${section.id} 的文案）。`,
     );
     expectNoProblems(problems);
