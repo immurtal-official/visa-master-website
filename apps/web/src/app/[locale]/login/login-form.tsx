@@ -4,7 +4,7 @@ import { useState, type FormEvent } from "react";
 import { useTranslations } from "next-intl";
 import type { ValidationIssue } from "@visa-master/core";
 import { api } from "@/lib/api/client";
-import { useRouter } from "@/i18n/navigation";
+import { useSessionNavigation } from "@/i18n/use-session-navigation";
 import { Button } from "@/components/ui/button";
 import { Callout } from "@/components/ui/callout";
 import { ErrorSummary } from "@/components/ui/error-summary";
@@ -28,7 +28,7 @@ interface AuthState {
 
 export function LoginForm({ configured }: { configured: boolean }) {
   const t = useTranslations();
-  const router = useRouter();
+  const leaveTo = useSessionNavigation();
   const [state, setState] = useState<AuthState>({ step: "email" });
 
   if (!configured) {
@@ -66,9 +66,10 @@ export function LoginForm({ configured }: { configured: boolean }) {
     });
 
     if (result.ok) {
-      // The session cookie is set; land on the dashboard with fresh data.
-      router.push("/dashboard");
-      router.refresh();
+      // The session cookie is set; a full load, so nothing the router
+      // remembered from before signing in can send the reader back here.
+      // `pending` stays on: the page is about to be replaced.
+      leaveTo("/dashboard");
       return;
     }
 
