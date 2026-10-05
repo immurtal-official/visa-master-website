@@ -34,6 +34,31 @@ from app.errors import ApiError
 logger = logging.getLogger(__name__)
 
 
+async def _init_connection(connection: asyncpg.Connection) -> None:
+    # json and jsonb arrive as Python values and leave as JSON, as they did
+    # through PostgREST.
+    for kind in ("json", "jsonb"):
+        await connection.set_type_codec(
+            kind, encoder=json.dumps, decoder=json.loads, schema="pg_catalog"
+        )
+
+
+@asynccontextmanager
+async def with_service_authority(connection: asyncpg.Connection) -> AsyncIterator[None]:
+    """Inside a user-scoped transaction, act on the product's authority for a moment.
+
+    For a write the caller may cause but not make — the row that says an answer
+    was typed, `stored` on an upload — committed in the same transaction as the
+    caller's own writes, so neither lands without the other. The caller's role
+    is restored before control returns.
+    """
+    await connection.execute("set local role service_role")
+    try:
+        yield
+    finally:
+        await connection.execute("set local role authenticated")
+
+
 class Database:
     """A lazily created pool that tolerates having no database configured."""
 
@@ -59,6 +84,7 @@ class Database:
                 # Supabase's transaction pooler does not support prepared
                 # statements across transactions.
                 statement_cache_size=0,
+                init=_init_connection,
             )
         except Exception:
             logger.exception("db.connect_failed")
@@ -107,21 +133,30 @@ class Database:
             await connection.execute("set local role service_role")
             yield connection
 
-    async def account_is_active(self, user_id: str) -> bool:
+    async def account_is_active(self, user_id: str, session_id: str | None = None) -> bool:
         """Whether the account behind a valid token still exists and may sign in.
 
         A signature proves a token was issued, not that its account survives: a
-        deleted or banned user's token stays valid until it expires. Read from
-        auth.users directly — no round trip to the auth service.
+        deleted or banned user's token stays valid until it expires. Nor that
+        its session does: a token from a session that was signed out stays
+        valid too, so when the token names its session, the session must still
+        exist. Read from auth.users and auth.sessions directly — no round trip
+        to the auth service.
         """
         async with self._require_pool().acquire() as connection:
             row = await connection.fetchrow(
                 """
-                select 1 from auth.users
-                where id = $1::uuid
-                  and deleted_at is null
-                  and (banned_until is null or banned_until <= now())
+                select 1 from auth.users u
+                where u.id = $1::uuid
+                  and u.deleted_at is null
+                  and (u.banned_until is null or u.banned_until <= now())
+                  and ($2::uuid is null or exists (
+                    select 1 from auth.sessions s
+                    where s.id = $2::uuid and s.user_id = u.id
+                      and (s.not_after is null or s.not_after > now())
+                  ))
                 """,
                 user_id,
+                session_id,
             )
             return row is not None

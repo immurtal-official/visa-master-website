@@ -11,7 +11,7 @@ from fastapi import Depends
 from fastapi.testclient import TestClient
 
 from app.auth import Caller
-from app.deps import optional_caller, require_caller
+from app.deps import Session, get_session, require_caller
 
 SIGNED_OUT = {"error": {"key": "route.sessionExpired"}}
 
@@ -23,8 +23,8 @@ def protected(app, fake_db) -> TestClient:
         return {"userId": caller.user_id, "email": caller.email}
 
     @app.get("/api/v1/_test/maybe")
-    async def maybe(caller: Caller | None = Depends(optional_caller)) -> dict:
-        return {"signedIn": caller is not None}
+    async def maybe(session: Session = Depends(get_session)) -> dict:
+        return {"signedIn": await session.optional() is not None}
 
     return TestClient(app)
 
@@ -101,3 +101,14 @@ def test_signed_out_is_a_state_where_a_route_allows_it(
     user = str(uuid.uuid4())
     fake_db.active.add(user)
     assert call(protected, make_token(user), "/api/v1/_test/maybe").json() == {"signedIn": True}
+    # A session that has gone is signed out too, not an error, where signed out is allowed.
+    assert call(protected, make_token(str(uuid.uuid4())), "/api/v1/_test/maybe").json() == {
+        "signedIn": False
+    }
+
+
+def test_a_session_id_that_is_not_one_is_signed_out(protected, fake_db, make_token) -> None:
+    user = str(uuid.uuid4())
+    fake_db.active.add(user)
+    response = call(protected, make_token(user, session_id="not-a-uuid"))
+    assert (response.status_code, response.json()) == (401, SIGNED_OUT)

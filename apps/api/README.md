@@ -1,9 +1,11 @@
 # apps/api — the backend
 
-FastAPI, Python 3.12. Every `/api/v1/**` endpoint lives here once it has moved
-out of Next.js ([ADR-005](../../discussion/ADR-005-fastapi-backend-service.md));
-until then the web still serves the rest. The web, the mobile app and any later
-client are all clients of this one contract.
+FastAPI, Python 3.12. Every `/api/v1/**` endpoint lives here
+([ADR-005](../../discussion/ADR-005-fastapi-backend-service.md)). The web, the
+mobile app and any later client are all clients of this one contract: the web
+forwards its browser's calls here with the session's token as Bearer
+(`apps/web/src/app/api/v1/[...path]/route.ts`); a native client calls directly
+and keeps the tokens `POST /api/v1/auth/verify` returns.
 
 ## Running it
 
@@ -13,10 +15,14 @@ cp apps/api/.env.example apps/api/.env  # then fill in from `pnpm db:status`
 pnpm --filter @visa-master/api dev      # http://127.0.0.1:8000/api/v1/health
 ```
 
+`pnpm dev` at the root starts this alongside the web (turbo runs every `dev`
+script); the web finds it at `API_URL`, `http://127.0.0.1:8000` by default.
+
 `pnpm turbo lint typecheck test` reaches this package like any other: lint is
 `ruff`, typecheck compiles every module, test is `pytest`. The database tests
-run against the local Supabase stack (`pnpm db:start`) and are reported as
-skipped when it is not up.
+— including `tests/test_endpoints.py`, every endpoint against real row-level
+security and grants — run against the local Supabase stack (`pnpm db:start`) and
+are reported as skipped when it is not up.
 
 ## How a request is handled
 
@@ -65,4 +71,6 @@ rewrites it, and the test suite fails when it is out of date.
 Its own Vercel project with the root directory `apps/api`; Vercel's Python
 runtime serves `api/index.py`. Environment: `DATABASE_URL` (direct or session
 pooler, as a role that can `SET ROLE authenticated`), `SUPABASE_URL`,
-`SUPABASE_PUBLISHABLE_KEY`, `SUPABASE_SECRET_KEY`, `ENVIRONMENT=production`.
+`SUPABASE_PUBLISHABLE_KEY`, `ENVIRONMENT=production`, and `DOCUMENT_EXTRACTION=on`
+once something can read documents. Then set `API_URL` on the web project to this
+service's URL.
