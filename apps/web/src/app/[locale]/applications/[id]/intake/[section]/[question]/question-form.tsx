@@ -2,7 +2,12 @@
 
 import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
 import { useTranslations } from "next-intl";
-import { FIELD_BEHAVIOUR, QUESTION_OPTIONS, type ValidationIssue } from "@visa-master/core";
+import {
+  FIELD_BEHAVIOUR,
+  QUESTION_OPTION_GROUP,
+  QUESTION_OPTIONS,
+  type ValidationIssue,
+} from "@visa-master/core";
 import { Button } from "@/components/ui/button";
 import { Callout } from "@/components/ui/callout";
 import { DateInput } from "@/components/ui/date-input";
@@ -334,21 +339,17 @@ function SaveButton({ label, pending }: { label: string; pending?: boolean }) {
 }
 
 /**
- * The label for one option.
- *
- * Yes/no/not-sure answers share a set, because the same three words should read
- * the same wherever they are offered — writing them per question is how two
- * questions end up disagreeing about what "not sure" is called.
+ * The label for one option, filed under the set the question declares in
+ * packages/core. questionnaire.test.ts checks that every set's labels exist in
+ * both catalogues, which is what makes the cast below safe.
  */
-function optionLabel(t: ReturnType<typeof useTranslations>, path: string, option: string): string {
-  const group = path.endsWith("travellingWith")
-    ? "travellingWith"
-    : path.endsWith("whoPays")
-      ? "whoPays"
-      : "yesNoUnsure";
-  // @ts-expect-error — the option sets are declared in packages/core and their
-  // labels are checked against the catalogue by the build.
-  return t(`intake.option.${group}.${option}`);
+function optionLabel(
+  t: ReturnType<typeof useTranslations<never>>,
+  path: string,
+  option: string,
+): string {
+  const group = QUESTION_OPTION_GROUP[path];
+  return t(`intake.option.${group}.${option}` as "intake.option.yesNoUnsure.yes");
 }
 
 function messageFor(t: ReturnType<typeof useTranslations>, issue: ValidationIssue): string {
