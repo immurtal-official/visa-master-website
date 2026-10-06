@@ -15,7 +15,7 @@ still in force is.
 |---|---|---|
 | `architecture-v0.1-en.md` (+ two images) | v0.2, then v0.4 | The first shape of the system |
 | `Design_Readme.md` | v0.1 itself, then v0.4 | A v0.1-era proposal under an older name |
-| `architecture-v0.2-en.md` | v0.4 | Named FastAPI for the backend; v0.4 superseded that with Node/TypeScript |
+| `architecture-v0.2-en.md` | v0.4 | Named FastAPI for the backend; v0.4 superseded that with Node/TypeScript, and ADR-005 later moved the backend back to FastAPI, as its own service in `apps/api` |
 | `architecture-v0.3-slides.html` (+ five images) | — | A presentation of v0.3. The v0.3 *text* is still current and lives in `doc/` |
 | `platform-and-dev-plan-en.md` | [`platform-and-dev-plan-v2-en.md`](../platform-and-dev-plan-v2-en.md) | Superseded by ADR-004, which made the control plane API-first |
 | `platform-and-dev-plan-en.html` | — | The generated reader for the above, and behind it by two revisions |

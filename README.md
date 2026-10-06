@@ -35,8 +35,8 @@ Two sections of it carry weight beyond description:
 | `doc/archive/` | Superseded documents, with a README naming what replaced each — including `EXECUTION-PLAN-week1-2.md`, the plan weeks 1–2 executed |
 | `discussion/` | The ADR ledger — every record in it is in force, and each is amended by a later ADR rather than edited. The long-form arguments they came out of are in `discussion/explorations/`; see [`discussion/README.md`](discussion/README.md) |
 | `design/` | Product design, binding guidelines (device parity, internationalization, design system selection), the exported design system, and prototypes — see [`design/README.md`](design/README.md) and its ground rule: design output is reference, never production code |
-| `apps/` | `web` — the Next.js front end, its `/api/v1/**` handlers and the service layer behind them; `conductor` — the workflow orchestrator and its executors; `app` — the React Native / Expo mobile client, not started; `api` — empty, where the backend would go if it ever leaves Next.js (see its README) |
-| `packages/` | `core` — shared zod schemas, deterministic route rules, i18n message keys; `db` — migrations and pgTAP tests; `executors` — the adapter contract only, no implementations |
+| `apps/` | `web` — the Next.js front end, and a single forwarder that passes `/api/v1/**` to the backend with the cookie session as a Bearer token; `api` — the backend (FastAPI, Python 3.12), which serves every `/api/v1/**` endpoint through thin routers and a service layer, with a Python copy of the rules held to `packages/core` by conformance vectors (ADR-005); `conductor` — the workflow orchestrator and its executors; `app` — the React Native / Expo mobile client, not started |
+| `packages/` | `core` — shared zod schemas, deterministic route rules, i18n message keys, and the rules data and conformance vectors it exports for the backend; `db` — migrations and pgTAP tests; `executors` — the adapter contract only, no implementations |
 | `infra/` | The agent plane as compose: the internal network and the Squid egress config. Systemd units and deploy scripts land with the VM |
 | `scripts/` | Repo-level build gates — today, the i18n catalogue check — and `doc-reader/`, which generates the documents' tables of contents, their diagrams, and their HTML readers |
 
@@ -60,7 +60,9 @@ Chinese: [`doc/architecture-v0.4-zh.md`](doc/architecture-v0.4-zh.md).
 
 ## Development
 
-Requires Node 22.12+, pnpm 10, the Supabase CLI, and Docker — for the local
+Requires Node 22.12+, pnpm 10, uv with Python 3.12 (for the backend in `apps/api`;
+create its environment once with `pnpm --filter @visa-master/api venv`), the
+Supabase CLI, and Docker — for the local
 Supabase stack, for the conductor's container tests, and for the agent plane in
 `infra/compose.local.yml`. Where the build currently stands, and what is left, is
 [`STATUS.md`](STATUS.md); the plan it tracks against is
@@ -76,7 +78,7 @@ locally, and what to build next.
 
 ```bash
 pnpm install                # install the workspace
-pnpm dev                    # run apps/web (stub mode, no config needed) and apps/conductor
+pnpm dev                    # run apps/web (stub mode, no config needed), apps/api on :8000, and apps/conductor
 pnpm lint typecheck test    # the checks every commit must pass
 pnpm --filter web build     # build; also runs the i18n catalogue gate
 ```
@@ -91,18 +93,23 @@ pnpm db:test                # pgTAP tests: row-level security behaves as specifi
 
 `pnpm db:start` prints the local API URL and keys; put them in
 `apps/web/.env.local` (never committed — see `apps/web/.env.example` for the key
-names). The conductor is configured separately: see `apps/conductor/.env.example`,
+names). The backend is configured separately, from `apps/api/.env` (see
+`apps/api/.env.example`): the same Supabase URL and publishable key, and a
+`DATABASE_URL` that connects as the backend's own `visa_api` login role, never as
+`postgres`. The conductor has its own file too: see `apps/conductor/.env.example`,
 where `HERMES_JOB_COMMAND` is the switch between the real container executor and
 the fake one. Sign-in emails are captured by Mailpit at <http://127.0.0.1:54324>,
 so local logins need no mail provider. End-to-end tests run against that stack
-with `pnpm --filter web e2e`.
+with `pnpm --filter web e2e`, which starts the backend itself.
 
-Nothing loads the conductor's env file for it, so `pnpm dev` starts the web app
-and the conductor exits immediately unless `DATABASE_URL` is exported in the
-shell (`pnpm db:status` prints it).
+The conductor's `dev` script loads `apps/conductor/.env.local` if it exists.
+Without that file, and without `DATABASE_URL` exported in the shell (`pnpm
+db:status` prints it), `pnpm dev` starts the web app and the backend while the
+conductor exits immediately.
 
-Ten of the conductor's thirty tests run real containers; the other twenty are
-lease and run-loop races against the local Postgres. The container ten bring the
+Ten of the conductor's sixty-one tests run real containers; thirty-nine run
+against the local database — lease and run-loop races, write-back, and document
+staging — and twelve are pure unit tests of the QA gate. The container ten bring the
 egress topology up from `infra/compose.local.yml`, and five of them need the
 `visa-master-hermes` image built from the `visa-master` repo — without it they
 return early and pass without having tested the container path.

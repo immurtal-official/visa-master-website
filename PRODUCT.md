@@ -100,8 +100,9 @@ The architecture is specified in [`doc/architecture-v0.4-en.md`](doc/architectur
   LLM API gateway (the workhorse, and the only place provider keys live), a
   Hermes server (today's pack producer), and a thin custom agent (the migration
   target). Swapping which one runs a task is a routing-table edit.
-- Planned hosting: **Vercel + Supabase** for the control plane, **one Hetzner VM**
-  for the agent plane — see [`doc/platform-and-dev-plan-v2-en.md`](doc/platform-and-dev-plan-v2-en.md)
+- Hosting: **Vercel + Supabase** for the control plane — the web app and the
+  backend run today as two Vercel projects from this repo, against a hosted
+  Supabase project — and, planned, **one Hetzner VM** for the agent plane; see [`doc/platform-and-dev-plan-v2-en.md`](doc/platform-and-dev-plan-v2-en.md)
   for the comparison, the eight-week build plan, and the cost model.
 
 ## 7. Non-negotiable constraints
@@ -138,10 +139,11 @@ These are settled and should not be re-litigated without a reason:
 | Repo | Contents |
 |---|---|
 | `visa-master` | The agent profile, the Node CLI and toolchain, the Docker packaging. This is the thing that produces packs. |
-| `visa-master-website` (this repo) | Everything else: the design documents, the decision records, and the application code built against them — the web app, the conductor, and the agent-plane compose. |
+| `visa-master-website` (this repo) | Everything else: the design documents, the decision records, and the application code built against them — the web app, the backend API, the conductor, and the agent-plane compose. |
 
-Inside this repo: `doc/` holds the architecture versions (v0.1→v0.4) and the
-platform plan, in English with `-zh` Chinese translations of the v0.4 set;
+Inside this repo: `doc/` holds the architecture and platform plan in force (v0.3,
+v0.4 and the v2 plan, with `-zh` Chinese translations of v0.4 and the plan), and
+`doc/archive/` the superseded versions back to v0.1;
 `discussion/` holds the architecture decision records and the reasoning behind
 them; `design/` holds the product design work and the exported design system;
 and `apps/`, `packages/` and `infra/` hold the product itself.

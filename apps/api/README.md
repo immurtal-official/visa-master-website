@@ -11,7 +11,7 @@ and keeps the tokens `POST /api/v1/auth/verify` returns.
 
 ```bash
 pnpm --filter @visa-master/api venv     # once: .venv with Python 3.12 (needs uv)
-cp apps/api/.env.example apps/api/.env  # then fill in from `pnpm db:status`
+cp apps/api/.env.example apps/api/.env  # URL + publishable key from `pnpm db:status`; DATABASE_URL as visa_api, not postgres
 pnpm --filter @visa-master/api dev      # http://127.0.0.1:8000/api/v1/health
 ```
 
@@ -26,13 +26,13 @@ are reported as skipped when it is not up.
 
 ## How a request is handled
 
-| Layer    | Where                                                | Does                                                                                                                                                                                                           |
-| -------- | ---------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Router   | `app/routers/`                                       | Parses the request, calls one service, returns its result.                                                                                                                                                     |
-| Service  | `app/services/`                                      | The business logic.                                                                                                                                                                                            |
-| Rules    | `packages/core`, exported as data, plus `app/rules/` | What counts as valid, complete, asked — written once in `packages/core` (ADR-005).                                                                                                                             |
-| Caller   | `app/auth.py`, `app/deps.py`                         | `Authorization: Bearer <Supabase access token>`, verified against the project's JWKS; the account must still exist. Cookies are not credentials here.                                                          |
-| Database | `app/db.py`                                          | `as_user(caller)` runs the transaction as `authenticated` with the caller's claims, so row-level security and the column grants still apply; `as_service()` is the product's own authority, asked for by name. |
+| Layer    | Where                                                | Does                                                                                                                                                                                                                                   |
+| -------- | ---------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Router   | `app/routers/`                                       | Parses the request, calls one service, returns its result.                                                                                                                                                                             |
+| Service  | `app/services/`                                      | The business logic.                                                                                                                                                                                                                    |
+| Rules    | `packages/core`, exported as data, plus `app/rules/` | What counts as valid, complete, asked — written once in `packages/core` (ADR-005).                                                                                                                                                     |
+| Caller   | `app/auth.py`, `app/deps.py`                         | `Authorization: Bearer <Supabase access token>`, verified against the project's JWKS; the account must still exist and be allowed to sign in, and the token's session must not have been signed out. Cookies are not credentials here. |
+| Database | `app/db.py`                                          | `as_user(caller)` runs the transaction as `authenticated` with the caller's claims, so row-level security and the column grants still apply; `as_service()` is the product's own authority, asked for by name.                         |
 
 ## The rules
 
