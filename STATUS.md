@@ -269,7 +269,8 @@ What the deployment consists of:
   skipping builds that do not touch its directory:
   - `visa-master-api` — root directory `apps/api`, FastAPI, functions in `pdx1` (Oregon,
     beside the database), at `visa-master-api-musico.vercel.app`; `api.wdnx.world` is
-    attached and waits on its CNAME at Cloudflare, which holds the zone. Environment:
+    attached through a DNS-only CNAME at Cloudflare, which holds the zone, and its
+    `/api/v1/health` answers `ok` and `db` true (checked 2026-10-06). Environment:
     `DATABASE_URL` (the `visa_api` role through the Supabase transaction pooler, set by the
     owner), `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY`, `ENVIRONMENT`,
     `DOCUMENT_EXTRACTION=off`. Vercel Authentication covers its previews only, since the
@@ -293,7 +294,9 @@ What the deployment consists of:
   account is the Vercel Marketplace integration on team MUSICO (Free: 3,000 a month, 100 a
   day), reached from Vercel → Integrations → Resend. Delivery to a university mailbox
   (umbc.edu) was accepted by its server and then filtered out of sight; Gmail receives it.
-  A DMARC record for `wdnx.world` is the usual next step for institutional mailboxes.
+  `wdnx.world` has carried a DMARC record since 2026-10-06, `p=none` with aggregate reports
+  going to Cloudflare DMARC Management; the policy tightens to `quarantine` once a few weeks
+  of reports show Resend's mail passing DKIM.
   Supabase's built-in SMTP allows two emails an hour, which is not a sign-in flow.
 
 **Sign-in is verified end to end against this deployment**: a real address, a code that
@@ -384,9 +387,9 @@ Elsewhere:
   are the Hetzner VM, `infra/compose.vm.yml`, and the systemd units — and, before anyone
   outside the team uses it, Supabase Pro (Free has no backups and pauses when idle). Vercel is
   already on the team's Pro plan. Blockers are accounts and spend, not code.
-- **Hosting loose ends**: the `api` CNAME for `api.wdnx.world` at Cloudflare, then `API_URL`
-  on the web switched to it; `SUPABASE_SECRET_KEY` removed from the web project, which no
-  longer reads it; a DMARC record for `wdnx.world`.
+- **Hosting loose ends**: `API_URL` on the web switched to `api.wdnx.world`, whose CNAME is
+  now in place; `SUPABASE_SECRET_KEY` removed from the web project, which no longer reads it;
+  the DMARC policy raised from `none` to `quarantine` after a few weeks of clean reports.
 - **CN-entity-gated items** (tracked, not blocking): ICP filing, WeChat Pay, +86 SMS, any
   WeChat Mini Program — all hang off the same prerequisite.
 
