@@ -119,9 +119,8 @@ The questionnaire rework has its own stage table below, under
   switching — whether a token's account and session are still live — is a `security definer`
   function in a schema of its own (`api_private.account_is_active`), so it has no access to
   `auth` at all. The tests connect the app as this role, and pgTAP asserts what it lacks.
-- **Not deployed yet.** Hosting `apps/api` needs its own Vercel project (root directory
-  `apps/api`, its own domain) and the web's `API_URL` pointed at it — account work, listed
-  under Not done yet.
+- **Deployed** as its own Vercel project (root directory `apps/api`) at `api.wdnx.world`,
+  with the web's `API_URL` pointed at it — see Staging deployment.
 
 ### Agent plane packaged to run (PR #14)
 
@@ -275,7 +274,7 @@ What the deployment consists of:
     owner), `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY`, `ENVIRONMENT`,
     `DOCUMENT_EXTRACTION=off`. Vercel Authentication covers its previews only, since the
     web's server calls production directly; the API does its own Bearer checks.
-  - `visa-master-website` — `apps/web`, with `API_URL` pointing at the backend. The project's Root Directory is `apps/web`, so the
+  - `visa-master-website` — `apps/web`, with `API_URL` pointing at `api.wdnx.world`. The project's Root Directory is `apps/web`, so the
   workspace installs from the repository root and Next is found where it actually lives;
   build command and output directory are left to auto-detection for the reason recorded in
   `vercel.json`'s commit. The domain is a first-party one rather than `*.vercel.app`,
@@ -387,9 +386,8 @@ Elsewhere:
   are the Hetzner VM, `infra/compose.vm.yml`, and the systemd units — and, before anyone
   outside the team uses it, Supabase Pro (Free has no backups and pauses when idle). Vercel is
   already on the team's Pro plan. Blockers are accounts and spend, not code.
-- **Hosting loose ends**: `API_URL` on the web switched to `api.wdnx.world`, whose CNAME is
-  now in place; `SUPABASE_SECRET_KEY` removed from the web project, which no longer reads it;
-  the DMARC policy raised from `none` to `quarantine` after a few weeks of clean reports.
+- **Hosting loose ends**: the DMARC policy raised from `none` to `quarantine` after a few
+  weeks of clean reports.
 - **CN-entity-gated items** (tracked, not blocking): ICP filing, WeChat Pay, +86 SMS, any
   WeChat Mini Program — all hang off the same prerequisite.
 
