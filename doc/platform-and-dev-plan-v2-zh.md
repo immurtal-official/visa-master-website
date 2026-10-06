@@ -2,6 +2,8 @@
 
 **状态：** 生效中 —— 依据 [ADR-004](../discussion/ADR-004-api-first-control-plane.md)（2026-08-12）取代 [platform-and-dev-plan-zh.md](archive/platform-and-dev-plan-zh.md)
 **v2 改了什么：** 控制面采纳 API-first 纪律 —— 每一项核心业务能力都放在 `/api/v1/**` 路由处理器之后、由服务层承载，Web UI 只是这份契约的一个客户端；Server Actions 不再承载任何核心业务操作。落位、周计划与 monorepo 说明相应更新。
+**自 [ADR-005](../discussion/ADR-005-fastapi-backend-service-zh.md)（2026-10-05）起：** `/api/v1/**` 契约不变，但现在由 `apps/api` 中独立的 FastAPI 服务承载（路由在 `app/routers/`，业务逻辑在 `app/services/`），作为单独的 Vercel 项目部署；`apps/web` 只把 `/api/v1/**` 转发给它，`apps/web/src/lib/services/` 已不存在。`packages/core` 仍是规则的唯一来源 —— 后端读取它导出的数据，并重新实现具名规则，由一致性向量保证与之相同。本文凡说「`lib/services/` 之上的路由处理器」或把 API 放在 `apps/web` 里的地方，都应读作 `apps/api`。
+
 **配套文档：** [architecture-v0.4](architecture-v0.4-zh.md) —— 本文档是平台相关的那一半：架构跑在哪里，以及具体的构建计划。
 
 > 英文原件：[platform-and-dev-plan-v2 (English)](platform-and-dev-plan-v2-en.md)
@@ -245,9 +247,9 @@ MVP 是单并发（v0.3），因此这个 Postgres 队列绰绰有余；不需�
 
 | 组件 | 落位 | 为什么 |
 |---|---|---|
-| 认证、用户 CRUD、提交签证包（插入 `jobs` 行）、预签名下载 URL、复核门的 UI 操作 | **Vercel 上 `/api/v1/**` 之下的 Next.js 路由处理器，作为服务层（`lib/services/`）之上的薄适配器** —— Web UI 只是这份契约的一个客户端；Server Actions 不承载任何核心业务操作（ADR-004） | 纯请求/响应，适配 serverless，零额外基础设施 —— 而且同一份契约还能服务未来的移动 App 或微信小程序，未来抽出独立后端时也只是把 `lib/services/` 换个家，而不是重写 |
+| 认证、用户 CRUD、提交签证包（插入 `jobs` 行）、预签名下载 URL、复核门的 UI 操作 | **Vercel 上 `/api/v1/**` 之下的 Next.js 路由处理器，作为服务层（`lib/services/`）之上的薄适配器** —— Web UI 只是这份契约的一个客户端；Server Actions 不承载任何核心业务操作（ADR-004） · *自 ADR-005 起：`/api/v1/**` 端点现由独立的 FastAPI 服务 `apps/api` 承载，部署为单独的 Vercel 项目；Web 只做转发。* | 纯请求/响应，适配 serverless，零额外基础设施 —— 而且同一份契约还能服务未来的移动 App 或微信小程序，未来抽出独立后端时也只是把 `lib/services/` 换个家，而不是重写 |
 | 编排器（"conductor"）：队列租约、执行器路由（按适配器契约在 hermes / thin-agent / llm-gateway 之间选）、经 Docker API 管容器生命周期、基于产物的完成判定（`qa-report.json` + 交付目录）、挂钟看门狗、重试、token 预算记账 | **常驻的 Node 服务，与 agent 虚拟机同机**（systemd 或 compose 服务） | 它需要 Docker socket、文件系统守候，以及比任何 serverless 调用都活得久的定时器；ADR-002 说的确定性工作流引擎，就是这个进程 |
-| 确定性业务规则（"西班牙旅游签需要护照 + 银行流水 + 在职证明"） | **共享的 TypeScript 包**，两边都引 | UI 里即时表单校验，conductor 里权威强制 —— 一个事实来源，符合 ADR-002 |
+| 确定性业务规则（"西班牙旅游签需要护照 + 银行流水 + 在职证明"） | **共享的 TypeScript 包**，两边都引 —— Python 后端（`apps/api`，ADR-005）无法引用它，因此读取该包导出的 JSON，并重新实现具名规则，由一致性向量保证与 TypeScript 一致 | UI 里即时表单校验，conductor 里权威强制 —— 一个事实来源，符合 ADR-002 |
 
 **不要**把引擎只放在 Next.js 路由里（没有常驻进程、有时长上限，Vercel 的 cron/队列同样受函数限制约束），也不要把它做成第三个托管位置 —— 与 agent 虚拟机同机可以让 Docker 控制留在本地，且不新增任何网络暴露面。
 
@@ -276,19 +278,19 @@ MVP 是单并发（v0.3），因此这个 Postgres 队列绰绰有余；不需�
 | 组件 | 跑在哪 | 由谁提供 | 说明 |
 |---|---|---|---|
 | 前端（Next.js App Router，以 zh-CN 为主） | Vercel Pro | `apps/web` | 每个 PR 一个预览；`main` 上线生产 |
-| 请求/响应 API（鉴权后的 CRUD、提交作业、预签名 URL、复核操作） | Vercel serverless —— **`/api/v1/**` 之下的路由处理器，位于 `lib/services/` 之上（API-first，ADR-004；核心操作不用 Server Actions）** | `apps/web` | 从不接触 Docker 或 LLM 密钥；线上契约只传目录键，绝不传句子 |
+| 请求/响应 API（鉴权后的 CRUD、提交作业、预签名 URL、复核操作） | Vercel serverless（Python 运行时，独立项目）—— **`/api/v1/**` 之下的 FastAPI 路由，位于 `app/services/` 之上（API-first，ADR-004；由 ADR-005 移出 Next.js；核心操作不用 Server Actions）**；`apps/web` 只把 `/api/v1/**` 转发给它 | `apps/api` | 从不接触 Docker 或 LLM 密钥；线上契约只传目录键，绝不传句子 |
 | 工作流引擎 / 编排器（"conductor"） | Hetzner CAX31，由 systemd 管理的 compose 服务 | `apps/conductor`（Node 22，TS） | 队列租约、执行器路由、容器生命周期、产物守候、看门狗、token 记账 |
 | 执行器：**hermes**（完整签证包生产者，当下即可用） | 虚拟机上每作业一个即抛容器，`internal: true` 网络 | `packages/executors/hermes` + `visa-master-hermes:latest` | 第 3 周上线 |
 | 执行器：**llm-gateway**（无状态步骤：动机信、清单、翻译） | conductor 中的适配器 + **版本锁定的 LiteLLM 代理容器**（compose 服务 `gateway`，第 3 周上线） | `packages/executors/llm-gateway` | 步骤库第 5 周上线；网关容器从第 3 周起就是唯一的推理咽喉 —— Hermes 的供应商配置指向它，因此**供应商密钥绝不进入作业容器**（架构 C §3.2） |
 | 执行器：**thin-agent**（讨论 01 的迁移目标） | 未来同契约下的容器 | `packages/executors/thin-agent` | **推迟 —— 见 §6** |
 | 出站代理 | Squid 容器，双网卡（内部网 + 外部网） | `infra/compose.vm.yml` | v0.3 §5.2 规则 1–3 + 审计日志；作业容器唯一的出口 |
 | Postgres（jobs、users、usage、cases） | Supabase Pro | `packages/db` 迁移 | conductor 经 Supavisor 连接池以 TLS 连接，只出不进 |
-| 认证（邮箱 OTP + 可选 OAuth，RLS） | Supabase Auth | —— | JWT 在 Next.js 中校验；所有面向用户的表都开 RLS |
+| 认证（邮箱 OTP + 可选 OAuth，RLS） | Supabase Auth | —— | JWT 在 `apps/api` 中按项目 JWKS 校验（只接受 Bearer，ADR-005）；所有面向用户的表都开 RLS |
 | 对象存储（上传件 + 产物包） | Supabase Storage，私有桶 `uploads`、`artifacts` | —— | 由 API 签发上传/下载 URL；conductor 用 service-role key |
 | 实时进度 | v1 每 3 秒轮询 `GET /api/jobs/:id`；后续增强为对作业行订阅 Supabase Realtime | —— | 轮询对中国用户能优雅降级（B.3） |
-| 业务规则（如西班牙旅游签材料要求） | 共享包，Web **和** conductor 都引 | `packages/core`（zod schema + `rules/`） | ADR-002：规则是代码，不是 LLM 的判断 |
+| 业务规则（如西班牙旅游签材料要求） | 共享包，Web **和** conductor 都引；`apps/api` 读取其导出的 JSON 并重新实现具名规则，由一致性向量保证一致（ADR-005） | `packages/core`（zod schema + `rules/`） | ADR-002：规则是代码，不是 LLM 的判断 |
 | 虚拟机的管理/SSH 访问 | Tailscale（只经 tailnet SSH；公网入站一律拒绝） | —— | 数据通路不需要 VPN —— 它本来就是只出不进 |
-| 密钥 | Vercel 环境变量（Web：anon key、Sentry DSN）；虚拟机：root 所有的 `/etc/visa-master/{conductor,gateway,proxy}.env`，权限 0600 | 以 1Password 为事实来源；由部署脚本下发 | **供应商 LLM 密钥只存在于网关容器的环境里，`service_role` key 只存在于 conductor 的环境里。** 作业容器完全不持有供应商密钥 —— 它唯一的推理通路是内部网络上的网关端点（架构 C §3.2，取代 v0.3 §6 中「密钥放容器里」的姿态） |
+| 密钥 | Vercel 环境变量（Web：publishable key、`API_URL`、Sentry DSN；api：以 `visa_api` 登录角色连接的 `DATABASE_URL`、publishable key）；虚拟机：root 所有的 `/etc/visa-master/{conductor,gateway,proxy}.env`，权限 0600 | 以 1Password 为事实来源；由部署脚本下发 | **供应商 LLM 密钥只存在于网关容器的环境里，`service_role` key 只存在于 conductor 的环境里。** 作业容器完全不持有供应商密钥 —— 它唯一的推理通路是内部网络上的网关端点（架构 C §3.2，取代 v0.3 §6 中「密钥放容器里」的姿态） |
 
 ```mermaid
 flowchart LR
@@ -307,12 +309,12 @@ flowchart LR
   X -->|80/443 白名单, 限制 POST, 全程审计| I[(互联网: LLM API, 使馆/BLS/EU 站点)]
 ```
 
-Monorepo（`pnpm` + Turborepo）：`apps/web`（UI + `/api/v1` 控制面 API + `lib/services/`）、`apps/conductor`、`packages/core`、`packages/db`、`packages/executors`、`infra/`（compose 文件、Squid 配置、systemd unit、部署脚本）。
+Monorepo（`pnpm` + Turborepo）：`apps/web`（UI；把 `/api/v1/**` 转发给后端）、`apps/api`（`/api/v1` 控制面 API —— FastAPI，ADR-005）、`apps/app`（移动 App，占位）、`apps/conductor`、`packages/core`、`packages/db`、`packages/executors`、`infra/`（compose 文件、Squid 配置、systemd unit、部署脚本）。
 
 #### 执行器适配器契约（承重的那个接口）
 
 ```ts
-// packages/executors/contract.ts
+// packages/executors/src/contract.ts
 export interface Executor {
   kind: 'hermes' | 'llm-gateway' | 'thin-agent';
   start(job: JobRow, ctx: RunContext): Promise<RunHandle>;      // 起容器 / 开始步骤
@@ -338,7 +340,7 @@ export interface Executor {
 
 #### 第 2 周 —— 结构化信息采集 + 上传
 
-> **实建说明（v2）：** 第 1–2 周是按 ADR-004 的 API-first 形态交付的 —— 下文提到的端点以 `/api/v1/**` 路由处理器的形式存在于 `lib/services/` 之上，Web 页面作为 API 客户端消费它们。
+> **实建说明（v2）：** 第 1–2 周是按 ADR-004 的 API-first 形态交付的，Web 页面作为 API 客户端消费它们。实建的端点以申请为范围，而不是下文写的路径（例如 `POST /api/v1/applications/{id}/uploads`、`POST /api/v1/applications/{id}/submit`、`GET /api/v1/applications/{id}`；完整列表见 `apps/api/openapi.json`）。自 ADR-005 起，它们由 `apps/api` 中的 FastAPI 服务承载，而不是 `lib/services/` 之上的 Next.js 路由处理器。
 - **目标：** 在任何 agent 出现之前，先把完整的申根旅游签采集变成经过校验的结构化数据。
 - **任务：** `packages/core`：`IntakeSchengenTourismV1` zod schema（申请人、护照、在职、行程日期与路线、财力、既往签证）+ `rules/schengen-spain.ts`（确定性的必需材料计算 —— 即 ADR-002 说的代码检查）。**校验问题携带消息 key 加参数**（例如 `passport.expiry.tooSoon` + `{monthsRequired: 3}`），绝不是句子 —— 由前端按当前语言解析（[国际化](../design/guidelines/internationalization-zh.md) §3）；这条从第一个 schema 起就有约束力，因为它是 i18n 里唯一一件补不回来的事。`apps/web` 里做多步表单，客户端校验用同一个 schema，另加**草稿持久化**（2026-08-10 修订，来自设计阶段审查 —— [design/product/04](../design/product/04_MVP_Scope_V1_V2.md)）：一行草稿记录（`jobs.status='draft'` 或专门的草稿表），按步自动保存，保存逻辑由共享 schema 的 partial 生成，登录后能从上次未完成的那一步精确恢复 —— 在微信 webview 里，被打断才是会话的中位数，因此没有服务端草稿的采集流程会丢用户（[移动端一致性](../design/guidelines/mobile-parity-zh.md) §3.3）。`POST /api/uploads/sign` → 签发上传 URL，写入私有的 `uploads/{user_id}/{upload_id}`（护照扫描、银行流水、在职证明）；`POST /api/jobs` 做服务端校验，冻结脱敏后的 `input` 快照（载荷里没有 user_id/email —— v0.3 §11），插入 `status='queued'`、`kind='pack.schengen.v1'`（挂钟 `deadline_at` 在**取得租约时**设置，而不是入队时 —— 排队等待绝不能吃掉运行预算）；`GET /api/jobs/:id`（受 RLS 限制）供轮询。
 - **完成定义：** 非法采集会被共享 schema 的字段级错误挡回，**且两种语言下都由消息 key 渲染**；中途放弃的采集在登出再登录后能从同一步带着数据继续；一次完成的采集会产出一行 `queued` 作业和 Storage 里的文件；此时还没有任何东西消费队列。
@@ -475,7 +477,7 @@ export interface Executor {
 | **多区域执行**（为时延取靠近中国的区域；按作业计费的平台白送） | 中国用户持续抱怨时延，或某个合作方要求区域内处理 |
 | **类 SOC2 加固**（访问审阅、审计轨迹、供应商 DPA、渗透测试） | 第一份提出该要求的企业/B2B 合同；在那之前，v0.3 的控制项 + 运行手册就是安全叙事 |
 | **2–3 台 Hetzner 节点上的 k3s** | 持续每天 >50 个签证包，或第二位工程师加入（研究 A 的 K8s 阈值） |
-| **抽出独立后端服务**（把 `lib/services/` 换个家，放到同样的 `/api/v1` 路径之后作为独立服务；框架届时再定 —— NestJS 能继续引用 `packages/core`，FastAPI 则需要把它移植过去） | 请求路径上需要某个只有 Python 才有的库；来了一位 Python 优先的协作者；或者第一个执行器搬离虚拟机，从而激活第 C 章 §1 的私网 HTTP 接口（ADR-004） |
+| **抽出独立后端服务**（把 `lib/services/` 换个家，放到同样的 `/api/v1` 路径之后作为独立服务；框架届时再定 —— NestJS 能继续引用 `packages/core`，FastAPI 则需要把它移植过去） | 请求路径上需要某个只有 Python 才有的库；来了一位 Python 优先的协作者；或者第一个执行器搬离虚拟机，从而激活第 C 章 §1 的私网 HTTP 接口（ADR-004） · **已由 [ADR-005](../discussion/ADR-005-fastapi-backend-service-zh.md)（2026-10-05）在这些触发条件出现之前完成：`apps/api` 中的 FastAPI；`packages/core` 仍是规则来源，靠导出数据 + 一致性向量，而不是移植。** |
 
 
 ---

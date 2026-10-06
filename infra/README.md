@@ -2,8 +2,8 @@
 
 This directory is the untrusted half of the system: the network boundary a job
 container runs inside, the proxy that is its only way out, and the compose
-files that stand both of them up. The trusted half — `apps/web` on Vercel,
-`apps/conductor`, the database — is described in [CODEBASE.md](../CODEBASE.md);
+files that stand both of them up. The trusted half — `apps/web` and `apps/api`
+on Vercel, `apps/conductor`, the database — is described in [CODEBASE.md](../CODEBASE.md);
 what is actually deployed is in [STATUS.md](../STATUS.md).
 
 Read [architecture v0.3](../doc/architecture-v0.3-en.md) §4a and §5.2 before
@@ -25,7 +25,7 @@ the live web, and does both while holding someone's passport scan.
 
 ## 2. Where this work stands
 
-The goal of the current branch (`feat/agent-plane-local`) is narrow and worth
+The goal of this work (`feat/agent-plane-local`, merged in PRs #11 and #14) is narrow and worth
 stating precisely, because "the agent plane runs" would be a much larger claim
 than the one being made:
 
@@ -52,7 +52,8 @@ than the one being made:
   `DATABASE_URL is required`; the docker CLI is present, which the executor
   needs because it shells out to `docker run`.
 - **`compose.vm.yml`** — passes `docker compose config`.
-- **`pnpm --filter @visa-master/conductor test` — 47/47.**
+- **`pnpm --filter @visa-master/conductor test` — 47/47** when this was written; the suite
+  is now 61 tests, with document staging and extraction write-back.
 
 ### Not done
 

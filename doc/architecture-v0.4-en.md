@@ -4,6 +4,7 @@
 **Status:** Architecture Proposal
 **Builds on:** [architecture-v0.3](architecture-v0.3-en.md) (trust boundary, ephemeral single-tenant execution, egress control) · [ADR-002](../discussion/ADR-002-Agent-Framework-Evaluation.md) (custom workflow engine, LLM APIs as intelligence services — Accepted) · [Discussion 01](../discussion/explorations/01-hermes-vs-custom-agent-loop.md) (Hermes vs. thin custom agent; middle path)
 **Companion:** [Platform selection & development plan](platform-and-dev-plan-v2-en.md) — the platform-specific half of this proposal.
+**Read with:** [ADR-004](../discussion/ADR-004-api-first-control-plane.md) (API-first control plane: every capability under `/api/v1/**`) · [ADR-005](../discussion/ADR-005-fastapi-backend-service.md) (the request/response backend is a separate FastAPI service in `apps/api`; `packages/core` remains the single source of rules). Neither changes this document's agent plane, conductor, or DB-as-interface between planes; the notes in B §2, B §3, B §4 and C §0 mark where they change the backend's language, roles or paths.
 
 > 中文版：[架构 v0.4（中文）](architecture-v0.4-zh.md)
 
@@ -859,6 +860,8 @@ Default posture: **the database is not exposed to clients at all** — every que
 
 Ownership predicate pattern: `user_id = (SELECT id FROM users WHERE auth_provider = current_setting('app.provider') AND auth_subject = auth.jwt()->>'sub')`.
 
+> **As built (Supabase carve-out, B §4; [ADR-005](../discussion/ADR-005-fastapi-backend-service.md) §3).** There is no `app_rw` role; it and the ownership predicate above belong to the plain-Postgres default. The API (`apps/api`) logs in as `visa_api` — `noinherit`, no privileges of its own beyond `api_private.account_is_active`, which it asks before every role switch (`packages/db/supabase/migrations/20261005200000_api_login_role.sql`) — and runs each user-scoped request as `authenticated` with `request.jwt.claims` set from the verified token, and server-authority writes (enqueueing a job, recording `stored`) as `service_role`, both by `set local role`. RLS and the column grants (`20261005134359_client_grants_baseline.sql`) therefore sit beneath the API's own checks on every request, not only when a BaaS exposes the database.
+
 ### 3. Object storage
 
 S3-compatible API so the provider is swappable. Default **AWS S3** (SSE-S3 encryption, Block Public Access on, versioning **off** — for PII, deletes must actually delete); evaluate **Cloudflare R2** once download volume matters, since zero-egress pricing directly cuts the cost of pack downloads to users in China.
@@ -886,6 +889,8 @@ Keys are opaque (`artifact_id`); the user's original filename (frequently CJK) l
 3. `POST /api/uploads/:artifact_id/complete` → backend HEADs the object, records verified `sha256` + `size_bytes`, sets `status='stored'`. Pending rows older than 1 h are garbage-collected.
 
 **Download:** `GET /api/packs/:id/download` → backend checks ownership + `packs.status IN ('approved','delivered')` (the human gate — no signed URL exists before an operator approves) → presigned GET, 15 min expiry, `response-content-disposition: attachment`. Operators get the same flow gated on role, audited.
+
+> **Note ([ADR-004](../discussion/ADR-004-api-first-control-plane.md), [ADR-005](../discussion/ADR-005-fastapi-backend-service.md)).** The paths above are illustrative. Every endpoint lives under `/api/v1/**`, served by `apps/api`; as built the upload flow is `POST /api/v1/applications/{id}/uploads` (announce: row + storage path) → resumable upload straight to Supabase Storage under the owner's token, constrained by storage policies on the owner's path prefix → `POST /api/v1/applications/{id}/uploads/{upload_id}/confirm`. Bytes still never transit the backend.
 
 **Job container never touches S3.** Per v0.3, the worker stages uploads from S3 into the fresh per-job scratch volume before launch, and after artifact-detection (`qa-report.json` + delivery folder) uploads outputs from the scratch to `vm-prod-artifacts`. The untrusted container holds no S3 credentials, and the egress proxy would refuse the host anyway.
 
@@ -921,6 +926,8 @@ The ephemeral-scratch model means the container leaves nothing behind; durable P
 
 **Platform carve-out (adopted by the companion dev plan).** When the control plane lands on Supabase (the [platform doc](platform-and-dev-plan-v2-en.md) ranks it #1), use **Supabase Auth** instead — auth, Postgres, storage and realtime then share one vendor, and RLS keys directly off `auth.uid()`. Two v0.4 requirements need explicit handling in that configuration: (1) *instant revocation* — Supabase sessions are JWT-based, so sensitive routes (operator actions, review-gate mutations, pack downloads) must re-check `users.status`/`role` server-side per request via the `authorize()` chokepoint (they do anyway), keep access-token TTL ≤ 1 h, and kill sessions via refresh-token revocation; acceptable because every high-consequence action is server-verified, never claims-trusted. (2) *China reachability* — serve auth under a first-party custom domain and monitor mainland login success; if it degrades, migrate to Better-Auth — `users(auth_provider, auth_subject)` was designed to absorb exactly that swap. Better-Auth remains the default whenever the database is plain Postgres.
 
+> **Note ([ADR-005](../discussion/ADR-005-fastapi-backend-service.md) §2).** In this configuration the API (`apps/api`) accepts **Bearer tokens only** — Supabase access tokens verified against the project's JWKS. The web keeps its httpOnly cookie session as a client-side concern and forwards each `/api/v1` call with `Authorization: Bearer <access token>`; the mobile app holds its own tokens. The "Next.js backend" named in the Better-Auth default above no longer exists — a later swap back to Better-Auth (a TypeScript library) would need a decision on where it runs.
+
 #### Session model
 
 **DB sessions with an httpOnly, Secure, SameSite=Lax cookie** (Better-Auth's default: opaque token → `session` row), 30-day rolling expiry. Chosen over stateless JWT because suspension, role changes (user → operator), and pack-access revocation must take effect immediately — non-negotiable with a human review gate and PII downloads. The per-request session lookup is a PK hit on the same Postgres; cache in-process (60 s TTL) if it ever shows up in profiles. Short-lived signed JWTs (≤10 min) appear only as internal service tokens — backend ↔ agent-server calls — never as the user session.
@@ -954,6 +961,8 @@ Already in schema: `users.plan`, `users.stripe_customer_id`, and `token_usage` a
 ### 0. Position in the architecture
 
 Per ADR-002, the trusted Backend (Node/TypeScript, same trust zone as auth + Postgres + object storage) **is** the workflow engine and the control plane. Everything that executes model calls or autonomous work lives in the **execution plane**: three *executor kinds* behind one uniform HTTP+JSON **adapter contract**. The backend decides which executor runs which `task_type` (routing table, §1.7), judges completion (terminal webhook + artifact manifest + its own validation), and owns users, budgets, and the human-review gate. Executors are replaceable workers; none of them hold business rules.
+
+> **Note ([ADR-005](../discussion/ADR-005-fastapi-backend-service.md), 2026-10-05).** "Node/TypeScript" above now holds only for the workflow engine (`apps/conductor`) and the shared rules (`packages/core`). The request/response tier of the trusted Backend — every `/api/v1/**` endpoint, the `authorize()` chokepoint, user-scoped data access — is a separate Python (FastAPI) service in `apps/api`. It reads the rules' data exported from `packages/core` and re-implements only the named rules, proven identical by committed conformance vectors. Both halves stay in the trusted zone; nothing else in this chapter changes.
 
 - **Executor A — LLM API Gateway**: stateless, the V1 workhorse (ADR-002's "LLM as intelligence service").
 - **Executor B — Hermes server**: the currently working full-pack producer, wrapped in the v0.3 container discipline.
@@ -1252,6 +1261,7 @@ The invariants that hold regardless of executor: sanitized input only; artifacts
 - **v0.3** remains the authoritative treatment of the trust boundary, ephemeral single-tenant execution, egress policy, and the human review gate; v0.4 embeds those controls per executor (Chapter C §5) rather than restating them.
 - **ADR-002**'s decision (custom workflow engine; LLMs as stateless intelligence services) is implemented literally by Chapter A; Hermes appears only as a pluggable executor, matching ADR-002's "general-purpose Agent Runtimes remain future options" — inverted into "remains a present option behind the contract, strangled over time" (Chapter C §4.1). This amendment is recorded as [ADR-003](../discussion/ADR-003-hermes-as-pluggable-executor-in-v1.md), so ADR-002 read alone does not mislead.
 - **Discussion 01**'s thin-agent middle path is Executor C; its speed levers (model routing, parallel steps, caching, small prompts) are realized in the routing table (A §2.2) and the gateway step design (C §2.2).
+- **ADR-004 / ADR-005** (later; both state they do not amend this document): the control plane is API-first under `/api/v1/**` ([ADR-004](../discussion/ADR-004-api-first-control-plane.md)), served by a separate FastAPI service in `apps/api` with `packages/core` exported as data + conformance vectors ([ADR-005](../discussion/ADR-005-fastapi-backend-service.md)). The agent plane, conductor and DB-as-interface specified here are unchanged; the notes in B §2–§4 and C §0 mark the backend details they supersede.
 
 ## Open questions
 

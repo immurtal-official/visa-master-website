@@ -27,8 +27,10 @@ not trusting it:
 ```
   Trusted control plane                        Agent plane
   ─────────────────────                        ───────────
-  apps/web        Next.js 16, /api/v1          apps/conductor   claims jobs,
-  packages/core   the rules, in one place        │              runs containers
+  apps/web        Next.js 16, pages; forwards    apps/conductor   claims jobs,
+                  /api/v1 to apps/api            │              runs containers
+  apps/api        FastAPI, every /api/v1 call    │
+  packages/core   the rules, in one place        │
   packages/db     Postgres + RLS + storage       │
         │                                        │
         └────────── jobs table ───────────────────┘
@@ -36,7 +38,7 @@ not trusting it:
                      makes outbound connections only)
 ```
 
-The database is the interface between the two planes. The web app enqueues a row
+The database is the interface between the two planes. The backend (`apps/api`) enqueues a row
 in `public.jobs`; the conductor claims it with `FOR UPDATE SKIP LOCKED`, runs a
 container, uploads the result to private storage, and writes the outcome back.
 There is no inbound port on the agent host and no service call between the
@@ -62,16 +64,17 @@ Four properties are worth knowing before you read any file:
 
 ```
 apps/
-  web/          Next.js 16 App Router: pages, /api/v1 handlers, services
+  web/          Next.js 16 App Router: pages, and one forwarder for /api/v1
   conductor/    the workflow state machine and its container executors
   app/          the Expo mobile client — README only, not started yet
-  api/          README only: the backend lives in web/ (ADR-004)
+  api/          FastAPI: every /api/v1 endpoint, services, the rules in Python (ADR-005)
 packages/
   core/         the rules both sides import — schemas, route gate, message keys
   db/           migrations, pgTAP tests, Supabase local config
   executors/    the Executor adapter interface. Types only, no implementation
 infra/          the agent plane as compose: internal network + Squid egress
-scripts/        repo-level build gates (today: the i18n catalogue check)
+scripts/        repo-level gates: the i18n catalogue check, and doc-reader (TOCs, diagrams, HTML readers)
+.github/        one workflow: the generated-docs check (`pnpm doc:check`)
 doc/            the architecture and plan in force: v0.4, v0.3, the v2 plan
   archive/      superseded versions, kept, with a README naming what replaced each
 discussion/     the ADR ledger — every record in it is in force
@@ -85,8 +88,9 @@ says by what. Note that v0.3 sits in `doc/` even though v0.4 exists — v0.4
 supersedes its framing and not its §5.2 egress rules, which
 `infra/squid/squid.conf` implements. Version number is not the axis.
 
-Five workspaces (`pnpm-workspace.yaml` is `apps/*` and `packages/*`; `app/` and
-`api/` have no `package.json` yet, so pnpm does not count them), one
+Six workspaces (`pnpm-workspace.yaml` is `apps/*` and `packages/*`; `app/` has no
+`package.json` yet, so pnpm does not count it, and `api/` has one only so turbo's
+lint, typecheck and test reach its Python), one
 Turborepo task graph, no build step for internal packages — they export raw
 TypeScript and Next transpiles `@visa-master/core` directly.
 
@@ -102,14 +106,17 @@ turned away *before* an application exists, with every failing part named at
 once, and is recorded in a write-only `waitlist_entries` table.
 
 **2. An application is a server-side draft.** `POST /api/v1/applications`
-re-runs the same gate server-side — the form is not trusted — and inserts a row.
+reaches apps/api, which re-runs the same gate — its Python port, held to
+`route-gate.ts` by the conformance vectors; the form is not trusted — and inserts
+a row.
 The applicant only ever gets an id back.
 
-**3. Twenty questions, one per page.** `INTAKE_SECTIONS` in
-`packages/core/src/intake/sections.ts` is the form's shape as data. Every answer
-POSTs to `/api/v1/applications/{id}/answers`, is validated by the same schema
-the whole form uses, is written into the `answers` JSONB at a dot-path, and the
-server replies with the *next* question. The client never computes what comes
+**3. Twenty questions, one per page.** `packages/core/src/intake/questionnaire.ts`
+declares the form as data; `INTAKE_SECTIONS` in `sections.ts` is derived from it.
+Every answer POSTs to `/api/v1/applications/{id}/answers`, is validated by the
+same rule the whole form uses (apps/api runs it from the exported `intake.json`),
+is written into the `answers` JSONB at a dot-path together with its
+`answer_sources` row and the intake contract version, and the server replies with the *next* question. The client never computes what comes
 next; `last_step` records where the reader is going, so an interrupted session
 resumes at the exact question. (Half the traffic is an in-app browser that gets
 killed when a message arrives. This is designed for that.)
@@ -129,15 +136,25 @@ The upload is three calls: **announce** (`POST …/uploads` writes the row and
 decides the storage path), **send** (the browser streams the bytes straight to
 Supabase Storage in 6 MiB chunks over tus, under its own token — the API never
 relays file content), **confirm** (`POST …/uploads/{id}/confirm`, where the
-server lists the object to prove the bytes arrived and flips `status` to
-`stored` with its *own* authority). A document counts as uploaded only after
-that last step: a client's word is not evidence.
+server finds the object in Storage's own records, as the caller, to prove the
+bytes arrived and flips `status` to `stored` with its *own* authority). A
+document counts as uploaded only after that last step: a client's word is not
+evidence.
+
+When `DOCUMENT_EXTRACTION=on`, confirming a passport scan also enqueues a
+`doc_field_extraction` job; the conductor writes what was read back as *proposed*
+answers (`answer_sources.source = 'document'`), which stay placeholders — refused
+at submission — until the applicant confirms each one. It is off by default: with
+no gateway, only the fixture reader (`EXTRACTION_EXECUTOR=fixtures`) can run it.
 
 **5. Submission.** `POST /api/v1/applications/{id}/submit` runs the whole-form
-schema (per-question checks cannot see rules that relate two answers), checks
-document completeness, and enqueues one `produce_pack` job with
-`idempotency_key = produce_pack:application:{id}` — so a double press bills
-once. The payload is `{route, intake}` and nothing else.
+schema (per-question checks cannot see rules that relate two answers), refuses
+answers proposed from a document that the applicant has not confirmed, checks
+document completeness, and — in one transaction with marking the application
+submitted — enqueues one `produce_pack` job with
+`idempotency_key = produce_pack:application:{id}`, so a double press bills once.
+The payload is `{route, intake, intakeContract, documents}`: the documents by
+upload id, never a storage path, and nothing that names the account.
 
 **6. The conductor claims it.** `apps/conductor/src/lease.ts` claims one queued
 row in a single statement with `FOR UPDATE SKIP LOCKED`, spending an attempt at
@@ -175,7 +192,7 @@ single gap in the product — see §7.
 | One set of rules, in two languages | `packages/core` exports the rules' data and conformance vectors (`pnpm intake:export`); `apps/api/tests/test_conformance*.py` replays every vector |
 | The container gets no identity and no credential | Sanitized `input` at enqueue; constructed env in `docker.ts`; `egress.test.ts` asserts it from inside the network |
 | Completion is evidence | `artifactReady` requires both artifacts; `qa.ts` reads the verdict; `poll` never reads an exit code |
-| Generated files are not edited | `doc/*.html` and `design/system/` are exports; `.prettierignore` and README say so |
+| Generated files are not edited | `doc/*.html`, `design/system/`, `packages/core/conformance/` and `apps/api/app/rules/generated/` are exports; `.prettierignore` says so, and `pnpm doc:check` (CI) and the conformance tests fail when a committed copy is stale |
 
 ---
 
@@ -183,11 +200,11 @@ single gap in the product — see §7.
 
 ### 5.1 The chassis (repo root)
 
-- **`package.json`** — the only place versions are pinned (`pnpm@10.34.5`, Node ≥ 22.12). Five scripts delegate to Turborepo, five to the db package. `pnpm build` → `turbo run build` → `lint` first (turbo), then web's own `check:i18n && next build`, so both i18n gates fire. `pnpm test` reaches only `packages/core` and `apps/conductor`; Playwright is deliberately outside the turbo graph and runs as `pnpm --filter web e2e`. `pnpm lint typecheck test` works because pnpm appends the extra words to the script — it expands to `turbo run lint typecheck test`.
+- **`package.json`** — the only place versions are pinned (`pnpm@10.34.5`, Node ≥ 22.12). Six scripts delegate to Turborepo, five to the db package; `intake:export`/`intake:lock`/`check:intake` regenerate and check what packages/core exports to the backend, and `doc:*` builds and checks the generated half of `doc/`. `pnpm build` → `turbo run build` → `lint` first (turbo), then web's own `check:i18n && next build`, so both i18n gates fire. `pnpm test` reaches `packages/core`, `apps/conductor` and `apps/api` (pytest, inside `apps/api/.venv`); Playwright is deliberately outside the turbo graph and runs as `pnpm --filter web e2e`. `pnpm lint typecheck test` works because pnpm appends the extra words to the script — it expands to `turbo run lint typecheck test`.
 - **`turbo.json`** — six tasks. `build.dependsOn: ["^build", "lint"]` is the load-bearing line: it makes the hardcoded-string rule a build failure. `check:i18n` is `cache: false` because its inputs cross the package boundary and Turborepo inputs are package-relative. Note `test` *is* cached while the conductor's tests depend on external state (Postgres, Docker, a 5 GB image) — an unchanged tree can replay a cached pass.
 - **`pnpm-workspace.yaml`** — `apps/*` and `packages/*`. `infra/`, `scripts/`, `doc/`, `design/` are deliberately not workspaces.
 - **`tsconfig.base.json`** — `strict`, `noUncheckedIndexedAccess`, `isolatedModules`, `noEmit`, ES2022/Bundler. Internal packages are source-exported, so nothing compiles to `dist/`; this file is the whole build story for internal code.
-- **`.prettierrc.json` / `.prettierignore`** — 100 columns, double quotes. The ignore list is the formatter-side expression of the generated-files rule: `design/prototypes/`, `design/system/`, `doc/*.html`, `apps/web/src/styles/tokens/`.
+- **`.prettierrc.json` / `.prettierignore`** — 100 columns, double quotes. The ignore list is the formatter-side expression of the generated-files rule: `design/prototypes/`, `design/system/`, `doc/*.html`, `apps/web/src/styles/tokens/`, `apps/web/public/`, the doc-reader shell, and the two exports `pnpm intake:export` writes (`packages/core/conformance/`, `apps/api/app/rules/generated/`).
 - **`.gitignore`** — beyond the usual: `.env*` ignored with `!.env.example` re-included; `.next-stub/` (the e2e suite's second dev server); `packages/db/supabase/.temp`.
 - **`AGENTS.md`, `PRODUCT.md`, `STATUS.md`, `README.md`, `CODEBASE.md`** — the five documents at the repo root, each an entry point; see §1.
 - **`doc/archive/EXECUTION-PLAN-week1-2.md`** — 81 KB of history, not instruction, and the reason several root config files look the way they do (§3), the first three migrations (§7) and the two i18n gates (§5.3–5.4). Its §14, "read before objecting to the code", is where deviations are recorded.
@@ -199,23 +216,30 @@ The only runtime dependency is zod. It reads no environment, touches no
 database, and both planes import it so they cannot hold different opinions about
 the same rule.
 
-- **`src/i18n/message-keys.ts`** — the closed registry: 17 keys mapped to the ICU parameters each requires. The build fails when a key here is missing from either catalogue, or when a catalogue message does not carry the declared parameters. Everything else in the package is downstream of this file.
+- **`src/i18n/message-keys.ts`** — the closed registry: 18 keys mapped to the ICU parameters each requires. The build fails when a key here is missing from either catalogue, or when a catalogue message does not carry the declared parameters. Everything else in the package is downstream of this file.
 - **`src/i18n/locales.ts`** — `LOCALES`, `DEFAULT_LOCALE = "zh-CN"`, self-names (`简体中文`, `English` — a language names itself, never a flag), and the `/zh` `/en` route prefixes. Exposed as a subpath so the proxy and the i18n gate can import it without dragging in zod.
 - **`src/validation/issue.ts`** — where zod errors become `{path, key, params}`. `issue.message` is never consulted: it is a sentence in one language. Two subtleties: the parsed input is passed alongside so a *missing* field can be told from a *wrongly typed* one without reading English, and `too_small` with `minimum === 1` reports `validation.required` because "fill this in" is the useful instruction.
 - **`src/schemas/auth.ts`** — email and OTP. The smallest complete worked example of schema + custom `i18nIssue` + `toResult`. Both are forgiving on purpose: a pasted address keeps its trailing space out of the rejection, and a code pasted as `1 2 3 4 5 6` is a right code.
 - **`src/routes/route-gate.ts`** — the commercial constraint as data: `SUPPORTED_ROUTE`, the five Chengdu-district areas, the destinations offered (so the waiting list records where demand actually is), and `checkRoute`, which accumulates *every* failing dimension rather than short-circuiting.
-- **`src/intake/schengen-tourism-v1.ts`** — the 363-line body of rules: per-field normalisation (pinyin uppercased, passport number stripped and `^[A-Z0-9]{9}$`, mainland mobile, income stripped of `¥` and commas), `FIELD_BEHAVIOUR` (which keyboard each field wants), and the two-phase passport check — against today when the question is asked, against the real return date at submission.
+- **`src/intake/questionnaire.ts`** — the form, declared once: sections, questions, which named rule each uses, keyboard hints, option groups, and conditions as data. Everything else about the intake is derived from it; `HOW-TO-EDIT.zh.md` beside it is the editing guide for non-engineers.
+- **`src/intake/rules.ts`** — the named rules: per-field normalisation (pinyin uppercased, passport number stripped and `^[A-Z0-9]{9}$`, mainland mobile, income stripped of `¥` and commas) and the cross-checks, including the two-phase passport check — against today when the question is asked, against the real return date at submission. Named so the backend can implement each one again under the same name.
+- **`src/intake/schengen-tourism-v1.ts`** — the derived tables the screens and API read (`FIELD_BEHAVIOUR`, `QUESTION_SCHEMAS`, `QUESTION_OPTION_GROUP`), the per-section schemas, and `parseQuestion`/`parseIntake`.
 - **`src/intake/sections.ts`** — the form as data: sections, questions, `readAnswer`, `sectionState`, `intakeProgress`, `resumePoint`, `nextQuestion`. Unbuilt sections are listed as `available: false` rather than hidden, because a form that hides its later half looks shorter than it is.
+- **`src/intake/condition.ts`, `answers.ts`** — conditions written as data (so the questionnaire gate can check every answer a condition names) and the dot-path readers.
+- **`src/intake/contract.ts`, `version.ts`, `contract.lock.json`, `declaration.ts`** — the intake contract: the core questions and checks, versioned and checksummed in the lock file, which only `pnpm intake:lock` writes; `declaration.ts` refuses a questionnaire the rest of the system cannot read.
+- **`src/intake/provenance.ts`, `extraction.ts`** — where an answer came from: a value read off a document is a placeholder until confirmed, and `decideProposals` decides, deterministically, which read values may become proposed answers.
+- **`src/conformance/` and `conformance/*.json`** — what the backend is held to: `export.ts` writes the rules' data to `apps/api/app/rules/generated/intake.json`, `vectors.ts` writes inputs and the outputs the TypeScript gives at a pinned clock. `pnpm intake:export` regenerates both; the tests fail when the committed copies are stale.
 - **`src/rules/schengen-spain.ts`** — the document checklist and what "complete" means. Deterministic code, not a model's opinion. `documentCompleteness` counts only `stored` uploads: a `pending` row is one the browser announced and the server has not seen the bytes for.
 - **`src/index.ts`** — the barrel; read it as the inventory of what the rest of the monorepo may depend on.
 - **`src/validation/issue.test.ts`** — the discipline made mechanical: for every exported schema it feeds deliberately bad inputs and asserts every key is in the registry with exactly the declared parameters. One case serialises a schema given an English custom message and asserts the text never appears in the output.
-- **`src/schemas/auth.test.ts`, `src/routes/route-gate.test.ts`, `src/intake/schengen-tourism-v1.test.ts`, `src/rules/schengen-spain.test.ts`** — behaviour tests. The last one derives its expected mandatory set from the document table rather than hardcoding ids, so adding a document cannot silently pass.
+- **`src/schemas/auth.test.ts`, `src/routes/route-gate.test.ts`, `src/intake/schengen-tourism-v1.test.ts`, `src/intake/questionnaire.test.ts`, `branching.test.ts`, `extra.test.ts`, `extraction.test.ts`, `src/rules/schengen-spain.test.ts`** — behaviour tests. The last one derives its expected mandatory set from the document table rather than hardcoding ids, so adding a document cannot silently pass.
 - **`package.json` / `tsconfig.json` / `vitest.config.ts`** — source exports (`.` → `./src/index.ts`, plus `./locales` and `./message-keys`), the shared base config, node environment.
 
 ### 5.3 `packages/db` — schema, policies, and their tests
 
-Migrations run in order; each pgTAP file pairs with one of them (except
-`job_lease_owner`, which adds a column and has no test).
+Migrations run in order; each pgTAP file pairs with one of them, except
+`job_lease_owner` and `intake_draft_answers`, which add columns and are covered
+by the grant tests (005, 008).
 
 - **`0001_profiles.sql`** — `set_updated_at()` (shared by later tables), `profiles` keyed to `auth.users`, the new-user trigger, RLS select/update-own, and an update grant scoped to the `locale` column only.
 - **`0002_jobs.sql`** — the queue. Attempt counters, idempotency key, budget columns, four indexes (including a partial one for `state='queued'` and a reaper index on `lease_expires_at`), RLS select-own, and `authenticated` granted select only — a client can watch a job and never write one.
@@ -225,9 +249,13 @@ Migrations run in order; each pgTAP file pairs with one of them (except
 - **`20260811172121_job_lease_owner.sql`** — one statement: `jobs.lease_owner`.
 - **`20260811182640_uploads.sql`** — the private `uploads` bucket with a size limit and MIME allowlist, four storage-object policies matching on the `userId/applicationId/…` path prefix, the `uploads` table with four more policies, and grants that exclude `status` from `authenticated`.
 - **`20260819233145_artifacts_bucket.sql`** — the private `artifacts` bucket, with no client policy at all: only the conductor's service credential can reach it.
+- **`20260910022332_intake_draft_answers.sql`** — `applications.draft_answers`, the raw keystrokes for the question in hand, with column grants; `parseIntake` cannot see it, so an unconfirmed value never reaches a submission.
+- **`20261005134359_client_grants_baseline.sql`** — every client privilege on public tables restated outright: newer Supabase images default to table-wide grants that made the column-scoped ones gate nothing, so each table is reset for `anon`/`authenticated` and granted exactly what was intended. The one place to read a table's client posture.
+- **`20261005141529_intake_provenance.sql`** — `applications.intake_version`/`intake_checksum`, and two tables clients may only read: `document_fields` (what was read off each document) and `answer_sources` (where each answer came from, and when it was confirmed). Writes are `service_role` only.
 - **`20261005200000_api_login_role.sql`** — `visa_api`, the backend's login role: `noinherit`, granted `anon`, `authenticated` and `service_role` and nothing else, plus `api_private.account_is_active(user, session)`, a `security definer` function that is its only window onto auth. No password: one is set per project out of band, and locally by `seed.sql`.
 - **`tests/001…010*.sql`** — 95 pgTAP assertions over policies and privileges, `010` on what the login role can and cannot do. Run with `pnpm db:test`.
-- **`supabase/config.toml`** — the local stack: API on 54321, Postgres on 54322, Studio, Mailpit on 54324.
+- **`supabase/config.toml`** — the local stack: API on 54321, Postgres on 54322, Studio, Mailpit on 54324; and, under `[remotes.staging]`, the hosted project's auth configuration.
+- **`supabase/seed.sql`** — sets the local `visa_api` password (`visa-api-local`). **`supabase/templates/otp.html`** — the sign-in email: digits, no link.
 
 ### 5.4 `packages/executors` — the adapter contract
 
@@ -249,6 +277,8 @@ The web holds no business logic and no server credential (ADR-005): every
 - **`supabase/client.ts`** — the browser client; its only consumer is the uploader, which needs the session token to stream bytes straight to Storage.
 - **`supabase/session.ts`** — three states, not two: signed-in, signed-out, *unavailable*. It calls `getUser()` rather than `getClaims()` because a deleted user's token stays cryptographically valid until it expires.
 - **`supabase/proxy.ts`** — session refresh for the middleware, writing refreshed cookies onto both request and response and copying Supabase's cache-control headers (without them a CDN can cache somebody's session).
+- **`src/proxy.ts`** (beside `lib/`) — Next 16's middleware: locale routing first, then the session refresh written onto the same response, and a redirect to sign-in for a signed-out reader on a protected path (`/dashboard` only).
+- **`src/i18n/*`** (beside `lib/`) — next-intl routing, navigation and request config, and `use-session-navigation.ts`: after signing in or out the page is left with a full load, because the client router can replay a redirect it remembered from the other session.
 - **`uploads/resumable.ts`** — tus in 6 MiB chunks with `findPreviousUploads`/`resume`. A monolithic upload that dies at 90% either fails outright or, worse, reports success for a passport scan that never arrived.
 
 #### The API (`src/app/api/v1/[...path]/route.ts`) — one forwarder
@@ -272,7 +302,7 @@ the result to a small `"use client"` form that POSTs back.
 - **`[locale]/error.tsx` / `not-found.tsx` / `global-not-found.tsx`** — Next's own fallback is English, which is the wrong answer for a reader who has been in Chinese all the way to the failure. The global 404 sits outside the locale layout and prints both languages, because at that point the reader's language is genuinely unknown.
 - **`[locale]/page.tsx`** — the landing shell. Explicitly a placeholder for real marketing copy.
 - **`[locale]/start/page.tsx` + `route-check-form.tsx`** — the four-question gate, reachable without signing in: whether the product can help is the first thing anyone wants to know. On 401 the form parks its answers in `sessionStorage` and sends the reader to sign in, then restores them.
-- **`[locale]/login/page.tsx` + `login-form.tsx`** — two-step OTP on one route, one `<form>` with `name="intent"` submit buttons. The code field is `autoComplete="one-time-code"` so the OS offers it from the notification.
+- **`[locale]/login/page.tsx` + `login-form.tsx`** — two-step OTP on one route, one `<form>` with `name="intent"` submit buttons. The code field is `autoComplete="one-time-code"` so the OS offers it from the notification. On success it leaves with a full page load (`useSessionNavigation`), not a router push.
 - **`[locale]/dashboard/page.tsx`** — the canonical `apiGet` page, and the only path the proxy protects. Its three-way render (error / empty / list) exists because a list that could not be loaded must never look like an account with nothing in it.
 - **`[locale]/applications/[id]/page.tsx`** — the hinge between "still editable" and "sent". A sent application must not lead back into the form that was sent.
 - **`…/intake/page.tsx`** — the hub: section list, progress, and the resume button computed by `resumePoint`.
@@ -285,8 +315,31 @@ the result to a small `"use client"` form that POSTs back.
 - **`components/chrome/*`** — `site-header` (session-agnostic; the page injects the action), `site-footer` (carries the service-boundary disclaimer in plain sight), `language-switcher` (self-names, preserves the current path, always present in the footer), `sign-out-button` (navigates only when the session actually ended), `wordmark` (the repo's one sanctioned hardcoded string, tagged `i18n-exempt`).
 - **`components/ui/*`** — `button` + `button-style` (variants and sizes as tables; interaction state in React rather than CSS pseudo-classes), `link-button`, `input`, `date-input` (three numeric fields plus a hidden ISO value), `radio-group` (full-width tappable rows), `callout` (five tones), `card`, `error-summary` (takes focus on mount and links to the offending field), `icon` (CSS-mask over self-hosted Lucide SVGs).
 - **`src/styles/tokens/*`** and **`app/globals.css`** — the design-token layer copied verbatim from the design system; `globals.css` re-exports tokens to Tailwind with every value dereferencing a custom property, because a raw hex here would be a second source of truth.
-- **`messages/en.json` and `messages/zh-CN.json`** — 243 keys each, identical shape and order. Every user-facing sentence in the product is in these two files.
+- **`messages/en.json` and `messages/zh-CN.json`** — 249 keys each, identical shape and order. Every user-facing sentence in the product is in these two files.
 - **`next.config.ts`** (next-intl plugin, `transpilePackages`, `globalNotFound`, `distDir` so the e2e suite can run a second server), **`eslint.config.mjs`** (the `no-literal-string` rule), **`playwright.config.ts`** (two projects; the backend and two web dev servers), **`tsconfig.json`**, **`postcss.config.mjs`**, **`.env.example`**.
+
+#### The end-to-end suite (`apps/web/e2e`)
+
+Twelve specs, 46 cases at runtime (one, extraction, skipped unless
+`DOCUMENT_EXTRACTION=on`). They refuse to trust the browser: uploads,
+submissions and job payloads are asserted with `psql` inside the
+`supabase_db_db` container, and the sign-in code is read out of Mailpit over
+HTTP, so the whole account journey runs with no human.
+
+- **`global-setup.ts`** — fails the run with a fixable message when the local stack is down.
+- **`support/mailpit.ts`** — a fresh address per run, and `readSignInCode` polling the inbox.
+- **`stub-mode.spec.ts`** — proves the app is usable with Supabase entirely unconfigured (this is the second dev server, on 3100).
+- **`i18n-routing.spec.ts`**, **`language-switcher.spec.ts`** — locale routing, `<html lang>`, the 404, switching without losing the page.
+- **`auth-otp.spec.ts`** — the whole sign-in/sign-out journey in both locales, including that the email carries digits and not a magic link, and that signing out and back in within one tab lands on the dashboard.
+- **`route-check.spec.ts`** — accept, refuse-with-every-reason, validate, and read without an account.
+- **`intake.spec.ts`** — the hub, per-answer rules, the passport-expiry rule, and resume after losing the session.
+- **`documents.spec.ts`** — the checklist is route-specific, a document counts only once the server saw the bytes, and submission is gated on documents.
+- **`submit.spec.ts`** — all twenty questions through the browser, asserted against the queued job row.
+- **`stale-session.spec.ts`** — a cryptographically valid session for a deleted account is treated as signed out.
+- **`provenance.spec.ts`** — an answer read from a document is held back until the applicant confirms it.
+- **`extraction.spec.ts`** — a passport scan read into proposed answers the applicant confirms; needs `DOCUMENT_EXTRACTION=on` and the fixture reader.
+- **`support/intake.ts`** — shared helpers for filling the intake.
+- **`api-contract.spec.ts`** — the same journey with no browser at all: the shape a mini program or mobile app will consume.
 
 ### 5.6 `apps/api` — the backend (FastAPI, ADR-005)
 
@@ -296,56 +349,48 @@ for key, so the contract suite that described those describes these.
 
 - **`app/main.py`** — the app factory: settings, database, JWKS, Supabase client, routers, and the exception handlers that are the wire format — `ValidationFailure` → 422 `{issues}`, `ApiError` → its status with `{error:{key,…}}`, anything else → a logged 500 `errors.request`.
 - **`app/auth.py`, `app/deps.py`** — Bearer only, ES256/RS256 only, verified against the project's JWKS; then the account must exist, not be banned, and — when the token names its session — that session must still exist, so a signed-out token stops working at once. Every refusal is `401 route.sessionExpired`. `Session` resolves the caller only when the service asks, so a malformed request is told what is malformed with or without a session.
-- **`app/db.py`** — asyncpg, connected as `visa_api`, a login role that can do nothing until it switches role (migration `20261005200000_api_login_role.sql`; it reaches auth only through `api_private.account_is_active`). `as_user(caller)` is a transaction under `authenticated` with the caller's claims (what PostgREST does), so RLS and the column grants still apply; `as_anonymous()` for the waiting list; `as_service()` and `with_service_authority(connection)` for the writes only the server may make, the latter inside the caller's transaction so an answer and its source row land together.
+- **`app/routers/`** — `auth`, `routes`, `applications`, `health`: thin adapters that parse, call one service and map the result. 17 operations, all under `/api/v1`, including `GET /health`.
+- **`app/config.py`, `app/errors.py`** — every setting from the environment (including `DOCUMENT_EXTRACTION`, off by default), and the two wire failure shapes.
+- **`app/db.py`** — asyncpg, connected as `visa_api`, a login role that can do nothing until it switches role (migration `20261005200000_api_login_role.sql`; it reaches auth only through `api_private.account_is_active`). `as_user(caller)` is a transaction under `authenticated` with the caller's claims (what PostgREST does), so RLS and the column grants still apply; `as_anonymous()` for the waiting list; `as_service()` and `with_service_authority(connection)` for the writes only the server may make, the latter inside the caller's transaction so an answer and its source row land together. The pool is opened by the first request as well as by the lifespan, because Vercel's Python runtime runs no lifespan; a connect timeout bounds it, and a failure logs its error type.
 - **`app/supabase.py`** — the two HTTP calls left: Auth (send a code, verify it, sign out) and Storage (delete an object, as the caller).
 - **`app/services/`** — `auth`, `routes`, `applications`, `intake`, `uploads`, `submission`. Two strengthenings over the Next.js versions, both atomic where those were not: an answer and its `answer_sources` row commit together, and a job and the application's `submitted` mark commit together. An id that is not a UUID is a 404, not a 502.
 - **`app/rules/`** — the rules as this service runs them: data from `generated/intake.json`, named rules and evaluators re-implemented, held to packages/core by the conformance vectors.
-- **`tests/`** — wire format, token verification, the OpenAPI snapshot, conformance, and `test_endpoints.py`: every endpoint against the real local Postgres, with Auth and Storage as recording doubles.
+- **`api/index.py`, `vercel.json`** — the Vercel entrypoint (serves `app` with paths intact; no rewrite) and the project's own build config: `uv pip install -r requirements.txt`, no workspace install.
+- **`scripts/py.sh`** — runs every package script inside `.venv`, or says to create it with `pnpm --filter @visa-master/api venv` (needs uv and Python 3.12).
+- **`tests/`** — 94 tests: wire format, token verification, the OpenAPI snapshot, conformance, `test_db_integration.py` (the login role, RLS through `as_user`, the pool opening without a lifespan), and `test_endpoints.py`: every endpoint against the real local Postgres, with Auth and Storage as recording doubles.
 - **`openapi.json`** — the contract, generated (`pnpm --filter @visa-master/api openapi`) and checked by the test suite.
 
-#### The end-to-end suite (`apps/web/e2e`)
-
-Ten specs, 40 cases at runtime. They refuse to trust the browser: uploads,
-submissions and job payloads are asserted with `psql` inside the
-`supabase_db_db` container, and the sign-in code is read out of Mailpit over
-HTTP, so the whole account journey runs with no human.
-
-- **`global-setup.ts`** — fails the run with a fixable message when the local stack is down.
-- **`support/mailpit.ts`** — a fresh address per run, and `readSignInCode` polling the inbox.
-- **`stub-mode.spec.ts`** — proves the app is usable with Supabase entirely unconfigured (this is the second dev server, on 3100).
-- **`i18n-routing.spec.ts`**, **`language-switcher.spec.ts`** — locale routing, `<html lang>`, the 404, switching without losing the page.
-- **`auth-otp.spec.ts`** — the whole sign-in/sign-out journey in both locales, including that the email carries digits and not a magic link.
-- **`route-check.spec.ts`** — accept, refuse-with-every-reason, validate, and read without an account.
-- **`intake.spec.ts`** — the hub, per-answer rules, the passport-expiry rule, and resume after losing the session.
-- **`documents.spec.ts`** — the checklist is route-specific, a document counts only once the server saw the bytes, and submission is gated on documents.
-- **`submit.spec.ts`** — all twenty questions through the browser, asserted against the queued job row.
-- **`stale-session.spec.ts`** — a cryptographically valid session for a deleted account is treated as signed out.
-- **`api-contract.spec.ts`** — the same journey with no browser at all: the shape a mini program or mobile app will consume.
-
-### 5.6 `apps/conductor` — the state machine
+### 5.7 `apps/conductor` — the state machine
 
 One long-running Node process, run straight from TypeScript by `tsx`. It is the
 only thing allowed to decide a job's outcome.
 
-- **`src/index.ts`** — the supervisor loop in 100 lines: sweep, claim, run, sleep. It is also where the product decides what a default checkout does: the docker executor is used **iff** `HERMES_JOB_COMMAND` is set, otherwise the fake one with a warning, because until a model credential exists there is no honest default for that command. Shutdown is cooperative — SIGINT flips a flag and takes effect between jobs, never mid-run.
+- **`src/index.ts`** — the supervisor loop in about 120 lines: sweep, claim, run, sleep. It is also where the product decides what a default checkout does: the docker executor is used **iff** `HERMES_JOB_COMMAND` is set, otherwise the fake one with a warning, because until a model credential exists there is no honest default for that command. Shutdown is cooperative — SIGINT flips a flag and takes effect between jobs, never mid-run. With `EXTRACTION_EXECUTOR=fixtures` it also registers the fixture document reader for `llm_gateway`; otherwise nothing runs extraction jobs.
 - **`src/config.ts`** — every env var and timing default (lease 90s, heartbeat 15s, heartbeat timeout 60s, reaper 30s, idle poll 2s). The 90/15/60 spread is deliberate: a lease outlives several missed heartbeats, while a dead process is noticed in under a minute. Its header explains why this process holds a database connection instead of an API client.
-- **`src/lease.ts`** — all the queue SQL, plus the failure taxonomy. `claimNextJob` is one statement (`FOR UPDATE SKIP LOCKED`, `attempt = attempt + 1` at hand-out). `FailureCode` is six values; `isRetryable` returns `code !== "budget_exceeded"`; `failJob` maps `wall_clock_exceeded` to `timed_out` and everything else to `failed`, and requeues while attempts remain.
-- **`src/run.ts`** — one job's lifecycle, and the five ways out of the poll loop: deadline, lease lost, executor failure, collection failure, artifact ready. `destroy()` is in a `finally` — a container left behind is a container still holding documents.
+- **`src/lease.ts`** — all the queue SQL, plus the failure taxonomy. `claimNextJob` is one statement (`FOR UPDATE SKIP LOCKED`, `attempt = attempt + 1` at hand-out). `FailureCode` is seven values (`input_unavailable` when a job's documents cannot be staged); `isRetryable` returns `code !== "budget_exceeded"`; `failJob` maps `wall_clock_exceeded` to `timed_out` and everything else to `failed`, and requeues while attempts remain.
+- **`src/run.ts`** — one job's lifecycle: stage the job's documents into the scratch (or fail `input_unavailable`), start, then the ways out of the poll loop — deadline, lease lost, executor failure, collection failure, a refused QA verdict, a refused write-back, success. `destroy()` is in a `finally` — a container left behind is a container still holding documents.
 - **`src/qa.ts`** — the QA gate (§3 step 8). Accepts `passed` and `visual-review-required`; `failed` is `qa_failed`; unreadable, unrecognised or self-contradictory is `validation_failed`. Its header records what it is *not*: v0.4 §3.3 puts the QA report fourth in a six-step validation whose first three steps have nowhere to run yet.
 - **`src/watchdog.ts`** — the reaper. Deadline sweep first, abandoned-heartbeat second, deliberately: a job can be both late and abandoned, and the more specific explanation is the useful one.
-- **`src/router.ts`** — a pure `task_type → executor_kind → Executor` lookup. Only `hermes` is ever registered today, so six of the eight task types would fail as `validation_failed`.
+- **`src/router.ts`** — a pure `task_type → executor_kind → Executor` lookup. By default only `hermes` is registered, so six of the eight task types would fail as `validation_failed`; `EXTRACTION_EXECUTOR=fixtures` also registers `llm_gateway`, with a reader that only knows how to extract.
 - **`src/artifacts.ts`** — a 30-line Supabase Storage adapter. The conductor uploads with its own credential *after* the run; the job container never held one, which is the point.
 - **`src/executors/docker.ts`** — the real executor: one detached container per attempt named from `(jobId, attempt)`, `--cpus`/`--memory`/`--pids-limit 512`/`--security-opt no-new-privileges`, one bind mount, an environment constructed from literals. `artifactReady` requires both `qa-report.json` and `delivery/`. `poll` checks the artifact first, then `docker inspect`; the exit code is never read.
 - **`src/executors/fake.ts`** — the stand-in that made the state machine buildable before any VM existed. It watches for an artifact rather than for itself, for the same reason the real one does.
 - **`src/executors/scratch.ts`** — one function; the attempt number in the path is what makes a retry start from an empty directory.
-- **`src/lease.test.ts`** (11), **`src/run.test.ts`** (14), **`src/qa.test.ts`** (12), **`src/executors/docker.test.ts`** (5), **`src/executors/egress.test.ts`** (5) — the first three need Postgres, the last two need Docker, and the docker five additionally need the `visa-master-hermes` image. They cannot be mocked: what is being checked is what Postgres does when two statements race, and what a container can actually reach.
+- **`src/documents.ts`** — resolves the job's upload ids to bytes with the conductor's own credential, checked against the job's owner and `stored`, and stages them in `documents/` with a `documents.json` that carries no path and no account.
+- **`src/writeback.ts`** — for tasks whose output is data: validates an extraction report and writes `document_fields` and proposed answers, deciding through `decideProposals` in packages/core.
+- **`src/executors/extraction-fixture.ts`** (+ `fixtures/extraction`) — a document reader that answers from hand-written fixtures, standing where the gateway call will stand.
+- **`Dockerfile`, `scripts/`** — the conductor as an image for `compose.vm.yml`, plus `enqueue:placeholder` and `run:job` for driving one job by hand.
+- **`src/lease.test.ts`** (11), **`src/run.test.ts`** (16), **`src/documents.test.ts`** (7, one of them only with a Storage secret key), **`src/writeback.test.ts`** (5), **`src/qa.test.ts`** (12), **`src/executors/docker.test.ts`** (5), **`src/executors/egress.test.ts`** (5) — lease, run, documents and writeback need Postgres; qa needs nothing; egress needs Docker; docker needs Postgres, Docker and the `visa-master-hermes` image. They cannot be mocked: what is being checked is what Postgres does when two statements race, and what a container can actually reach.
 
-### 5.7 `infra/` and `scripts/`
+### 5.8 `infra/` and `scripts/`
 
-- **`infra/compose.local.yml`** — the v0.3 egress boundary in ~15 lines: `vm-egress-internal` (`internal: true`, so a container attached only to it has no default route), `vm-egress-external`, and one dual-homed Squid aliased `proxy`. The names match the conductor's defaults, so the two agree with no env set. The LLM gateway is deliberately absent; `compose.vm.yml` does not exist yet.
+- **`infra/compose.local.yml`** — the v0.3 egress boundary in ~15 lines: `vm-egress-internal` (`internal: true`, so a container attached only to it has no default route), `vm-egress-external`, and one dual-homed Squid aliased `proxy`. The names match the conductor's defaults, so the two agree with no env set. The LLM gateway is deliberately absent from both compose files.
+- **`infra/compose.vm.yml`** — the same topology on the VM, plus the conductor as a supervised service; written and reviewed, never applied to a host.
+- **`infra/placeholder-job/`** — a job image that writes a pack-shaped nothing (`qa-report.json` and `delivery/`), so the real docker path can be proven with no model (see `infra/README.md`).
 - **`infra/squid/squid.conf`** — the shortest file that explains the whole security model. Deny link-local and RFC1918; ports 80/443 only; deny cleartext POST/PUT/PATCH/DELETE off the allowlist; allow and log everything else.
 - **`infra/squid/allowlist.txt`** — comments only, on purpose: an empty allowlist means no cleartext write leaves a job at all. It gets *looser* by exactly one host when the gateway lands.
 - **`scripts/check-i18n.mjs`** — 200 lines, no framework, exit 1 on any problem: catalogue parity both ways, ICU validity, ICU argument parity across locales, coverage of `MESSAGE_KEYS` including declared parameters, no empty messages, and a CJK sweep over `src/` with an `i18n-exempt` escape hatch. It catches Chinese; Latin-script copy is ESLint's job.
+- **`scripts/doc-reader/`** — builds the HTML readers, TOCs and diagram SVGs in `doc/`; `pnpm doc:check` fails on a stale one, and CI runs it.
 
 ---
 
@@ -353,14 +398,16 @@ only thing allowed to decide a job's outcome.
 
 Everything runs on one machine, and nothing below needs the deployment to
 exist — that is why a fresh checkout can be made to work in about ten minutes.
-The control plane is also deployed (Vercel + a hosted Supabase project, see
+The control plane is also deployed (two Vercel projects — apps/web at app.wdnx.world
+and apps/api at api.wdnx.world — and a hosted Supabase project, see
 [STATUS.md](STATUS.md)), but development does not go through it: the local
 stack has its own database, its own auth, and Mailpit instead of real mail.
 There is still no VM, so the agent plane runs only here.
 
 ### What you need
 
-Node 22.12+, pnpm 10, the Supabase CLI, and Docker running. Docker is needed
+Node 22.12+, pnpm 10, uv with Python 3.12 (for apps/api), the Supabase CLI, and
+Docker running. Docker is needed
 three separate times: for the local Supabase stack, for the conductor's
 container tests, and for the agent plane in `infra/`.
 
@@ -368,14 +415,17 @@ container tests, and for the agent plane in `infra/`.
 
 ```bash
 pnpm install
+pnpm --filter @visa-master/api venv   # once: apps/api/.venv (needs uv)
 pnpm db:start        # boots Postgres, Auth, Studio and Mailpit; prints the URL and keys
 ```
 
-Put the printed values into `apps/web/.env.local` — the names are in
-`apps/web/.env.example`, and the file is gitignored. Then:
+Put the printed values into `apps/web/.env.local` and `apps/api/.env` — the names
+are in each `.env.example`, and both files are gitignored. The backend connects
+as `visa_api` (locally `postgresql://visa_api:visa-api-local@127.0.0.1:54322/postgres`),
+never as `postgres`. Then:
 
 ```bash
-pnpm dev             # apps/web on :3000
+pnpm dev             # apps/web on :3000, apps/api on :8000, and the conductor
 ```
 
 The web app runs with **no** Supabase configuration at all (stub mode): the
@@ -383,9 +433,9 @@ landing page renders and the sign-in screen says plainly that it is not
 configured rather than pretending to work. That path is covered by
 `stub-mode.spec.ts`, so it stays true.
 
-`pnpm dev` also starts the conductor, which will exit immediately unless
-`DATABASE_URL` is exported in your shell — nothing loads its env file for it.
-`pnpm db:status` prints the value. Without `HERMES_JOB_COMMAND` it runs the fake
+`pnpm dev` also starts the conductor, which exits immediately unless
+`DATABASE_URL` is set — in `apps/conductor/.env.local` (names in its
+`.env.example`) or your shell. `pnpm db:status` prints the value. Without `HERMES_JOB_COMMAND` it runs the fake
 executor, which is what you want until you have a provider credential: it
 produces a QA report after five seconds and no real pack.
 
@@ -405,13 +455,14 @@ That is the bar `AGENTS.md` states, and the expected shape of a green run is:
 
 | Layer | Expect | Needs |
 |---|---|---|
-| `lint` / `typecheck` | 5 workspaces each | nothing |
-| `packages/core` | 49 passed | nothing — the only layer that runs without Docker |
-| `apps/conductor` | 47 passed | Postgres; 10 of them also Docker; 5 of those the Hermes image |
-| pgTAP | 7 files, 52 assertions | the local stack |
-| Playwright | 40 cases (37 `test()` calls, 3 looped over both locales) | the stack, plus two dev servers Playwright starts itself |
+| `lint` / `typecheck` | 6 workspaces each | the api's `.venv` |
+| `packages/core` | 113 passed | nothing |
+| `apps/api` | 94 passed | the local stack for the database tests (they skip without it) |
+| `apps/conductor` | 61 (one skipped without a Storage secret key) | Postgres for most; Docker for 10, 5 of those also the Hermes image; the 12 QA-gate tests need nothing |
+| pgTAP | 10 files, 95 assertions | the local stack |
+| Playwright | 46 cases at runtime, three of them looped over both locales; extraction skipped unless `DOCUMENT_EXTRACTION=on` | the stack, plus the backend and two web dev servers Playwright starts itself |
 
-Four traps worth knowing before you read a green run as proof:
+Five traps worth knowing before you read a green run as proof:
 
 1. **The docker executor tests return early rather than skipping** when
    `visa-master-hermes` is absent. On a machine without that 5 GB image the
@@ -428,7 +479,8 @@ Four traps worth knowing before you read a green run as proof:
 5. **A fresh worktree has no `apps/web/.env.local`** — it is gitignored, so it
    does not come with a `git worktree add`. The app then runs in stub mode and
    the suite fails with 503s everywhere, which looks like a broken app and is a
-   missing file. Write the three values from `pnpm db:status` and re-run.
+   missing file. Write the two Supabase values from `pnpm db:status` (and `apps/api/.env`, which
+   is gitignored the same way) and re-run.
 
 ### Seeing a job run end to end
 
@@ -443,9 +495,11 @@ DATABASE_URL="postgresql://postgres:postgres@127.0.0.1:54322/postgres" \
   pnpm --filter @visa-master/conductor start
 ```
 
-To watch the real container path instead, you need the Hermes image, the egress
-plane (`docker compose -f infra/compose.local.yml up -d`), and a
-`HERMES_JOB_COMMAND`. That last one does not exist yet — see §7.
+To watch the real container path instead, build `infra/placeholder-job`, bring up
+the egress plane (`docker compose -f infra/compose.local.yml up -d`), and set
+`HERMES_IMAGE=visa-master-placeholder-job:latest` and
+`HERMES_JOB_COMMAND=/usr/local/bin/run.sh` (`infra/README.md` §3). The real
+Hermes command, which would produce a pack, does not exist yet — see §7.
 
 ---
 
@@ -485,7 +539,8 @@ lives in `STATUS.md`; at the time of writing it is:
 - **Metering is schema-only.** Nothing writes `tokens_in`/`tokens_out` or reads
   the budget columns, so `budget_exceeded` cannot be emitted.
 - **Executor kind vocabularies disagree** — the contract says `llm-gateway`, the
-  router says `llm_gateway`, and only `hermes` is registered.
+  router and `jobs.executor_kind` say `llm_gateway`; by default only `hermes` is
+  registered (the fixture reader adds `llm_gateway` when asked for).
 
 ### Three loose ends this document turned up
 
@@ -507,9 +562,11 @@ lives in `STATUS.md`; at the time of writing it is:
 
 Weeks 5–8 in [`doc/platform-and-dev-plan-v2-en.md`](doc/platform-and-dev-plan-v2-en.md):
 the gateway executor and its step library, per-user budgets, a requirements
-cache, CI/CD (there is no `.github/` at all), container hardening beyond four
-flags, observability, notifications, retention enforcement, a restore drill, and
-payments. Deployment — hosted Supabase, a Vercel project, the Hetzner VM — is
-blocked on accounts and spend, not on code. The CN-entity items (ICP filing,
+cache, CI/CD beyond the generated-docs check (`.github/workflows/docs.yml`; there
+is no lint/typecheck/test workflow yet), container hardening beyond four flags,
+observability, notifications, retention enforcement, a restore drill, and
+payments. Of deployment, the control plane is live (hosted Supabase, two Vercel
+projects); the Hetzner VM for the agent plane is blocked on accounts and spend,
+not on code. The CN-entity items (ICP filing,
 WeChat Pay, +86 SMS, a Mini Program) all hang off one prerequisite this
 repository cannot supply.

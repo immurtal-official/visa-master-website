@@ -1,6 +1,6 @@
 # Status — where the build stands
 
-**As of:** 2026-10-05 · everything described here is on `main`, through PR #38, and the
+**As of:** 2026-10-06 · everything described here is on `main`, through PR #39, and the
 control plane is hosted and working again (see [Staging deployment](#staging-deployment)). Weeks 1–2 arrived in PR #4;
 the API-first work — six commits, `22cbfe1` through `fa36fbd` — missed that crossing, because
 PR #5 merged into a base that had already been merged, and followed in PR #6.
@@ -90,11 +90,11 @@ The questionnaire rework has its own stage table below, under
   yet, so a pack can still pass this gate missing a document the applicant needs. Until the
   week-4 human gate exists this stops only the case where the machine already knew.
 
-### The backend as its own service (ADR-005, PRs #28–#31)
+### The backend as its own service (ADR-005, PRs #28–#31, #34, #36–#38)
 
-- **Every `/api/v1` endpoint now runs in `apps/api` (FastAPI, Python 3.12)** — fifteen, the
-  same paths, bodies and keys as before. `apps/web/src/lib/services/` and the fourteen Next.js
-  route handlers are gone; the web's one route handler forwards `/api/v1/**` to the backend
+- **Every `/api/v1` endpoint now runs in `apps/api` (FastAPI, Python 3.12)** — fifteen paths
+  (sixteen operations), the same paths, bodies and keys as before. `apps/web/src/lib/services/`
+  and the fifteen Next.js route handlers are gone; the web's one route handler forwards `/api/v1/**` to the backend
   with the cookie session's access token as `Authorization: Bearer`, and holds no server
   credential at all. Server Components call the backend directly as the request's session.
 - The backend accepts Bearer tokens only (ES256/RS256 against the project's JWKS), then
@@ -146,7 +146,7 @@ manifest ever holds a storage path, a user id or a key.
 ### Documents read into proposed answers (stage 9, fixtures in place of a model)
 
 A checklist item declares which answers it can supply (`extracts`: the passport data page
-supplies the number, both dates, the pinyin name and the birth date). With the web app run
+supplies the number, both dates, the pinyin name and the birth date). With the backend (`apps/api`) run
 with `DOCUMENT_EXTRACTION=on`, confirming such an upload queues a `doc_field_extraction` job
 carrying the document by reference and the fields to read. The conductor stages the document,
 and — with `EXTRACTION_EXECUTOR=fixtures` — a fixture reader answers from
@@ -219,9 +219,9 @@ not the proxy: no credential reaches the container and nothing inside it knows w
 
 | Layer | What it is | Needs |
 |---|---|---|
-| Playwright end-to-end, 12 spec files, **45 cases at runtime** | real sign-in via the Mailpit API, real uploads into the bucket, full journey to a queued job, the headless API contract — all through the web's forwarder to the backend. `extraction.spec.ts` runs only with `DOCUMENT_EXTRACTION=on` and is skipped otherwise | Docker + the local Supabase stack + `apps/api/.venv`; Playwright starts the backend and both web dev servers |
+| Playwright end-to-end, 12 spec files, **46 cases at runtime** | real sign-in via the Mailpit API, signing out and back in within one tab, real uploads into the bucket, full journey to a queued job, the headless API contract — all through the web's forwarder to the backend. `extraction.spec.ts` runs only with `DOCUMENT_EXTRACTION=on` and is skipped otherwise | Docker + the local Supabase stack + `apps/api/.venv`; Playwright starts the backend and both web dev servers |
 | `packages/core` unit tests, **113** | schemas, the route gate, the document rules, the questionnaire gate, branching, extraction decisions, and the check that the exported rules and conformance vectors are current | nothing — runs without Docker (`pnpm check:intake`) |
-| `apps/api` tests, **93** | token verification and the wire format; 6,910 conformance vectors replayed against the Python rules; every endpoint against real Postgres with Auth and Storage as doubles (`test_endpoints.py`, 35) | the database tests need the local stack and are reported as skipped without it |
+| `apps/api` tests, **94** | token verification and the wire format; the database pool opening without a lifespan; 6,910 conformance vectors replayed against the Python rules; every endpoint against real Postgres with Auth and Storage as doubles (`test_endpoints.py`, 35) | the database tests need the local stack and are reported as skipped without it |
 | `apps/conductor` tests, **61** | lease and run-loop races against real Postgres; document staging and extraction write-back; the QA gate's verdicts as a pure table; the docker executor and the egress denials against real containers | local Postgres; the container cases also need Docker, and some the `visa-master-hermes` image |
 | pgTAP, 10 files, **95 assertions** | row-level security and privilege grants, including the client-grant baseline, the provenance tables, and what the backend's login role can and cannot do | the local stack (`pnpm db:test`) |
 
@@ -229,7 +229,9 @@ Plus the two i18n build gates: `pnpm --filter web build` runs the catalogue chec
 and the hardcoded-string rule reaches a build only through turbo, whose `build` depends on
 `lint` — so `pnpm build` runs both and the filtered form runs one.
 
-**Last full run: 2026-10-05**, on `main` after PR #31, against the local stack in a cloud
+**Last full run: 2026-10-05**, on `main` after PR #31 — before the `visa_api` role (#34),
+the pool fix (#37) and the same-tab sign-in case (#38), which account for the larger counts
+above — against the local stack in a cloud
 container — `lint`, `typecheck` and `test` 15/15 turbo tasks (`packages/core` 113 passed,
 `apps/api` 91 passed, `apps/conductor` 60 passed and 1 skipped), the web build through the
 i18n gate, pgTAP 84 of 84, and Playwright 44 passed and 1 skipped (`extraction.spec.ts`,
@@ -281,9 +283,9 @@ What the deployment consists of:
   which is what [architecture v0.4](doc/architecture-v0.4-en.md) §B.4 asks for on the
   China-reachability grounds recorded there.
 - **Supabase** (project `rmsdyqmuztydicfintbs`, `us-west-2`, Free plan) carries Postgres,
-  Auth and Storage. All eleven migrations are applied — the last three, including the
-  client-grant baseline and the provenance tables, pushed on 2026-10-05 and checked by
-  reading the grants back — and both private buckets were created by them rather than by hand — the `storage.buckets` inserts run unmodified against a
+  Auth and Storage. All twelve migrations are applied — the client-grant baseline and the
+  provenance tables pushed on 2026-10-05 and checked by reading the grants back, and the
+  `visa_api` login role pushed with the backend's deployment — and both private buckets were created by them rather than by hand — the `storage.buckets` inserts run unmodified against a
   hosted project.
 - **The hosted project's auth configuration lives in `config.toml`**, in a
   `[remotes.staging]` block pushed with `supabase config push`, not in the dashboard. That
@@ -298,17 +300,14 @@ What the deployment consists of:
   of reports show Resend's mail passing DKIM.
   Supabase's built-in SMTP allows two emails an hour, which is not a sign-in flow.
 
-**Sign-in is verified end to end against this deployment**: a real address, a code that
-arrived, a session, and the dashboard rendering behind row-level security. That exercises
-more than auth — the dashboard reads through `lib/api/server.ts`, so the loopback API hop
-works under Vercel's proxy headers, and `/api/v1/applications` returned an RLS-filtered
-result. The `profiles` row follows from the `on_auth_user_created` trigger, whose failure
-would have aborted the signup itself.
+**What the 2026-10-05 check exercises**: a real address, a code that arrived, a session, and
+the dashboard rendering behind row-level security. That is more than auth — the dashboard
+reads through `lib/api/server.ts`, which calls `api.wdnx.world` directly as the request's
+session, so the backend's Bearer checks, its `visa_api` connection through the pooler, and
+row-level security are all on that path. The `profiles` row follows from the
+`on_auth_user_created` trigger, whose failure would have aborted the signup itself.
 
-**That verification predates ADR-005**: it exercised the Next.js backend that PR #31 removed,
-and it is what is broken now.
-
-What is **not** deployed: the backend (`apps/api`) and the whole agent plane. No conductor, no Hetzner VM, no egress
+What is **not** deployed: the whole agent plane. No conductor, no Hetzner VM, no egress
 proxy, no job containers. A pack cannot be produced by anything running in the cloud today,
 and submitting an application there enqueues a job that nothing will claim.
 
@@ -357,7 +356,8 @@ Elsewhere:
   defaults and selected on every claim, but nothing ever compares anything to them.
   `budget_exceeded` is in the taxonomy and nothing can emit it yet.
 - **Executor kind vocabularies disagree.** The contract says `llm-gateway`, the router says
-  `llm_gateway`, and only `hermes` is registered — six of eight routed task types would fail
+  `llm_gateway`, and only `hermes` is registered by default (the fixture reader adds `llm_gateway` when
+  `EXTRACTION_EXECUTOR=fixtures`) — six of eight routed task types would fail
   as `validation_failed` today.
 
 ## Not done yet
@@ -365,7 +365,7 @@ Elsewhere:
 - **LLM gateway** — the largest piece of week 3 still missing: the version-pinned LiteLLM
   service, the provider key it holds, Hermes pointed at it, and the Squid allowlist reduced to
   the gateway itself. The first real pack run waits on this (and costs a few dollars). Week 3
-  also still owes `infra/compose.vm.yml`, the rest of the container hardening, and per-job
+  also still owes a host for `infra/compose.vm.yml` (written in PR #14, never applied), the rest of the container hardening, and per-job
   token metering; the conductor, the executor and the egress boundary are what is done.
 - **Progress UI + review gate + delivery** (week 4): the `progress`/`job_events` stage machine
   and its timeline, `/admin/review` with approve → `delivered` / reject → structured
@@ -383,7 +383,7 @@ Elsewhere:
   worth knowing about precisely because it looks like a whole one.
 - **Notifications, retention enforcement, restore drill** (week 7); **payments** (week 8).
 - **Deployment**: the control plane is up (see above); the agent plane is not. Still owed
-  are the Hetzner VM, `infra/compose.vm.yml`, and the systemd units — and, before anyone
+  are the Hetzner VM, `infra/compose.vm.yml` brought up on it, and the systemd units — and, before anyone
   outside the team uses it, Supabase Pro (Free has no backups and pauses when idle). Vercel is
   already on the team's Pro plan. Blockers are accounts and spend, not code.
 - **Hosting loose ends**: the DMARC policy raised from `none` to `quarantine` after a few
@@ -394,11 +394,12 @@ Elsewhere:
 ## Architecture decisions made along the way
 
 - Backend shape examined in depth (Next.js fullstack vs separate FastAPI-class service):
-  staying **Next.js as frontend + request/response backend**, with a hard **API-first
+  at first **Next.js as frontend + request/response backend**, with a hard **API-first
   discipline** — every core business capability behind a stable `/api/v1/**` HTTP contract
   with a service layer, the web UI being one client of it, so a mobile app or WeChat Mini
   Program consumes the same contract and a future backend extraction is a re-homing, not a
-  rewrite. This is now implemented and binding, not planned: the decision is
+  rewrite. The API-first discipline is implemented and binding; the Next.js backend half was
+  superseded by ADR-005 (next item). The decision is
   [ADR-004](discussion/ADR-004-api-first-control-plane.md), the rules are [AGENTS.md](AGENTS.md),
   and the plan revision is [v2](doc/platform-and-dev-plan-v2-en.md), which now also exists
   in [Chinese](doc/platform-and-dev-plan-v2-zh.md).

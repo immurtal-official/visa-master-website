@@ -42,7 +42,7 @@ Figma file — you don't import a Figma file.
 | `guidelines/` | Written design and interaction guidance — layout rules, copy tone, component behaviour, states |
 | `system/` | The exported design system — tokens, components, UI kits, and its `SKILL.md`. This is the durable artifact; the prototypes are snapshots against it |
 | `prototypes/` | Generated prototype code and self-contained HTML/React pages |
-| `assets/` | Screenshots, exported images, and anything visual worth keeping |
+| `assets/` | Screenshots, exported images, and anything visual worth keeping (not created yet) |
 
 Start with [`product/00_INDEX_Visa_Master_Product_Design.md`](product/00_INDEX_Visa_Master_Product_Design.md),
 then [`guidelines/design-system-selection-en.md`](guidelines/design-system-selection-en.md)
@@ -61,14 +61,17 @@ scaffolding that was only there to make it run.
 ## How design reaches production
 
 The intended bridge is **`packages/core`**. The intake flow designed here becomes
-the `IntakeSchengenTourismV1` zod schema, which is then imported by both the
-front-end form and the backend that validates and stores the submission — one
-definition, two consumers. Design that with the schema in mind: the fields, their
+the questionnaire in `packages/core/src/intake/questionnaire.ts` and the
+`intakeSchengenTourismV1` zod schema built from it. The front-end form imports it
+directly; the backend (`apps/api`, Python) reads the same rules as exported data
+and is held to them by conformance tests — one definition, two consumers. Design that with the schema in mind: the fields, their
 types, which are required, and which are conditional on the route.
 
 The production code lives outside this folder, in the monorepo laid out in
-[`../doc/archive/platform-and-dev-plan-en.md`](../doc/archive/platform-and-dev-plan-en.md):
-`apps/web` (Next.js front end and API routes), `apps/conductor` (the orchestrator),
+[`../doc/platform-and-dev-plan-v2-en.md`](../doc/platform-and-dev-plan-v2-en.md):
+`apps/web` (the Next.js front end, which forwards `/api/v1` to the backend),
+`apps/api` (the FastAPI backend that serves every `/api/v1` endpoint),
+`apps/conductor` (the orchestrator),
 `packages/*` (shared schemas, rules, database, executors), and `infra/`.
 
 For product context — what a pack is, who the customer is, and what is already

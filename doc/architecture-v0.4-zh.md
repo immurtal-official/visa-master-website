@@ -4,6 +4,7 @@
 **状态：** 架构提案
 **承接自：** [architecture-v0.3](architecture-v0.3-en.md)（信任边界、即抛单租户执行、出站管控）· [ADR-002](../discussion/ADR-002-Agent-Framework-Evaluation.md)（自研工作流引擎，LLM API 作为智能服务 — 已接受）· [讨论 01](../discussion/explorations/01-hermes-vs-custom-agent-loop.md)（Hermes 对比轻量自研 agent；折中路线）
 **配套文档：** [平台选型与开发计划](platform-and-dev-plan-v2-zh.md) — 本提案中与平台相关的另一半。
+**配套阅读：** [ADR-004](../discussion/ADR-004-api-first-control-plane.md)（API 优先的控制面：所有能力都在 `/api/v1/**` 之下）· [ADR-005](../discussion/ADR-005-fastapi-backend-service-zh.md)（请求/响应后端是 `apps/api` 中独立的 FastAPI 服务；`packages/core` 仍是规则的唯一来源）。二者都不改变本文的 agent 执行面、conductor 以及两侧之间以数据库为接口的设计；B 章 §2、§3、§4 与 C 章 §0 中的注记标出了它们改变后端语言、角色或路径之处。
 
 > 英文原件：[architecture-v0.4 (English)](architecture-v0.4-en.md)
 
@@ -858,6 +859,8 @@ erDiagram
 
 归属谓词模式：`user_id = (SELECT id FROM users WHERE auth_provider = current_setting('app.provider') AND auth_subject = auth.jwt()->>'sub')`。
 
+> **实际实现（Supabase 平台特例条款，B 章 §4；[ADR-005](../discussion/ADR-005-fastapi-backend-service-zh.md) 第 3 点）。** 并不存在 `app_rw` 角色；它和上面的归属谓词属于“普通 Postgres”默认方案。API（`apps/api`）以登录角色 `visa_api` 连接 —— `noinherit`，除 `api_private.account_is_active` 外自身没有任何权限，每次切换角色前都先用它询问令牌对应的账户是否仍然有效（`packages/db/supabase/migrations/20261005200000_api_login_role.sql`）—— 然后以 `authenticated` 身份执行每个用户范围的请求，并按已验证令牌设置 `request.jwt.claims`；服务端权威写入（作业入队、记录 `stored`）则以 `service_role` 执行，二者都通过 `set local role` 完成。因此 RLS 与列级授权（`20261005134359_client_grants_baseline.sql`）在每次请求时都位于 API 自身检查之下，而不只是在数据库经由 BaaS 暴露时才生效。
+
 ### 3. 对象存储
 
 采用 S3 兼容 API，使供应商可替换。默认 **AWS S3**（SSE-S3 加密、开启 Block Public Access、版本控制**关闭** —— 对 PII 而言，删除必须是真删除）；一旦下载量变得重要，就评估 **Cloudflare R2**，因为零出站费定价直接降低了向中国境内用户交付签证包下载的成本。
@@ -885,6 +888,8 @@ s3://vm-prod-artifacts/                     # generated material
 3. `POST /api/uploads/:artifact_id/complete` → 后端对该对象发起 HEAD，记录经过验证的 `sha256` + `size_bytes`，将 `status` 置为 `'stored'`。超过 1 小时仍为 pending 的记录会被垃圾回收。
 
 **下载：** `GET /api/packs/:id/download` → 后端检查归属关系以及 `packs.status IN ('approved','delivered')`（即人工门 —— 在运营人员批准之前根本不存在签名 URL）→ 预签名 GET，15 分钟有效期，`response-content-disposition: attachment`。运营人员走同样的流程，但以角色为准入条件，并留下审计记录。
+
+> **注（[ADR-004](../discussion/ADR-004-api-first-control-plane.md)、[ADR-005](../discussion/ADR-005-fastapi-backend-service-zh.md)）。** 上面的路径只是示意。所有端点都位于 `/api/v1/**` 之下，由 `apps/api` 提供；实际实现的上传流程是 `POST /api/v1/applications/{id}/uploads`（登记：记录行 + 存储路径）→ 以所有者自己的令牌直接可续传上传到 Supabase Storage，并受按所有者路径前缀设定的存储策略约束 → `POST /api/v1/applications/{id}/uploads/{upload_id}/confirm`。字节内容依然从不经过后端。
 
 **作业容器从不接触 S3。** 依照 v0.3，worker 在启动前把上传件从 S3 暂存到每作业新建的暂存卷中，并在产物检测（`qa-report.json` + 交付目录）之后把输出从暂存卷上传到 `vm-prod-artifacts`。不可信容器不持有任何 S3 凭据，而且出站代理无论如何都会拒绝该主机。
 
@@ -920,6 +925,8 @@ s3://vm-prod-artifacts/                     # generated material
 
 **平台特例条款（配套开发计划已采纳）。** 当控制面落在 Supabase 上时（[平台文档](platform-and-dev-plan-v2-zh.md) 将其排为第 1 位），改用 **Supabase Auth** —— 届时认证、Postgres、存储和 realtime 共用同一家供应商，RLS 也直接以 `auth.uid()` 为键。在该配置下，v0.4 的两项要求需要显式处理：(1) *即时吊销* —— Supabase 的会话基于 JWT，因此敏感路由（运营人员操作、复核门变更、签证包下载）必须在每次请求时通过 `authorize()` 收口点在服务端重新检查 `users.status`/`role`（它们本来就会这么做），把 access token 的 TTL 保持在 ≤ 1 小时，并通过吊销 refresh token 来终止会话；这是可接受的，因为每一个高后果动作都经过服务端验证，绝不轻信 claims。（2） *中国可达性* —— 在第一方自定义域名下提供认证服务，并监控大陆的登录成功率；若出现劣化，则迁移到 Better-Auth —— `users(auth_provider, auth_subject)` 的设计初衷正是为了吸收这种替换。只要数据库是普通的 Postgres，Better-Auth 仍是默认选择。
 
+> **注（[ADR-005](../discussion/ADR-005-fastapi-backend-service-zh.md) 第 2 点）。** 在该配置下，API（`apps/api`）**只接受 Bearer 令牌** —— 即按项目 JWKS 验证的 Supabase access token。Web 端把 httpOnly cookie 会话保留为客户端自身的事务，并以 `Authorization: Bearer <access token>` 转发每一次 `/api/v1` 调用；移动端自行持有令牌。上文 Better-Auth 默认方案中所说的“Next.js 后端”已不存在 —— 若日后换回 Better-Auth（一个 TypeScript 库），需要另行决定它运行在哪里。
+
 #### 会话模型
 
 **数据库会话 + httpOnly、Secure、SameSite=Lax 的 cookie**（Better-Auth 的默认方式：不透明 token → 一条 `session` 记录），30 天滚动过期。之所以选它而不是无状态 JWT，是因为封禁、角色变更（user → operator）以及签证包访问权限的吊销必须立即生效 —— 在存在人工复核门与 PII 下载的场景下，这一点没有商量余地。每次请求的会话查找是同一个 Postgres 上的一次主键命中；如果它在性能剖析中真的显现出来，就在进程内做缓存（60 秒 TTL）。短时效的签名 JWT（≤10 分钟）只作为内部服务令牌出现 —— 后端 ↔ agent server 之间的调用 —— 绝不用作用户会话。
@@ -953,6 +960,8 @@ schema 中已经就位：`users.plan`、`users.stripe_customer_id`，以及作�
 ### 0. 在架构中的位置
 
 按照 ADR-002，可信的 Backend（Node/TypeScript，与 auth + Postgres + 对象存储处于同一信任区）**就是**工作流引擎和控制面。所有执行模型调用或自主工作的部分都位于**执行面**：三种*执行器种类*，统一置于一套 HTTP+JSON **适配器契约**之后。后端决定哪个执行器运行哪个 `task_type`（路由表，§1.7），判定完成（终态 webhook + 产物清单 + 自身校验），并拥有用户、预算和人工复核门。执行器是可替换的 worker；它们都不持有业务规则。
+
+> **注（[ADR-005](../discussion/ADR-005-fastapi-backend-service-zh.md)，2026-10-05）。** 上文的“Node/TypeScript”如今只适用于工作流引擎（`apps/conductor`）与共享规则（`packages/core`）。可信 Backend 的请求/响应层 —— 全部 `/api/v1/**` 端点、`authorize()` 收口点、按用户范围的数据访问 —— 已是 `apps/api` 中独立的 Python（FastAPI）服务。它读取 `packages/core` 导出的规则数据，只重新实现具名规则，并以提交入库的一致性向量证明两边相同。两部分都仍在可信区内；本章其余内容不变。
 
 - **执行器 A — LLM API 网关**：无状态，V1 的主力（ADR-002 中的“LLM 作为智能服务”）。
 - **执行器 B — Hermes server**：当前可用的完整签证包生产者，包裹在 v0.3 的容器纪律之中。
@@ -1251,6 +1260,7 @@ docker run -d --name vm-job-${TASK_ID} \
 - **v0.3** 仍是关于信任边界、即抛单租户执行、出站策略和人工复核门的权威论述；v0.4 是把这些控制项按执行器嵌入（章节 C §5），而不是重述它们。
 - **ADR-002** 的决策（自研工作流引擎；LLM 作为无状态智能服务）被章节 A 逐字实现；Hermes 只以可插拔执行器的身份出现，契合 ADR-002 的“通用 Agent Runtime 仍是未来选项”——并被反转为“在契约之后它仍是当下的选项，并随时间被绞杀”（章节 C §4.1）。该修订记录在 [ADR-003](../discussion/ADR-003-hermes-as-pluggable-executor-in-v1-zh.md)，以免单独阅读 ADR-002 时产生误导。
 - **Discussion 01** 的轻量 agent 中间路线就是执行器 C；其速度杠杆（模型路由、并行步骤、缓存、小提示词）在路由表（A §2.2）和网关步骤设计（C §2.2）中得以落地。
+- **ADR-004 / ADR-005**（均晚于本文，且都声明不修订本文）：控制面以 API 优先，位于 `/api/v1/**` 之下（[ADR-004](../discussion/ADR-004-api-first-control-plane.md)），由 `apps/api` 中独立的 FastAPI 服务提供，`packages/core` 以数据 + 一致性向量的形式导出（[ADR-005](../discussion/ADR-005-fastapi-backend-service-zh.md)）。本文规定的 agent 执行面、conductor 与以数据库为接口的设计不变；B 章 §2–§4 与 C 章 §0 中的注记标出了被它们取代的后端细节。
 
 ## 开放问题
 
