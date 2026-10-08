@@ -195,11 +195,13 @@ are silent.
 | 7 | `jobs.input` carries upload references (ids only, never paths) | half a day | done (PR #23) |
 | 8 | Branching `showIf`, and a gate on placeholder answers | 3–4 days | done (PR #24) |
 | 9 | Extraction write-back, driven by hand-made fixtures | 1–2 days | done (PRs #25, #26) |
-| 10 | Real extraction | — | blocked on the LLM gateway |
+| 10 | Real extraction | — | blocked on the LLM gateway; deferred (2026-10-08) |
 
 Stages 1–9 are on `main`. The partner's guide is
 `packages/core/src/intake/HOW-TO-EDIT.zh.md`. Stage 10 swaps the fixture reader for a model
-call through the gateway; nothing downstream of the reader changes.
+call through the gateway; nothing downstream of the reader changes. It is deliberately
+deferred as of 2026-10-08: it waits on the gateway, and the gateway on a host for the agent
+plane, which is not decided (see Not done yet).
 
 Order matters in three places. **2 before 3**: the gate passing before and after the merge is
 what shows the merge did not change the copy contract. **6 before 8**: branching changes what
@@ -367,6 +369,7 @@ Elsewhere:
   the gateway itself. The first real pack run waits on this (and costs a few dollars). Week 3
   also still owes a host for `infra/compose.vm.yml` (written in PR #14, never applied), the rest of the container hardening, and per-job
   token metering; the conductor, the executor and the egress boundary are what is done.
+  Deferred as of 2026-10-08, together with stage 10, until the agent plane has a host.
 - **Progress UI + review gate + delivery** (week 4): the `progress`/`job_events` stage machine
   and its timeline, `/admin/review` with approve → `delivered` / reject → structured
   `failure_reason`, migration `packs`/`reviews`/`audit_log`, the pre-review validator, and the
@@ -383,11 +386,17 @@ Elsewhere:
   worth knowing about precisely because it looks like a whole one.
 - **Notifications, retention enforcement, restore drill** (week 7); **payments** (week 8).
 - **Deployment**: the control plane is up (see above); the agent plane is not. Still owed
-  are the Hetzner VM, `infra/compose.vm.yml` brought up on it, and the systemd units — and, before anyone
+  are a host for it, `infra/compose.vm.yml` brought up on it, and the systemd units — and, before anyone
   outside the team uses it, Supabase Pro (Free has no backups and pauses when idle). Vercel is
   already on the team's Pro plan. Blockers are accounts and spend, not code.
+  **Where the agent plane runs is open again** as of 2026-10-08: the plan has said a Hetzner
+  VM, and that is being reconsidered before anything is bought, for the reasons
+  [`infra/README.md`](infra/README.md) gives: the database is in `us-west-2` while Hetzner's
+  arm64 machines are in Europe, and Vercel Sandbox did not exist when the host was chosen.
 - **Hosting loose ends**: the DMARC policy raised from `none` to `quarantine` after a few
-  weeks of clean reports.
+  weeks of clean reports; and a mailbox on `wdnx.world` (Zoho or similar) for people to
+  write to — deferred as of 2026-10-08. Sign-in mail does not need it: Resend sends from
+  `no-reply@`, and DMARC reports go to Cloudflare.
 - **CN-entity-gated items** (tracked, not blocking): ICP filing, WeChat Pay, +86 SMS, any
   WeChat Mini Program — all hang off the same prerequisite.
 

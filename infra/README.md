@@ -201,7 +201,7 @@ Two things about that file deserve to be read before it runs:
   connections only — it polls the jobs table and uploads artifacts — so there is
   no inbound surface. Do not add `ports:`.
 
-The machine itself is decided but not bought: Hetzner CAX31, 8 vCPU / 16 GB
+The machine itself is proposed but not bought, and since 2026-10-08 open again: Hetzner CAX31, 8 vCPU / 16 GB
 arm64, ≈ $19/mo, sized so the job container keeps its full 4 vCPU / 8 GB with
 headroom for the Docker daemon, Squid and the conductor
 ([plan v2](../doc/platform-and-dev-plan-v2-en.md) §B.5). Two things have changed
